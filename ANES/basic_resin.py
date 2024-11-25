@@ -155,7 +155,7 @@ for i, key in enumerate(pos.keys()):
     new_pos[key] = [x_pca[i, 0], x_pca[i, 1]]
 
 # 4. Draw the graph
-plt.figure(figsize=(10, 7))
+plt.figure(figsize=(10, 5))
 
 # Draw nodes and edges
 nx.draw_networkx_nodes(G, new_pos, node_size=500, node_color="lightblue")
@@ -168,6 +168,7 @@ nx.draw_networkx_labels(G, new_pos, labels, font_size=12, font_color="black")
 # Show the graph
 plt.title("Correlation Graph", fontsize=16)
 plt.axis("off")
+plt.savefig("correlation_graph.png")
 plt.show()
 
 # -------------- save data ----------------- #

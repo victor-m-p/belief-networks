@@ -144,7 +144,7 @@ dict_2016 = base_2016.set_index('item')['count'].to_dict()
 nx.set_node_attributes(G, dict_2016, name="count_2016")
 
 # get a subset of the positions 
-pos_subset = {k: pos[k] for k in pos.keys() if variable in k} 
+pos_subset = {k: new_pos[k] for k in new_pos.keys() if variable in k} 
 pos_subset = {k.split('_')[1]: v for k, v in pos_subset.items()}
 
 # edge labels
@@ -192,7 +192,7 @@ nx.draw_networkx_labels(
     node_labels,
     font_size = 9,
 )
-plt.show();
+plt.show(); 
 
 '''
 Okay, really hard to show properly with self-loops.
