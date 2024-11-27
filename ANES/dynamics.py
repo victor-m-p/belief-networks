@@ -387,13 +387,6 @@ base_temp = base_temp.drop(columns=['year'])
 dfx = pd.merge(base_temp, merged_df, on=['variable', 'item_2016'], how='inner')
 dfx['p_transition'] = dfx['n_transition'] / dfx['n_2016']
 
-sns.scatterplot(
-    data=dfx,
-    x='euclid_dist_2016',
-    y='p_transition',
-    hue='variable',  # Color points by the 'class' column)
-)
-
 colors = {
     'abort': 'tab:blue',
     'gay': 'tab:orange',
@@ -403,28 +396,47 @@ colors = {
 
 variable_item_combinations = dfx.groupby(['variable', 'item_2016']).size().reset_index(name='count')
 variable_item_combinations = variable_item_combinations.to_dict(orient='records')
+import matplotlib.pyplot as plt
+
+# Keep track of variables already added to the legend
+added_to_legend = set()
+
 for d in variable_item_combinations:
-    # extract dictionary elements 
+    # Extract dictionary elements
     variable = d.get('variable')
     item = d.get('item_2016')
     
+    # Filter and sort the data
     df_subset = dfx[(dfx['variable'] == variable) & (dfx['item_2016'] == item)]
     df_subset = df_subset.sort_values('euclid_dist_2016')
     color = colors[variable]
     
-    # scatter plot 
-    plt.scatter(df_subset['euclid_dist_2016'], df_subset['p_transition'], label=item, color=color)
+    # Scatter plot
+    plt.scatter(df_subset['euclid_dist_2016'], df_subset['p_transition'], color=color)
 
-    # line plot 
-    plt.plot(df_subset['euclid_dist_2016'], df_subset['p_transition'], label=item, color=color)
-
-for x, y, _ in variable_item_combinations: 
-    print(x)
+    # Line plot
+    plt.plot(df_subset['euclid_dist_2016'], df_subset['p_transition'], color=color)
     
+    # Add variable to the legend only once
+    if variable not in added_to_legend:
+        plt.scatter([], [], label=variable, color=color)  # Add an invisible scatter point for the legend
+        added_to_legend.add(variable)
 
+# Add labels and legend
+plt.xlabel('Distance (network) in 2016')
+plt.ylabel('p(transition)')
+plt.legend(title='Variables')
+plt.savefig('fig/distance_transition.png')
+    
+'''
+NB: 
+1. cannot use correlations directly because no correlation for items within variables
+2. questions with fewer levels will have lower mean and obscure plot (can be normalized)
+'''
 
 # transition by distance - normalizing for size # 
-
+# is this gravity?
+dfx
 
 # could also be a kind of gravity model maybe?
 
