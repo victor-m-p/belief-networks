@@ -10,55 +10,53 @@ df, meta = pyreadstat.read_sav("data/2016_2020_mergedpanel.sav")
 
 # ------- data selection ----------------- #
 
-df['V161231'] # position gay marriage (pre-2016)
-df['V201416'] # position gay marriage (pre-2020)
-
 '''
+gay marriage: 
 1: legally marry
 2: union but not marry
 3: no legal recognition
-'''
 
-df['V161192'] # unauthorized immigrants (pre-2016)
-df['V201417'] # unauthorized immigrants (pre-2020)
-
-'''
+unauthorized immigrants: 
 1: most conservative
 2: ...
 3: ...
 4: most liberal 
-'''
 
-df['V161224'] # rising temp (pre-2016)
-df['V201401'] # rising temp (pre-2020)
-
-'''
+rising temperature:
 1: do more
 2: do less
 3: right amount
-'''
 
-df['V161232'] # abortion (pre-2016)
-df['V201336'] # abortion (pre-2020)
-
-'''
+abortion: 
 1: never permitted
 2: three exceptions
 3: other need
 4: choice
+
+tax rich
+1: favor
+2: oppose
+3: neither
+
+econ mobility: 
+1: easier (better)
+2: harder (worse)
+3: same 
 '''
 
 df_test = df[[
-    'V161231', 
-    'V201416', 
-    'V161192', 
-    'V201417', 
-    'V161224',
-    'V201401',
-    'V161232',
-    'V201336',
-    #'V161347', --feminism mostly nan
-    #'V202476' --feminism mostly nan
+    'V161231', # gay marriage pre-2016
+    'V201416', # gay marriage pre-2020
+    'V161192', # unauth. immigrants pre-2016
+    'V201417', # unauth. immigrants pre-2020
+    'V161224', # rising temperature pre-2016
+    'V201401', # rising temperature pre-2020
+    'V161232', # abortion pre-2016
+    'V201336', # abortion pre-2020
+    'V162140', # rich tax pre-2016
+    'V202325', # rich tax pre-2020
+    'V162136', # econ mobility pre-2016
+    'V202318', # econ mobility pre-2020
     ]]
 df_test = df_test.rename(
     columns={
@@ -70,16 +68,23 @@ df_test = df_test.rename(
         'V201401': 'temp2020',
         'V161232': 'abort2016',
         'V201336': 'abort2020',
-        #'V161347': 'fem2016',
-        #'V202476': 'fem2020'
+        'V162140': 'tax2016',
+        'V202325': 'tax2020',
+        'V162136': 'econ2016',
+        'V202318': 'econ2020'
     }
 )
+
+df_test = df_test.astype(int)
+df_test['ID'] = df_test.index
 
 # give meaningful names
 recode_gay = {1: "marry", 2: "union", 3: "no"}
 recode_imm = {1: "deport", 2: "restrict", 3: "stay", 4: "citizen"}
 recode_temp = {1: "more", 2: "less", 3: "right"}
 recode_abort = {1: "never", 2: "exceptions", 3: "need", 4: "choice"}
+recode_tax = {1: "favor", 2: "oppose", 3: "neither"}
+recode_econ = {1: "better", 2: "worse", 3: "same"}
 df_test['gay2016'] = df_test['gay2016'].map(recode_gay).fillna(np.nan)
 df_test['gay2020'] = df_test['gay2020'].map(recode_gay).fillna(np.nan)
 df_test['imm2016'] = df_test['imm2016'].map(recode_imm).fillna(np.nan)

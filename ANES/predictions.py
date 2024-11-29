@@ -1,7 +1,13 @@
+'''
+todo;
+clean up document. 
+'''
+
 import numpy as np 
 import pandas as pd 
 import pickle 
 import re
+import matplotlib.pyplot as plt
 
 df = pd.read_csv('data/anes_data.csv')
 df = df.dropna()
@@ -37,108 +43,122 @@ position_extra = position_df.copy()
 position_extra['year'] = '2020'
 position_df = pd.concat([position_df, position_extra])
 
-# now we merge
+# now we merge (here; still okay)
 complete_df = melted_df.merge(position_df, on=['question', 'year', 'answer'], how='inner')
 
-# create lag-lead format
-sorted_df = complete_df.sort_values(by=["ID", "question", "year"]).reset_index(drop=True)
+# we can do this with sorting and lagging instead
+df_2016 = complete_df[complete_df['year']=='2016']
+df_2020 = complete_df[complete_df['year']=='2020']
+df_2016 = df_2016.rename(columns={
+    'answer': 'answer_lag',
+    'xvalue': 'xvalue_lag'
+})
+df_2016 = df_2016.drop(columns=['year'])
+df_2020 = df_2020.drop(columns=['year'])
 
-# Create lagged columns
-sorted_df["year_lag"] = sorted_df.groupby(["ID", "question"])["year"].shift(1)
-sorted_df["answer_lag"] = sorted_df.groupby(["ID", "question"])["answer"].shift(1)
-sorted_df["xvalue_lag"] = sorted_df.groupby(["ID", "question"])["xvalue"].shift(1)
-
-# Drop rows where lagged values are missing
-sorted_df = sorted_df.dropna(subset=["year_lag", "answer_lag", "xvalue_lag"])
-
-# Reset index for cleanliness
-sorted_df = sorted_df.reset_index(drop=True)
+lagged_df = df_2016.merge(df_2020, on = ['ID', 'question'], how = 'inner')
 
 '''
 First hypothesis;
 distance ~ |xvalue_lag| + (1+ID)
 '''
 
-sorted_df['xvalue_lag_abs'] = sorted_df['xvalue_lag'].abs()
-sorted_df['xvalue_delta'] = abs(sorted_df['xvalue'] - sorted_df['xvalue_lag'])
+lagged_df['xvalue_lag_abs'] = lagged_df['xvalue_lag'].abs()
+lagged_df['xvalue_delta'] = abs(lagged_df['xvalue'] - lagged_df['xvalue_lag'])
 
 # plot idea for first model;
 import seaborn as sns 
+fig, ax = plt.subplots()
+
 sns.lineplot(
-    data=sorted_df,
+    data=lagged_df,
     x='xvalue_lag_abs', 
     y='xvalue_delta', 
     hue='question'
     )
+
+# Add jitter to the x and/or y values
+lagged_df['xvalue_lag_abs_jittered'] = lagged_df['xvalue_lag_abs'] + np.random.uniform(-0.02, 0.02, len(lagged_df))
+lagged_df['xvalue_delta_jittered'] = lagged_df['xvalue_delta'] + np.random.uniform(-0.02, 0.02, len(lagged_df))
+
+# Plot with jittered values
 sns.scatterplot(
-    data=sorted_df,
-    x='xvalue_lag_abs',
-    y='xvalue_delta',
-    hue='question'
+    data=lagged_df,
+    x='xvalue_lag_abs_jittered',
+    y='xvalue_delta_jittered',
+    hue='question',
+    alpha=0.1,
+    legend=False
 )
 
-# wait; what?
-# there should only be 4 values here ...
-sorted_df[sorted_df['question']=='imm'][['question', 'answer', 'xvalue_lag']].drop_duplicates()
+plt.xlabel(r'$|X_{t1}|, \forall X$', fontsize=12)
+plt.ylabel(r'$|X_{t1} - X_{t2}|, \forall X$', fontsize=12)
+plt.show();
 
-# fit first model # 
-df['ID_encoded'] = pd.Categorical(df['ID']).codes
+# now we can also do the average 
+# like; how far do you move thing. 
+average_values = complete_df.groupby(['ID', 'year'])['xvalue'].mean().reset_index(name='avg_x')
+average_2016 = average_values[average_values['year']=='2016']
+average_2020 = average_values[average_values['year']=='2020']
+average_2016 = average_2016.rename(columns={
+    'avg_x': 'x_2016'})
+average_2020 = average_2020.rename(columns={
+    'avg_x': 'x_2020'
+})
+average_2016 = average_2016.drop(columns='year')
+average_2020 = average_2020.drop(columns='year')
+average_values = average_2016.merge(average_2020, on = 'ID', how = 'inner')
+average_values['absolute_dist'] = abs(average_values['x_2016']-average_values['x_2020'])
+average_values['absolute_2016'] = abs(average_values['x_2016'])
 
-# PyMC model
-import pymc as pm 
-import bambi as bmb
-import arviz as az
-
-# how do we specify priors here?
-# also this is much slower than brms
-# Define the priors
-priors = {
-    "Intercept": bmb.Prior("Normal", mu=0, sigma=10),  # Prior for the intercept
-    "xvalue_lag_abs": bmb.Prior("Normal", mu=0, sigma=5),  # Prior for the fixed effect
-    "1|ID": bmb.Prior("HalfNormal", sigma=2)  # Prior for the random effect SD
-}
-
-model = bmb.Model("xvalue_delta ~ xvalue_lag_abs + (1|ID)", sorted_df, family="gaussian")
-
-# Fit the model
-trace = model.fit(draws=2000, tune=1000)
-az.summary(trace, var_names=['sigma', 'Intercept', 'xvalue_lag_abs'])
-az.plot_trace(trace, var_names=['sigma', 'Intercept', 'xvalue_lag_abs']);
-
-
-with pm.Model() as model:
-    # Priors for fixed effects
-    beta = pm.Normal("beta", mu=0, sigma=10)  # Fixed effect for xvalue_lag_abs
-    intercept = pm.Normal("intercept", mu=0, sigma=10)  # Fixed intercept
-
-    # Random intercepts for IDs
-    sd_ID = pm.Exponential("sd_ID", 1)  # Standard deviation for ID random effects
-    random_intercept_ID = pm.Normal("random_intercept_ID", mu=0, sigma=sd_ID, shape=len(df['ID_encoded'].unique()))
-    
-    # Linear model
-    mu = (
-        intercept +
-        random_intercept_ID[df["ID_encoded"]] +
-        beta * df["xvalue_lag_abs"]
+# Plot with jittered values
+fig, ax = plt.subplots(figsize=(5, 3))
+sns.regplot(
+    data=average_values,
+    x='absolute_2016', 
+    y='absolute_dist', 
+    scatter_kws={'alpha': 0.1},
+    x_jitter=0.01,
+    y_jitter=0.01
     )
+plt.xlabel('|avg(X t1)|')
+plt.ylabel('|avg(X t1)-avg(X t2)|')
+plt.show();
 
-    # Likelihood
-    sigma = pm.Exponential("sigma", 1)  # Error standard deviation
-    likelihood = pm.Normal("xvalue_diff", mu=mu, sigma=sigma, observed=df["xvalue_diff"])
-    
-    # Sampling
-    trace = pm.sample(2000, tune=1000, return_inferencedata=True)
+# by distance from your locus to opinions # 
+lagged_df = lagged_df.merge(average_2016, on = 'ID', how = 'inner')
+lagged_df['d_abs'] = abs(lagged_df['xvalue_lag']-lagged_df['x_2016'])
 
+sns.regplot(
+    data=lagged_df,
+    x='d_abs',
+    y='xvalue_delta',
+    scatter_kws={'alpha': 0.1},
+    x_jitter=0.01,
+    y_jitter=0.01
+)
 
+# absolute movement by SD of beliefs 
+data_2016 = complete_df[complete_df['year']=='2016']
+data_2016 = data_2016.groupby(['ID'])['xvalue'].std().reset_index(name='std')
+lagged_df = lagged_df.merge(data_2016, on = 'ID', how = 'inner')
 
-# find average xvalue for each individual in 2016 and 2020
-average_x = complete_df.groupby(['ID', 'year'])['xvalue'].mean().reset_index(name='xavg')
-complete_df = complete_df.merge(average_x, on = ['ID', 'year'], how = 'inner')
+centroid_2020 = complete_df[complete_df['year']=='2020']
+centroid_2020 = centroid_2020.groupby(['ID'])['xvalue'].mean().reset_index(name='centroid_2020')
+lagged_df = lagged_df.merge(centroid_2020, on = 'ID', how = 'inner')
 
+lagged_df['centroid_delta'] = abs(lagged_df['centroid_2020']-lagged_df['x_2016'])
+lagged_unique = lagged_df[['ID', 'std', 'centroid_delta']].drop_duplicates()
 
-
-# fit models  
-
-
-# okay look at the average thing first # 
-agg_df = complete_df.groupby(['ID', 'year']).agg({'xvalue': 'mean'}).reset_index()
+fig, ax = plt.subplots(figsize=(6, 4))
+sns.regplot(
+    data=lagged_df,
+    x = 'std', 
+    y = 'centroid_delta',
+    scatter_kws = {'alpha': 0.1},
+    x_jitter = 0.01, 
+    y_jitter = 0.01,
+)
+plt.ylabel(r"$abs(avg(X_{t1})-avg(X_{t2}))$")
+plt.xlabel(r'$std(X_{t1})$')
+plt.show();
