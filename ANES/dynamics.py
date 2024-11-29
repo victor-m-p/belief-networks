@@ -7,12 +7,12 @@ import pickle
 import matplotlib.colors as mcolors
 
 # ----------------- DATA ---------------------- #
-df = pd.read_csv('anes_data.csv')
+df = pd.read_csv('data/anes_data.csv')
 df = df.dropna()
 
-with open('pos.pkl', 'rb') as handle:
+with open('data/pos.pkl', 'rb') as handle:
     pos = pickle.load(handle)
-with open('new_pos.pkl', 'rb') as handle:
+with open('data/new_pos.pkl', 'rb') as handle:
     new_pos = pickle.load(handle)
 
 # ----------------- FUNCTIONS ---------------------- #

@@ -6,7 +6,7 @@ import networkx as nx
 import pickle
 # https://electionstudies.org/data-center/2016-2020-panel-merged-file/
 
-df, meta = pyreadstat.read_sav("2016_2020_mergedpanel.sav")
+df, meta = pyreadstat.read_sav("data/2016_2020_mergedpanel.sav")
 
 # ------- data selection ----------------- #
 
@@ -168,15 +168,14 @@ nx.draw_networkx_labels(G, new_pos, labels, font_size=12, font_color="black")
 # Show the graph
 plt.title("Correlation Graph", fontsize=16)
 plt.axis("off")
-plt.savefig("correlation_graph.png")
-plt.show()
+plt.savefig("fig/correlation_graph.png")
 
 # -------------- save data ----------------- #
-df_test.to_csv("anes_data.csv", index=False)
+df_test.to_csv("data/anes_data.csv", index=False)
 
-with open('pos.pkl', 'wb') as f:
+with open('data/pos.pkl', 'wb') as f:
     pickle.dump(pos, f)
 
-with open('new_pos.pkl', 'wb') as f:
+with open('data/new_pos.pkl', 'wb') as f:
     pickle.dump(new_pos, f)
 

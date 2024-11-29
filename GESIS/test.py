@@ -89,61 +89,23 @@ fig = go.Figure(data=[go.Sankey(
 fig.update_layout(title_text="Sankey Diagram of Panel Data", font_size=10)
 fig.show()
 
-# try on a subset; 
+### path dependency ###
+import seaborn as sns
 target = 9
 d_sub = d_cl[d_cl['clch-2015']==target]
-counts = d_sub['clch-2014'].value_counts().reset_index()
-result = d_sub.groupby('clch-2014')[['clch-2016', 'clch-2017', 'clch-2018']].mean().reset_index()
-result_melt = result.melt(id_vars='clch-2014', var_name='year', value_name='mean')
-result_merge = pd.merge(result_melt, counts, on = 'clch-2014', how = 'inner')
+d_sub = d_sub.astype(int)
+d_sub['baseline'] = d_sub['clch-2014'] # baseline year
 
-# try to reformat;
-baseline_year = result_merge[['clch-2014', 'count']].drop_duplicates()
-baseline_year['year'] = 'clch-2014'
-baseline_year['mean'] = baseline_year['clch-2014']
+df_long = d_sub.melt(id_vars=["baseline"], 
+                  value_vars=[col for col in d_sub.columns if col.startswith("clch-")],
+                  var_name="year", 
+                  value_name="value")
 
-# merge again
-result_merge = pd.concat([result_merge, baseline_year])
-result_merge['year'] = result_merge['year'].apply(lambda x: x.split('-')[1])
-result_merge['year'] = result_merge['year'].astype(int)
-result_merge = result_merge.rename(columns={'clch-2014': 'group'})
-result_merge['group'] = result_merge['group'].astype(int)
+# Extract the year from the "year" column (remove the "clch-" prefix)
+df_long["year"] = df_long["year"].str.replace("clch-", "", regex=False)
 
-# add 2015
-missing_year = result_merge[['group', 'count']].drop_duplicates()
-missing_year['year'] = 2015
-missing_year['mean'] = target
-result_merge = pd.concat([result_merge, missing_year])
-
-# plot this;
-import seaborn as sns 
-import matplotlib.ticker as ticker
-
-sns.set(style="whitegrid")
 plt.figure(figsize=(12, 6))
-sns.lineplot(x='year', y='mean', hue='group', data=result_merge)
-plt.title(f"Transition from {target} in 2015")
+sns.lineplot(x="year", y="value", hue="baseline", data=df_long)
 
-# Ensure the x-axis displays integers only
-plt.gca().xaxis.set_major_locator(ticker.MultipleLocator(1))  # Set ticks at every year (integer)
-plt.gca().xaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))  # Format ticks as integers
-
-plt.savefig('fig/path_dependency.png')
-
-# is there a way to quantify this? 
-## ding ding ##
-from sklearn.feature_selection import mutual_info_regression
-from sklearn.preprocessing import StandardScaler
-
-# Standardize the data (optional)
-scaler = StandardScaler()
-X_conditional = scaler.fit_transform(d_cl[['clch-2015']])
-X_all = scaler.fit_transform(d_cl[['clch-2015', 'clch-2014']])
-Y = d_cl['clch-2016']
-
-# Mutual information
-mi_conditional = mutual_info_regression(X_conditional, Y)
-mi_all = mutual_info_regression(X_all, Y)
-
-print(f"Mutual Information (with 2015 only): {mi_conditional}")
-print(f"Mutual Information (with 2015 and 2014): {mi_all}")
+### quantify path dependenecy ###
+# mutual information
