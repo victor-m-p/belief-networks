@@ -1,50 +1,13 @@
 import pyreadstat
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
-import pickle
 # https://electionstudies.org/data-center/2016-2020-panel-merged-file/
 
 df, meta = pyreadstat.read_sav("data/2016_2020_mergedpanel.sav")
 
 # ------- data selection ----------------- #
-
-'''
-gay marriage: 
-1: legally marry
-2: union but not marry
-3: no legal recognition
-
-unauthorized immigrants: 
-1: most conservative
-2: ...
-3: ...
-4: most liberal 
-
-rising temperature:
-1: do more
-2: do less
-3: right amount
-
-abortion: 
-1: never permitted
-2: three exceptions
-3: other need
-4: choice
-
-tax rich
-1: favor
-2: oppose
-3: neither
-
-econ mobility: 
-1: easier (better)
-2: harder (worse)
-3: same 
-'''
-
-df_test = df[[
+df = df[[
     'V161231', # gay marriage pre-2016
     'V201416', # gay marriage pre-2020
     'V161192', # unauth. immigrants pre-2016
@@ -58,7 +21,7 @@ df_test = df[[
     'V162136', # econ mobility pre-2016
     'V202318', # econ mobility pre-2020
     ]]
-df_test = df_test.rename(
+df = df.rename(
     columns={
         'V161231': 'gay2016',
         'V201416': 'gay2020',
@@ -75,39 +38,54 @@ df_test = df_test.rename(
     }
 )
 
-df_test = df_test.astype(int)
-df_test['ID'] = df_test.index
+# ----------------- data cleaning ---------------------- #
 
-# give meaningful names
-recode_gay = {1: "marry", 2: "union", 3: "no"}
-recode_imm = {1: "deport", 2: "restrict", 3: "stay", 4: "citizen"}
-recode_temp = {1: "more", 2: "less", 3: "right"}
-recode_abort = {1: "never", 2: "exceptions", 3: "need", 4: "choice"}
-recode_tax = {1: "favor", 2: "oppose", 3: "neither"}
-recode_econ = {1: "better", 2: "worse", 3: "same"}
-df_test['gay2016'] = df_test['gay2016'].map(recode_gay).fillna(np.nan)
-df_test['gay2020'] = df_test['gay2020'].map(recode_gay).fillna(np.nan)
-df_test['imm2016'] = df_test['imm2016'].map(recode_imm).fillna(np.nan)
-df_test['imm2020'] = df_test['imm2020'].map(recode_imm).fillna(np.nan)
-df_test['temp2016'] = df_test['temp2016'].map(recode_temp).fillna(np.nan)
-df_test['temp2020'] = df_test['temp2020'].map(recode_temp).fillna(np.nan)
-df_test['abort2016'] = df_test['abort2016'].map(recode_abort).fillna(np.nan)
-df_test['abort2020'] = df_test['abort2020'].map(recode_abort).fillna(np.nan)
+df = df.astype(int)
+df['ID'] = df.index
+df_long = df.melt(id_vars='ID', var_name='question', value_name='value')
+df_long['year'] = df_long['question'].str.extract(r'(\d+)')
+df_long['question'] = df_long['question'].str.extract(r'([a-zA-Z]+)')
 
-df_2016 = df_test[['gay2016', 'imm2016', 'temp2016', 'abort2016']]
-df_2020 = df_test[['gay2020', 'imm2020', 'temp2020', 'abort2020']]
+# add question interpretation # 
+code_answers = [
+    ('gay', 1, 'marry'),
+    ('gay', 2, 'union'),
+    ('gay', 3, 'no'),
+    ('imm', 1, 'deport'),
+    ('imm', 2, 'restrict'),
+    ('imm', 3, 'stay'),
+    ('imm', 4, 'citizen'),
+    ('abort', 1, 'never'),
+    ('abort', 2, 'exceptions'),
+    ('abort', 3, 'need'),
+    ('abort', 4, 'choice'),
+    ('tax', 1, 'favor'),
+    ('tax', 2, 'oppose'),
+    ('tax', 3, 'neither'),
+    ('econ', 1, 'better'),
+    ('econ', 2, 'worse'),
+    ('econ', 3, 'same'),
+]
 
-df_2016.isna().sum() # few nan
-df_2020.isna().sum() # few nan
+code_answers = pd.DataFrame(code_answers, columns=['question', 'value', 'answer'])
+df_long = pd.merge(df_long, code_answers, on=['question', 'value'], how='inner')
 
-df_2016 = df_2016.dropna()
+# full answers from all IDs otherwise drop
+id_grouped = df_long.groupby('ID').size().reset_index(name='N')
+max_n = id_grouped['N'].max()
+id_grouped = id_grouped[id_grouped['N'] == max_n]
+id_grouped = id_grouped['ID'].drop_duplicates()
+df_long = df_long.merge(id_grouped, on='ID', how='inner').reset_index(drop=True)
 
-# get dummies
-df_2016 = pd.get_dummies(df_2016)
+# ----------------- data visualization ---------------------- #
+
+df_2016 = df_long[df_long['year'] == '2016']
+df_2016_wide = df_2016.pivot(index='ID', columns='question', values='answer')
+df_2016_dummies = pd.get_dummies(df_2016_wide)
 
 # ----------------- network ---------------------- #
 # calculate all pairwise correlations
-corr = df_2016.corr() # consider nan. 
+corr = df_2016_dummies.corr() # consider nan. 
 
 # remove negative things.
 corr[corr < 0] = 0
@@ -126,24 +104,6 @@ pos = nx.spring_layout(G, iterations=5000)
 # 3. Scale edge widths based on weights
 edge_multiplier = 10
 edge_weights = [data['weight'] * edge_multiplier for _, _, data in G.edges(data=True)]  # Scale factor: 5
-
-# 4. Draw the graph
-plt.figure(figsize=(10, 7))
-
-# Draw nodes and edges
-nx.draw_networkx_nodes(G, pos, node_size=500, node_color="lightblue")
-nx.draw_networkx_edges(G, pos, width=edge_weights, alpha=0.7)
-
-# Draw labels
-labels = {node: node for node in G.nodes}
-nx.draw_networkx_labels(G, pos, labels, font_size=12, font_color="black")
-
-# Show the graph
-plt.title("Correlation Graph", fontsize=16)
-plt.axis("off")
-plt.show()
-
-# --------------------------------------- # 
 
 # taking the positions; which are already 2-dimensional.
 pos_list = [list(v) for v in pos.values()]
@@ -176,11 +136,16 @@ plt.axis("off")
 plt.savefig("fig/correlation_graph.png")
 
 # -------------- save data ----------------- #
-df_test.to_csv("data/anes_data.csv", index=False)
 
-with open('data/pos.pkl', 'wb') as f:
-    pickle.dump(pos, f)
+# fix pos first 
+df_pos = pd.DataFrame(new_pos).T.reset_index()
+df_pos.columns = ['ID', 'xvalue', 'yvalue']
+df_pos = df_pos.drop(columns='yvalue')
+df_pos['question'] = df_pos['ID'].str.split('_').str[0]
+df_pos['answer'] = df_pos['ID'].str.split('_').str[1]
+df_pos['year'] = 2016
+df_pos = df_pos.drop(columns='ID')
 
-with open('data/new_pos.pkl', 'wb') as f:
-    pickle.dump(new_pos, f)
-
+# now save 
+df_pos.to_csv("data/anes_pos.csv", index=False)
+df_long.to_csv("data/anes_data.csv", index=False)

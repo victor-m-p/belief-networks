@@ -7,7 +7,9 @@ import pickle
 import matplotlib.colors as mcolors
 
 # ----------------- DATA ---------------------- #
+
 df = pd.read_csv('data/anes_data.csv')
+
 df = df.dropna()
 
 with open('data/pos.pkl', 'rb') as handle:
