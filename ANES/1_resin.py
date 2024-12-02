@@ -2,6 +2,8 @@ import pyreadstat
 import pandas as pd
 import matplotlib.pyplot as plt
 import networkx as nx
+from sklearn.decomposition import PCA
+
 # https://electionstudies.org/data-center/2016-2020-panel-merged-file/
 
 df, meta = pyreadstat.read_sav("data/2016_2020_mergedpanel.sav")
@@ -91,8 +93,6 @@ corr = df_2016_dummies.corr() # consider nan.
 corr[corr < 0] = 0
 
 # calculate the phi thing
-import networkx as nx
-# Create a NetworkX graph from the correlation matrix
 G = nx.from_pandas_adjacency(corr)
 
 # 1. Remove self-loops
@@ -107,8 +107,6 @@ edge_weights = [data['weight'] * edge_multiplier for _, _, data in G.edges(data=
 
 # taking the positions; which are already 2-dimensional.
 pos_list = [list(v) for v in pos.values()]
-
-from sklearn.decomposition import PCA
 
 # then PCA with 2 components? 
 pca = PCA(n_components=2)
@@ -137,15 +135,19 @@ plt.savefig("fig/correlation_graph.png")
 
 # -------------- save data ----------------- #
 
-# fix pos first 
-df_pos = pd.DataFrame(new_pos).T.reset_index()
-df_pos.columns = ['ID', 'xvalue', 'yvalue']
-df_pos = df_pos.drop(columns='yvalue')
-df_pos['question'] = df_pos['ID'].str.split('_').str[0]
-df_pos['answer'] = df_pos['ID'].str.split('_').str[1]
-df_pos['year'] = 2016
-df_pos = df_pos.drop(columns='ID')
+def pos_to_df(pos):
+    df_pos = pd.DataFrame(pos).T.reset_index()
+    df_pos.columns = ['ID', 'xvalue', 'yvalue']
+    df_pos['question'] = df_pos['ID'].str.split('_').str[0]
+    df_pos['answer'] = df_pos['ID'].str.split('_').str[1]
+    df_pos['year'] = 2016
+    df_pos = df_pos.drop(columns='ID')
+    return df_pos
+
+df_pos_resin = pos_to_df(new_pos)
+df_pos_basic = pos_to_df(pos)
 
 # now save 
-df_pos.to_csv("data/anes_pos.csv", index=False)
+df_pos_resin.to_csv("data/anes_pos_resin.csv", index=False)
+df_pos_basic.to_csv("data/anes_pos_basic.csv", index=False)
 df_long.to_csv("data/anes_data.csv", index=False)

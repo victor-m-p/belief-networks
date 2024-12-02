@@ -1,97 +1,53 @@
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
-from itertools import combinations
-import pickle 
+from itertools import combinations, product 
 import matplotlib.colors as mcolors
+import plotly.graph_objects as go
+import plotly.io as pio
 
 # ----------------- DATA ---------------------- #
 
 df = pd.read_csv('data/anes_data.csv')
+pos = pd.read_csv('data/anes_pos_resin.csv')
 
-df = df.dropna()
+# ----------------- calculate distances ---------------------- #
+pos['index'] = pos.index
+distance_data = []
+for node_x, node_y in product(pos['index'], repeat=2):
+    node_x_val = pos.loc[node_x]['xvalue']
+    node_y_val = pos.loc[node_y]['xvalue']
+    x_distance = abs(node_x_val - node_y_val)
+    distance_data.append([node_x, node_y, x_distance])
+    
+# naming here is just to facilitate merges 
+df_distance = pd.DataFrame(distance_data, columns=['index', 'idx', 'abs_x_dist'])
+pos_tmp = pos[['question', 'answer', 'index']]
+df_distance = df_distance.merge(pos_tmp, on = 'index', how='inner')
+pos_tmp = pos_tmp.rename(columns={'index': 'idx'})
+df_distance = df_distance.merge(pos_tmp, on=['idx', 'question'], how='inner')
+df_distance = df_distance.rename(columns={
+    'answer_x': 'answer',
+    'answer_y': 'lag_answer'
+})
+df_distance = df_distance.drop(columns={'index', 'idx'})
 
-with open('data/pos.pkl', 'rb') as handle:
-    pos = pickle.load(handle)
-with open('data/new_pos.pkl', 'rb') as handle:
-    new_pos = pickle.load(handle)
-
-# ----------------- FUNCTIONS ---------------------- #
-def calculate_distances(pos, new_pos): 
-    data = []
-    # loop over all pairs of nodes
-    for node_x, node_y in combinations(pos.keys(), 2): 
-        euclid_distance = np.linalg.norm(np.array(pos[node_x]) - np.array(pos[node_y]))
-        x_distance = abs(new_pos[node_x][0] - new_pos[node_y][0])
-
-        # overall variable
-        variable = node_x.split('2016')[0]
-        item_1 = node_x.split('_')[1]
-        item_2 = node_y.split('_')[1]
-        
-        # Append results to the list
-        data.append([variable, item_1, item_2, euclid_distance, x_distance])
-        
-        # Maybe there is a better way to organize this
-        data.append([variable, item_2, item_1, euclid_distance, x_distance])
-
-    # add self-loops
-    for node in pos.keys():
-        variable = node.split('2016')[0]
-        item = node.split('_')[1]
-        
-        # by definition distance is 0
-        data.append([variable, item, item, 0, 0])
-
-    # gather data 
-    distance_df = pd.DataFrame(data, columns=['variable', 'item_2016', 'item_2020', 'euclid_dist_2016', 'x_dist_2016'])
-    return distance_df
-
-def get_transitions(df, variable): 
-    transitions = df[[f'{variable}2016', f'{variable}2020']].value_counts().to_frame().reset_index()
-    transitions['variable'] = variable
-    transitions = transitions.rename(columns={
-        f'{variable}2016': 'item_2016',
-        f'{variable}2020': 'item_2020',
-        'count': 'n_transition'
-    })
-    return transitions
-
-# calculate base rates 
-def get_baserate(df):
-    melt = df.melt(var_name="variable", value_name="item")
-    melt = melt.groupby(["variable", "item"]).size().reset_index(name="count")
-    melt['year'] = melt['variable'].str.extract(r'(\d{4})')
-    melt['variable'] = melt['variable'].str.extract(r'([a-zA-Z]+)')
-    return melt
-
-# -------- calculate distances -------- #
-distance_df = calculate_distances(pos, new_pos)
-
-# -------- calculate transitions -------- #
-transition_abort = get_transitions(df, 'abort')
-transition_gay = get_transitions(df, 'gay')
-transition_imm = get_transitions(df, 'imm')
-transition_temp = get_transitions(df, 'temp')
-
-transition_df = pd.concat([
-    transition_abort,
-    transition_gay,
-    transition_imm,
-    transition_temp
-])
+# ----------------- calculate transitions ---------------------- #
+df_transitions = df.sort_values(by=['ID', 'question', 'year'])
+df_transitions['lag_answer'] = df_transitions.groupby(['ID', 'question'])['answer'].shift(1)
+df_transitions['lag_year'] = df_transitions.groupby(['ID', 'question'])['year'].shift(1)
+df_transitions = df_transitions.dropna(subset=['lag_answer', 'lag_year']).reset_index(drop=True)
+df_transitions['lag_year'] = df_transitions['lag_year'].astype(int)
+df_transitions = df_transitions.groupby(['question', 'answer', 'lag_answer']).size().reset_index(name='n_transitions')
 
 # -------- merge dataframes -------- #
-merged_df = pd.merge(distance_df, transition_df, on=['variable', 'item_2016', 'item_2020'], how='inner')
+merged_df = pd.merge(df_distance, df_transitions, on=['question', 'answer', 'lag_answer'], how='inner')
 
 # -------- calculate baserate -------- #
-baserate = get_baserate(df)
+df_baserate = df[df['year']==2016]
+df_baserate = df_baserate.groupby(['question', 'answer']).size().reset_index(name='count')
 
 ##### ----------------- SANKEY DIAGRAM ---------------------- #####
-
-import plotly.graph_objects as go
-import plotly.io as pio
 
 # important to not that we do not need to provide the base rate here
 # the transitions implicitly capture this. 
@@ -102,11 +58,11 @@ def sankey_diagram(
     save_path=None  # Optional save path
     ): 
     
-    df_subset = df_transitions[df_transitions['variable']==variable]
+    df_subset = df_transitions[df_transitions['question']==variable]
     
     # if not provided specifically obtain 
     if not items: 
-        items = df_subset['item_2016'].unique().tolist()
+        items = df_subset['answer'].unique().tolist()
     
     labels = [f"{item}_2016" for item in items] + [f"{item}_2020" for item in items]
     

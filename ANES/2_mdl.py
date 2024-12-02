@@ -20,7 +20,7 @@ rcParams['ytick.labelsize'] = 12  # Y-axis tick size
 
 
 df = pd.read_csv('data/anes_data.csv')
-pos = pd.read_csv('data/anes_pos.csv')
+pos = pd.read_csv('data/anes_pos_resin.csv')
 
 # since position here (2016) is used for 2020 we need to duplicate
 pos2020 = pos.copy()
@@ -169,134 +169,42 @@ plot_question(
 # plot model 4 
 # Delta individual ~ SD of beliefs
 plot_individual(
-    df = merged_df[['ID', 'xvalue_lag_std', 'xvalue_delta_abs']].drop_duplicates(),
+    df = merged_df[['ID', 'xvalue_lag_std', 'abs_x_distance']].drop_duplicates(),
     col_x = 'xvalue_lag_std',
-    col_y = 'xvalue_delta_abs',
+    col_y = 'abs_x_distance',
     title = r'$|\Delta x_{a, i}| \sim |std(x_{a, i})|$',
-    xlab = r'$|std(x_{a, i})|$',
-    ylab = r'$|\Delta x_{a, i}|$',
+    xlab = r'$|std(x_{p, i})|$',
+    ylab = r'$|\Delta x_{p, i}|$',
     save = 'figres/m4.png'
 )
 
-
-merged_df
-data_2016 = data_2016.groupby(['ID'])['xvalue'].std().reset_index(name='std')
-lagged_df = lagged_df.merge(data_2016, on = 'ID', how = 'inner')
-
-centroid_2020 = complete_df[complete_df['year']==2020]
-centroid_2020 = centroid_2020.groupby(['ID'])['xvalue'].mean().reset_index(name='centroid_2020')
-lagged_df = lagged_df.merge(centroid_2020, on = 'ID', how = 'inner')
-
-lagged_df['centroid_delta'] = abs(lagged_df['centroid_2020']-lagged_df['x_2016'])
-lagged_unique = lagged_df[['ID', 'std', 'centroid_delta']].drop_duplicates()
-
-
-lagged_df['xvalue_lag_abs'] = lagged_df['xvalue_lag'].abs()
-lagged_df['xvalue_delta'] = abs(lagged_df['xvalue'] - lagged_df['xvalue_lag'])
-
-# plot idea for first model;
-import seaborn as sns 
-fig, ax = plt.subplots()
-
-sns.lineplot(
-    data=lagged_df,
-    x='xvalue_lag_abs', 
-    y='xvalue_delta_abs', 
-    hue='question'
-    )
-
-# Add jitter to the x and/or y values
-lagged_df['xvalue_lag_abs_jittered'] = lagged_df['xvalue_lag_abs'] + np.random.uniform(-0.02, 0.02, len(lagged_df))
-lagged_df['xvalue_delta_jittered'] = lagged_df['xvalue_delta'] + np.random.uniform(-0.02, 0.02, len(lagged_df))
-
-
-# Plot with jittered values
-sns.scatterplot(
-    data=lagged_df,
-    x='xvalue_lag_abs_jittered',
-    y='xvalue_delta_jittered',
-    hue='question',
-    alpha=0.1,
-    legend=False
+# fig 5.
+# basically the same as fig 2, but with the average delta.
+# so instead of ideological movement; stability.
+fig2_tweak = merged_df[['ID', 'abs_x_baseline', 'xvalue_delta_abs']]
+average_delta = fig2_tweak.groupby('ID')['xvalue_delta_abs'].mean().reset_index(name='average_delta')
+fig2_tweak = fig2_tweak[['ID', 'abs_x_baseline']].drop_duplicates()
+fig2_tweak = fig2_tweak.merge(average_delta, on='ID', how='inner')
+plot_individual(
+    df = fig2_tweak,
+    col_x = 'abs_x_baseline',
+    col_y = 'average_delta',
+    title = r'$avg(|\Delta x_{a, i}|) \sim |x_{p, i}(t-1)|$',
+    xlab = r'$|x_{p, i}(t-1)|$',
+    ylab = r'$avg(|\Delta x_{a, i}|)$',
+    save = 'figres/m5.png'
 )
 
-plt.xlabel(r'$|X_{t1}|, \forall X$', fontsize=12)
-plt.ylabel(r'$|X_{t1} - X_{t2}|, \forall X$', fontsize=12)
-plt.tight_layout()
-plt.savefig('figres/m1.png')
-plt.close()
-
-# now we can also do the average 
-# like; how far do you move thing. 
-average_values = complete_df.groupby(['ID', 'year'])['xvalue'].mean().reset_index(name='avg_x')
-average_2016 = average_values[average_values['year']==2016]
-average_2020 = average_values[average_values['year']==2020]
-average_2016 = average_2016.rename(columns={
-    'avg_x': 'x_2016'})
-average_2020 = average_2020.rename(columns={
-    'avg_x': 'x_2020'
-})
-average_2016 = average_2016.drop(columns='year')
-average_2020 = average_2020.drop(columns='year')
-average_values = average_2016.merge(average_2020, on = 'ID', how = 'inner')
-average_values['absolute_dist'] = abs(average_values['x_2016']-average_values['x_2020'])
-average_values['absolute_2016'] = abs(average_values['x_2016'])
-
-# Plot with jittered values
-fig, ax = plt.subplots(figsize=(5, 3))
-sns.regplot(
-    data=average_values,
-    x='absolute_2016', 
-    y='absolute_dist', 
-    scatter_kws={'alpha': 0.1},
-    x_jitter=0.01,
-    y_jitter=0.01
-    )
-plt.xlabel('|avg(X t1)|')
-plt.ylabel('|avg(X t1)-avg(X t2)|')
-plt.tight_layout()
-plt.savefig('figres/m2.png')
-plt.close()
-
-# by distance from your locus to opinions # 
-lagged_df = lagged_df.merge(average_2016, on = 'ID', how = 'inner')
-lagged_df['d_abs'] = abs(lagged_df['xvalue_lag']-lagged_df['x_2016'])
-
-sns.regplot(
-    data=lagged_df,
-    x='d_abs',
-    y='xvalue_delta',
-    scatter_kws={'alpha': 0.1},
-    x_jitter=0.01,
-    y_jitter=0.01
+fig4_tweak = merged_df[['ID', 'xvalue_lag_std', 'xvalue_delta_abs']]
+average_delta = fig4_tweak.groupby('ID')['xvalue_delta_abs'].mean().reset_index(name='average_delta')
+fig4_tweak = fig4_tweak[['ID', 'xvalue_lag_std']].drop_duplicates()
+fig4_tweak = fig4_tweak.merge(average_delta, on='ID', how='inner')
+plot_individual(
+    df = fig4_tweak,
+    col_x = 'xvalue_lag_std',
+    col_y = 'average_delta',
+    title = r'$avg(|\Delta x_{a, i}|) \sim |std(x_{a, i})|$',
+    xlab = r'$|std(x_{a, i})|$',
+    ylab = r'$avg(|\Delta x_{a, i}|)$',
+    save = 'figres/m6.png'
 )
-plt.tight_layout()
-plt.savefig('figres/m3.png')
-plt.close()
-
-# absolute movement by SD of beliefs 
-data_2016 = complete_df[complete_df['year']==2016]
-data_2016 = data_2016.groupby(['ID'])['xvalue'].std().reset_index(name='std')
-lagged_df = lagged_df.merge(data_2016, on = 'ID', how = 'inner')
-
-centroid_2020 = complete_df[complete_df['year']==2020]
-centroid_2020 = centroid_2020.groupby(['ID'])['xvalue'].mean().reset_index(name='centroid_2020')
-lagged_df = lagged_df.merge(centroid_2020, on = 'ID', how = 'inner')
-
-lagged_df['centroid_delta'] = abs(lagged_df['centroid_2020']-lagged_df['x_2016'])
-lagged_unique = lagged_df[['ID', 'std', 'centroid_delta']].drop_duplicates()
-
-fig, ax = plt.subplots(figsize=(6, 4))
-sns.regplot(
-    data=lagged_df,
-    x = 'std', 
-    y = 'centroid_delta',
-    scatter_kws = {'alpha': 0.1},
-    x_jitter = 0.01, 
-    y_jitter = 0.01,
-)
-plt.ylabel(r"$abs(avg(X_{t1})-avg(X_{t2}))$")
-plt.xlabel(r'$std(X_{t1})$')
-plt.tight_layout()
-plt.savefig('figres/m4.png')
-plt.close()
