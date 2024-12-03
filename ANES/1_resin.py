@@ -48,7 +48,7 @@ df_long = df.melt(id_vars='ID', var_name='question', value_name='value')
 df_long['year'] = df_long['question'].str.extract(r'(\d+)')
 df_long['question'] = df_long['question'].str.extract(r'([a-zA-Z]+)')
 
-# add question interpretation # 
+# add question interpretation 
 code_answers = [
     ('gay', 1, 'marry'),
     ('gay', 2, 'union'),
@@ -57,6 +57,9 @@ code_answers = [
     ('imm', 2, 'restrict'),
     ('imm', 3, 'stay'),
     ('imm', 4, 'citizen'),
+    ('temp', 1, 'do more'),
+    ('temp', 2, 'do less'),
+    ('temp', 3, 'right'),
     ('abort', 1, 'never'),
     ('abort', 2, 'exceptions'),
     ('abort', 3, 'need'),
@@ -71,6 +74,19 @@ code_answers = [
 
 code_answers = pd.DataFrame(code_answers, columns=['question', 'value', 'answer'])
 df_long = pd.merge(df_long, code_answers, on=['question', 'value'], how='inner')
+
+# recode such that they follow reasonable likert
+recode_map = {
+    ('temp', 'do less'): 3,
+    ('temp', 'right'): 2,
+    ('tax', 'oppose'): 3,
+    ('tax', 'neither'): 2,
+    ('econ', 'worse'): 3,
+    ('econ', 'same'): 2
+}
+def recode_values(row): 
+    key = (row['question'], row['answer'])
+    return recode_map[key] if key in recode_map else row['value']
 
 # full answers from all IDs otherwise drop
 id_grouped = df_long.groupby('ID').size().reset_index(name='N')
@@ -121,15 +137,15 @@ for i, key in enumerate(pos.keys()):
 plt.figure(figsize=(10, 5))
 
 # Draw nodes and edges
-nx.draw_networkx_nodes(G, new_pos, node_size=500, node_color="lightblue")
+nx.draw_networkx_nodes(G, new_pos, node_size=200, node_color="lightblue")
 nx.draw_networkx_edges(G, new_pos, width=edge_weights, alpha=0.7)
 
 # Draw labels
 labels = {node: node for node in G.nodes}
-nx.draw_networkx_labels(G, new_pos, labels, font_size=12, font_color="black")
+nx.draw_networkx_labels(G, new_pos, labels, font_size=10, font_color="black")
 
 # Show the graph
-plt.title("Correlation Graph", fontsize=16)
+plt.title("ResIN on ANES", fontsize=16)
 plt.axis("off")
 plt.savefig("fig/correlation_graph.png")
 

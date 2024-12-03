@@ -64,7 +64,7 @@ def sankey_diagram(
     if not items: 
         items = df_subset['answer'].unique().tolist()
     
-    labels = [f"{item}_2016" for item in items] + [f"{item}_2020" for item in items]
+    labels = [f"lag_{item}" for item in items] + [f"{item}" for item in items]
     
     # get colors (can be improved)
     n_items = len(items)
@@ -73,9 +73,9 @@ def sankey_diagram(
     node_colors = node_colors + node_colors
     
     # map source and target to indices in the labels list
-    source = df_subset['item_2016'].map(lambda x: labels.index(f"{x}_2016")).tolist()
-    target = df_subset['item_2020'].map(lambda x: labels.index(f"{x}_2020")).tolist()
-    value = df_subset['n_transition'].tolist()
+    source = df_subset['lag_answer'].map(lambda x: labels.index(f"lag_{x}")).tolist()
+    target = df_subset['answer'].map(lambda x: labels.index(f"{x}")).tolist()
+    value = df_subset['n_transitions'].tolist()
     
     # Create the Sankey diagram
     fig = go.Figure(go.Sankey(
@@ -126,69 +126,68 @@ sankey_diagram(
 sankey_diagram(
     df_transitions = merged_df, 
     variable = 'temp',
-    items = ['more', 'right', 'less'],
+    items = ['do more', 'right', 'do less'],
     save_path = 'fig/sankey_temp.png') # all unstable (but clear direction)
+
+# really does not work well; come back and fix this. 
+sankey_diagram(
+    df_transitions = merged_df,
+    variable = 'econ',
+    items = ['better', 'same', 'worse'],
+    save_path = 'fig/sankey_econ.png'
+)
 
 #### ----------------- network plot ---------------------- #####
 
-# okay so now make this nice.
 def network_plot(df_baserate: pd.DataFrame,
                  df_transitions: pd.DataFrame,
                  variable: str,
                  pos: dict,
                  save_path=None):
 
-    # baserate 2016
-    base_2016 = df_baserate[(df_baserate['variable']==variable) & (df_baserate['year']=='2016')].sort_values('item')
-    base_2016 = base_2016.rename(columns={
-        'count': 'n_2016'
-    })
-    base_2016 = base_2016.drop(columns=['year'])
-    base_2016 = base_2016.rename(columns={"item": "item_2016"})
-    
-    # merge with transitions
-    df_merged = pd.merge(base_2016, df_transitions, on=['variable', 'item_2016'], how='inner')
-    df_merged['pct_transition'] = df_merged['n_transition'] / df_merged['n_2016']
-    
-    # add edges
+    # subset 
+    df_transitions = df_transitions[df_transitions['question']==variable]
+    df_baserate = df_baserate[df_baserate['question']==variable]
+    df_baserate = df_baserate.rename(columns={'answer': 'lag_answer'})
+    pos = pos[pos['question']==variable]
+
+    # get pct transitions
+    df_merged = df_transitions.merge(df_baserate, on = ['question', 'lag_answer'], how = 'inner')
+    df_merged['pct_transitions'] = (df_merged['n_transitions'] / df_merged['count'])*100
+
+    # remove self-loops
+    df_merged = df_merged[df_merged['answer'] != df_merged['lag_answer']]
+
+    # initialize 
     G = nx.from_pandas_edgelist(
         df_merged, 
-        'item_2016', 
-        'item_2020', 
-        edge_attr=['n_transition', 'pct_transition'],
+        'lag_answer', 
+        'answer', 
+        edge_attr=['pct_transitions'],
         create_using=nx.DiGraph)
-    
-    # add nodes
-    dict_2016 = base_2016.set_index('item_2016')['n_2016'].to_dict()
-    nx.set_node_attributes(G, dict_2016, name="count_2016")
-    
-    # edge labels
+
+    # add node weight
+    node_attr = df_baserate.set_index('lag_answer')['count'].to_dict()
+    nx.set_node_attributes(G, node_attr, name='count')
+
+    # add edge weight
     edge_width = []
     edge_labels = {}
-    for x, y, attr in G.edges(data = True):
-        weight = attr['pct_transition']
+    for x, y, attr in G.edges(data=True): 
+        weight = attr['pct_transitions']
         edge_width.append(weight)
         edge_labels[(x, y)] = round(weight, 2)
-    
-    # node labels
-    node_labels = {}
-    for i in G.nodes():
-        node_labels[i] = i
-    
-    # fix position
-    pos = {k: pos[k] for k in pos.keys() if variable in k} 
-    pos = {k.split('_')[1]: v for k, v in pos.items()}
 
-    # initialize
-    x = nx.draw_networkx_edge_labels(
-        G, 
-        pos, 
-        edge_labels = [])
-    
+    # node labels 
+    node_labels = {i: i for i in G.nodes()}
+
+    # positions 
+    pos = {a: (x, y) for a, x, y in zip(pos['answer'], pos['xvalue'], pos['yvalue'])}
+
     # make it cool
-    node_width = [G.nodes[n]['count_2016'] for n in G.nodes()]
+    node_width = [G.nodes[n]['count'] for n in G.nodes()]
     node_width = [x*2 for x in node_width]
-    
+
     plt.axis('off')
     nx.draw_networkx_nodes(
         G, 
@@ -201,7 +200,7 @@ def network_plot(df_baserate: pd.DataFrame,
     nx.draw_networkx_edges(
         G,
         pos,
-        width = [x*5 for x in edge_width],
+        width = [x/20 for x in edge_width],
         connectionstyle = "arc3,rad=0.2",
         node_size = [x*2 for x in node_width] #2000,
     )
@@ -216,53 +215,23 @@ def network_plot(df_baserate: pd.DataFrame,
     else: 
         plt.show();
     plt.close()
-    
-network_plot(
-    df_baserate = baserate,
-    df_transitions = merged_df,
-    variable = 'abort',
-    pos = new_pos,
-    save_path = 'fig/network_abort.png'
-)
 
-# interesting that union goes much more to marry
-# than to "no" even though it is closer to "no".
-# "marry" is really stable.
-network_plot(
-    df_baserate = baserate,
-    df_transitions = merged_df,
-    variable = 'gay',
-    pos = new_pos,
-    save_path = 'fig/network_gay.png'
-)
-
-# again the liberal position is the stable attractor.
-network_plot(
-    df_baserate = baserate,
-    df_transitions = merged_df,
-    variable = 'imm',
-    pos = new_pos,
-    save_path = 'fig/network_imm.png'
-)
-
-# main transition through moderate towards "more".
-# well not really "through" because we only have 
-# 2 observations (but directionality). 
-network_plot(
-    df_baserate = baserate,
-    df_transitions = merged_df,
-    variable = 'temp',
-    pos = new_pos,
-    save_path = 'fig/network_temp.png'
-)
+# now do the network plots ... # 
+questions = df_baserate['question'].unique()
+for q in questions: 
+    network_plot(
+        df_baserate = df_baserate,
+        df_transitions = df_transitions,
+        variable = q,
+        pos = pos,
+        save_path = f'fig/network_{q}.png'
+    )
 
 
-'''
-Really hard to show properly with self-loops.
-But we can see it indirectly by less out-edges. 
-'''
+# below metrics are not so important I think # 
 
 #### ----------------- metrics ---------------------- #####
+
 '''
 Hypotheses / Frameworks: 
 Some "stability" might be captured simply in base rates.
@@ -294,6 +263,8 @@ other options you would have a higher chance of transitioning
 import seaborn as sns 
 
 # total number of observations
+
+
 base_2016 = baserate[baserate['year'] == '2016']
 base_2016 = base_2016.rename(columns={'count': 'n_2016'})
 

@@ -104,8 +104,11 @@ df_long = d_sub.melt(id_vars=["baseline"],
 # Extract the year from the "year" column (remove the "clch-" prefix)
 df_long["year"] = df_long["year"].str.replace("clch-", "", regex=False)
 
-plt.figure(figsize=(12, 6))
-sns.lineplot(x="year", y="value", hue="baseline", data=df_long)
+fig, ax = plt.subplots(figsize=(5, 3))
+sns.lineplot(x="year", y="value", hue="baseline", data=df_long, legend=False)
+plt.suptitle('Path Dependency')
+plt.tight_layout()
+plt.savefig('fig/path_dependency.png')
 
 ### quantify path dependenecy ###
 # mutual information
