@@ -5,6 +5,8 @@ import json
 
 # write to mpf
 def write_to_mpf(df, output_folder, output_filename, weights=1.0): 
+    n_obs = df.shape[0]
+    n_nodes = df.shape[1]
     columns = [f"Q{i+1}" for i in range(df.shape[1])]
     df['weight'] = weights
     formatted_rows = df.apply(

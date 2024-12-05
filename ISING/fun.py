@@ -10,6 +10,35 @@ import networkx as nx
 import matplotlib.pyplot as plt 
 from matplotlib.colors import rgb2hex
 from tqdm import tqdm 
+import os 
+
+### new functions ###
+def write_to_mpf(df, output_folder, output_filename, weights=1.0): 
+    columns = df.columns.tolist()
+    n_obs = df.shape[0]
+    n_nodes = len(columns)
+    df['weight'] = weights
+    formatted_rows = df.apply(
+        lambda row: f"{''.join(map(str, row[columns].astype(int).tolist()))} {row['weight']:.2f}",
+        axis=1
+    )
+    # save 
+    output = f"{n_obs}\n{n_nodes}\n" + '\n'.join(formatted_rows)
+    with open(os.path.join(output_folder, output_filename), 'w') as f: 
+        f.write(output)
+        
+def load_mpf_params(n_nodes, path): 
+    with open(path, 'r') as f:
+        mpf_data = f.readline().strip()
+    
+    n_couplings = n_nodes * (n_nodes - 1) // 2
+    mpf_params = np.array(mpf_data.split(), dtype=float)
+    mpf_couplings = mpf_params[:n_couplings]
+    mpf_fields = mpf_params[n_couplings:]
+    #mpf_p = p_dist(mpf_fields, mpf_couplings)
+    
+    return mpf_fields, mpf_couplings
+
 
 # taken from coniii enumerate
 def fast_logsumexp(X, coeffs=None):
