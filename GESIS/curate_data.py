@@ -42,4 +42,3 @@ d_cl = d_cl.rename(columns=dict(zip(d_cl.columns, colnames)))
 pol_waves = ['bbzc001a', 'cbzc001a', 'dbzc001a', 'dfbo057a', 'ebzc001a', 'ecbo080a', 'efbo051a', 'f12c009a', 'fbzc001a', 'fcbo107a', 'gbzc001a']
 d_pol = data[pol_waves]
 nan_responses = [-11, -22, -33, -77, -99, -111]
-d_pol
