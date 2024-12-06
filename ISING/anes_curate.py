@@ -6,7 +6,7 @@ import os
 anes_df = pd.read_csv('../ANES/data/anes_data.csv')
 
 # take a smaller part of the data 
-questions = ['gay', 'imm']
+questions = ['gay', 'imm', 'abort', 'tax', 'temp']
 anes_sub = anes_df[anes_df['question'].isin(questions)]
 anes_sub.groupby(['question', 'answer']).size()
 

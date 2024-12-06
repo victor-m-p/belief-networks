@@ -4,42 +4,6 @@ import os
 from fun import *
 import matplotlib.pyplot as plt 
 
-def plot_probabilities(p_true, p_est, alpha=1, save=False):
-    plt.figure(figsize=(5, 4))
-    plt.grid(True, zorder=1)
-    plt.scatter(p_true, p_est, color='tab:blue', alpha=alpha, label='Probabilities', zorder=2)
-    plt.plot([0, 1], [0, 1], color='black', linestyle='--', label='', zorder=3)
-    plt.xlabel('True Probabilities')
-    plt.ylabel('Inferred Probabilities')
-    plt.title('True vs. Inferred Probabilities')
-    
-    if save: 
-        plt.savefig(save, dpi=300)
-        plt.close()
-    
-    else: 
-        plt.show()
-
-def plot_params(h_true, J_true, h_est, J_est, alpha=1, save=False): 
-    plt.figure(figsize=(5, 4))
-    plt.grid(True, zorder=1)
-    plt.scatter(h_true, h_est, color='tab:orange', alpha=alpha, label='Local Fields', zorder=2)
-    plt.scatter(J_true, J_est, color='tab:blue', alpha=alpha, label='Pairwise Couplings', zorder=2)
-    plt.plot([min(min(h_true), min(J_true)), max(max(h_true), max(J_true))],
-            [min(min(h_true), min(J_true)), max(max(h_true), max(J_true))],
-            color='black', linestyle='--', label='', zorder=3)
-    plt.title('True vs. Inferred Parameters')
-    plt.xlabel('True Parameters')
-    plt.ylabel('Inferred Parameters')
-    plt.legend()
-    plt.tight_layout()
-
-    if save: 
-        plt.savefig(save, dpi=300)
-        plt.close()
-    else: 
-        plt.show();
-
 # basic setup  
 folder_path = 'sim_data'
 n_nodes = 5
@@ -65,16 +29,6 @@ ising_p, ising_fields, ising_couplings = load_params(path_ising)
 normal_p, normal_fields, normal_couplings = load_params(path_normal)
 
 # ---- load mpf data ---- #
-def load_mpf_params(path): 
-    with open(path, 'r') as f:
-        mpf_data = f.readline().strip()
-        
-    mpf_params = np.array(mpf_data.split(), dtype=float)
-    mpf_couplings = mpf_params[:n_couplings]
-    mpf_fields = mpf_params[n_couplings:]
-    mpf_p = p_dist(mpf_fields, mpf_couplings)
-    
-    return mpf_p, mpf_fields, mpf_couplings
 
 mpf_ising = os.path.join(folder_path, f'nodes_{n_nodes}_obs_{n_obs}_ising.txt_params.dat')
 mpf_normal = os.path.join(folder_path, f'nodes_{n_nodes}_obs_{n_obs}_normal.txt_params.dat')

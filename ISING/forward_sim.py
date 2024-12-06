@@ -2,22 +2,9 @@
 from fun import *
 import os 
 import json
+# from fun import write_to_mpf ....
 
 # write to mpf
-def write_to_mpf(df, output_folder, output_filename, weights=1.0): 
-    n_obs = df.shape[0]
-    n_nodes = df.shape[1]
-    columns = [f"Q{i+1}" for i in range(df.shape[1])]
-    df['weight'] = weights
-    formatted_rows = df.apply(
-        lambda row: f"{''.join(map(str, row[columns].astype(int).tolist()))} {row['weight']:.2f}",
-        axis=1
-    )
-    # save 
-    output = f"{n_obs}\n{n_nodes}\n" + '\n'.join(formatted_rows)
-    with open(os.path.join(output_folder, output_filename), 'w') as f: 
-        f.write(output)
-        
 def normal_params(n_nodes, sd=0.5): 
     n_couplings = n_nodes * (n_nodes - 1) // 2
     fields = np.random.normal(0, sd, n_nodes)
