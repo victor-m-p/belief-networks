@@ -18,8 +18,8 @@ rcParams['legend.fontsize'] = 14  # Legend font size
 rcParams['xtick.labelsize'] = 12  # X-axis tick size
 rcParams['ytick.labelsize'] = 12  # Y-axis tick size
 
-
 df = pd.read_csv('data/anes_data.csv')
+df_meta = pd.read_csv('data/anes_complete.csv')
 pos = pd.read_csv('data/anes_pos_resin.csv')
 
 # since position here (2016) is used for 2020 we need to duplicate
@@ -112,13 +112,17 @@ def plot_question(df, col_x, col_y, title, xlab, ylab, save=None):
 # |\Delta x_{a, i}| \sim f(|x_{a, i}(t-1)|)
 plot_question(
     df = merged_df,
-    col_x = 'xvalue_lag_abs',
+    col_x = 'xvalue_lag_abs', 
     col_y = 'xvalue_delta_abs',
     title = r'$|\Delta x_{a, i}| \sim f(|x_{a, i}(t-1)|)$',
     xlab = r'$|x_{a, i}(t-1)|$',
     ylab = r'$|\Delta x_{a,i}|$',
-    save = 'figres/m1.png'
+    #save = 'figres/m1.png'
 )
+
+'''
+Movement of individual question
+'''
 
 #### plot model 2 ####
 # |\Delta x_{i} \sim |x_{i}(t-1)|
@@ -208,3 +212,44 @@ plot_individual(
     ylab = r'$avg(|\Delta x_{a, i}|)$',
     save = 'figres/m6.png'
 )
+
+# find examples for the strongest effects that we have # 
+plot_question(
+    df = merged_df,
+    col_x = 'centroid_distance',
+    col_y = 'xvalue_delta_abs',
+    title = r'$|\Delta x_{a, i}| \sim |dist(x_{p, i}, x_{a, i})|_{t-1}$',
+    xlab = r'$|dist(x_{p, i}, x_{a, i})|_{t-1}$',
+    ylab = r'$|\Delta x_{a, i}|$',
+    save = 'figres/m3.png'
+)
+
+# now we have voting as well so what can we do with it?
+# would be really interesting to look at what makes people not vote
+# or what does make people vote 
+# i.e., going from no vote --> vote, or from vote --> no vote 
+
+# would be interesting to look into
+# p(republican) ~ x 
+# p(republican) ~ sd(x)
+# p(shift) ~ sd(x)
+
+'''
+Things that would be interesting: 
+1. what make people vote or not vote (or transition)
+--> hypothesis: belief network does not match existing parties. 
+2. what makes people vote for other parties
+--> hypothesis: belief network does not match existing parties. 
+... 
+'''
+
+# ahh---there would be some clean-up here to make it work
+# would be great to have a column that is 
+# democrat, republican, other, did not vote 
+df_vote = df_meta[df_meta['type']=='vote']
+df_vote[df_vote['question']=='who']['answer'].unique()
+df_vote[(df_vote['question']=='vote') & (df_vote['answer'] == 'No')]
+df_vote[df_vote['ID']==52]
+df_meta[df_meta['ID']==52]
+
+df_vote
