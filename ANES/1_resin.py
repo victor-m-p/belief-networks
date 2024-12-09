@@ -7,6 +7,7 @@ from sklearn.decomposition import PCA
 # https://electionstudies.org/data-center/2016-2020-panel-merged-file/
 
 df, meta = pyreadstat.read_sav("data/2016_2020_mergedpanel.sav")
+df['id'] = df.index
 
 # ------- data selection ----------------- #
 df = df[[
@@ -80,21 +81,55 @@ df = df.rename(
 
 # combine early voters and those who intend to vote (2016)
 # ah actually need to think through this 
-df['vote2016'] = df['preVote2016'].where(df['pre2016']==4, df['postVote2016']) 
+
+# if person did pre-vote (pre2016==4) then take that, otherwise postvote
+''' logic for voting: 
+1: vote / intends to vote
+2: not vote / not intend to vote 
+
+for pre2016: 
+4: already voted (so count that as 1)
+1: does not really intend to vote (count that as 2)
+
+this leaves a small amount of -8 which is correctly nan.
+'''
+
+df['vote2016'] = df['postVote2016']
+df['vote2016'] = df['vote2016'].where(df['pre2016'] != 4, 1) 
+df['vote2016'] = df['vote2016'].where(df['pre2016'] != 1, 2)
+
+''' logic for who you voted for:
+1: democrat
+2: republican
+3-8: other
+-8, -9: nan
+-1: inapplicable
+
+Where we can code some of -1: 
+if they are 4) on pre-voting then take their pre-vote
+if they are 2) on voting (did not vote) then could set to 10.
+'''
+
 df['who2016'] = df['preWho2016'].where(df['pre2016']==4, df['postWho2016'])
+df['who2016'] = df['who2016'].where(df['vote2016'] != 2, 10)
+
+'''
+For preferences same as above.
+'''
+
 df['pref2016'] = df['prePref2016'].where(df['pre2016']==4, df['postPref2016'])
+df['pref2016'] = df['pref2016'].where(df['vote2016'] != 2, 10)
 
-df['postWho2016'].value_counts()
-# third most common is -1 
-# those are the ones we need to recode
-df['who2016'].value_counts() # still some -1
+# do the same for 2020 
+df['vote2020'] = df['postVote2020']
+df['vote2020'] = df['vote2020'].where(df['pre2020'] != 4, 1) 
+df['vote2020'] = df['vote2020'].where(df['pre2020'] != 1, 2)
 
+df['who2020'] = df['preWho2020'].where(df['pre2020']==4, df['postWho2016'])
+df['who2020'] = df['who2020'].where(df['vote2020'] != 2, 10)
 
-
-# combine early voters and those who intend to vote (2016)
-df['vote2020'] = df['preVote2020'].where(df['pre2020']==4, df['postVote2020'])
-df['who2020'] = df['preWho2020'].where(df['pre2020']==4, df['postWho2020'])
-df['pref2020'] = df['prePref2020'].where(df['pre2020']==4, df['postPref2020'])
+df['pref2020'] = df['prePref2020'].where(df['pre2020']==4, df['postPref2016'])
+df['pref2020'] = df['pref2020'].where(df['vote2020'] != 2, 10)
 
 df = df.drop(columns={
     'pre2016', 
@@ -152,8 +187,10 @@ code_answers = [
     ('who', 6, 'Other'),
     ('who', 7, 'Other'),
     ('who', 8, 'Other'),
+    ('who', 10, 'Not vote'),
     ('pref', 1, 'Strong'),
     ('pref', 2, 'Weak'), 
+    ('pref', 10, 'Not vote')
 ]
 
 code_answers = pd.DataFrame(code_answers, columns=['question', 'value', 'answer'])

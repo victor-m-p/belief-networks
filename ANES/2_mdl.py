@@ -19,7 +19,6 @@ rcParams['xtick.labelsize'] = 12  # X-axis tick size
 rcParams['ytick.labelsize'] = 12  # Y-axis tick size
 
 df = pd.read_csv('data/anes_data.csv')
-df_meta = pd.read_csv('data/anes_complete.csv')
 pos = pd.read_csv('data/anes_pos_resin.csv')
 
 # since position here (2016) is used for 2020 we need to duplicate
@@ -67,6 +66,9 @@ merged_df['centroid_distance'] = abs(merged_df['average_x_2016']-merged_df['xval
 data_2016 = complete_df[complete_df['year']==2016]
 xvalue_2016 = data_2016.groupby(['ID'])['xvalue'].std().reset_index(name='xvalue_lag_std')
 merged_df = merged_df.merge(xvalue_2016, on='ID', how='inner')
+
+# save this data
+merged_df.to_csv('data/anes_merged.csv', index=False)
 
 #### plot model 1 ####
 def plot_question(df, col_x, col_y, title, xlab, ylab, save=None): 
@@ -223,33 +225,3 @@ plot_question(
     ylab = r'$|\Delta x_{a, i}|$',
     save = 'figres/m3.png'
 )
-
-# now we have voting as well so what can we do with it?
-# would be really interesting to look at what makes people not vote
-# or what does make people vote 
-# i.e., going from no vote --> vote, or from vote --> no vote 
-
-# would be interesting to look into
-# p(republican) ~ x 
-# p(republican) ~ sd(x)
-# p(shift) ~ sd(x)
-
-'''
-Things that would be interesting: 
-1. what make people vote or not vote (or transition)
---> hypothesis: belief network does not match existing parties. 
-2. what makes people vote for other parties
---> hypothesis: belief network does not match existing parties. 
-... 
-'''
-
-# ahh---there would be some clean-up here to make it work
-# would be great to have a column that is 
-# democrat, republican, other, did not vote 
-df_vote = df_meta[df_meta['type']=='vote']
-df_vote[df_vote['question']=='who']['answer'].unique()
-df_vote[(df_vote['question']=='vote') & (df_vote['answer'] == 'No')]
-df_vote[df_vote['ID']==52]
-df_meta[df_meta['ID']==52]
-
-df_vote
