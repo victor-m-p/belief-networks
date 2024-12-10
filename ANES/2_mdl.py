@@ -155,7 +155,7 @@ plot_individual(
     title = r'$|\Delta x_{i}| \sim |x_{i}(t-1)|$',
     xlab = r'$|x_{i}(t-1)|$',
     ylab = r'$|\Delta x_{i}|$',
-    save = 'figres/m2.png'
+    #save = 'figres/m2.png'
 )
 
 # plot model 3 
@@ -169,7 +169,7 @@ plot_question(
     title = r'$|\Delta x_{a, i}| \sim |dist(x_{p, i}, x_{a, i})|_{t-1}$',
     xlab = r'$|dist(x_{p, i}, x_{a, i})|_{t-1}$',
     ylab = r'$|\Delta x_{a, i}|$',
-    save = 'figres/m3.png'
+    #save = 'figres/m3.png'
 )
 
 # plot model 4 
@@ -181,7 +181,7 @@ plot_individual(
     title = r'$|\Delta x_{a, i}| \sim |std(x_{a, i})|$',
     xlab = r'$|std(x_{p, i})|$',
     ylab = r'$|\Delta x_{p, i}|$',
-    save = 'figres/m4.png'
+    #save = 'figres/m4.png'
 )
 
 # fig 5.
@@ -198,7 +198,7 @@ plot_individual(
     title = r'$avg(|\Delta x_{a, i}|) \sim |x_{p, i}(t-1)|$',
     xlab = r'$|x_{p, i}(t-1)|$',
     ylab = r'$avg(|\Delta x_{a, i}|)$',
-    save = 'figres/m5.png'
+    #save = 'figres/m5.png'
 )
 
 fig4_tweak = merged_df[['ID', 'xvalue_lag_std', 'xvalue_delta_abs']]
@@ -212,16 +212,5 @@ plot_individual(
     title = r'$avg(|\Delta x_{a, i}|) \sim |std(x_{a, i})|$',
     xlab = r'$|std(x_{a, i})|$',
     ylab = r'$avg(|\Delta x_{a, i}|)$',
-    save = 'figres/m6.png'
-)
-
-# find examples for the strongest effects that we have # 
-plot_question(
-    df = merged_df,
-    col_x = 'centroid_distance',
-    col_y = 'xvalue_delta_abs',
-    title = r'$|\Delta x_{a, i}| \sim |dist(x_{p, i}, x_{a, i})|_{t-1}$',
-    xlab = r'$|dist(x_{p, i}, x_{a, i})|_{t-1}$',
-    ylab = r'$|\Delta x_{a, i}|$',
-    save = 'figres/m3.png'
+    #save = 'figres/m6.png'
 )
