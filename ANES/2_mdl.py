@@ -60,6 +60,7 @@ average_pivot = average_pivot.rename(columns = {2016: 'average_x_2016',
 # \delta x_{a_i} ~ dist(x_{p_i}, x_{a_i})
 merged_df = lagged_df.merge(average_pivot, on='ID', how='inner')
 merged_df['centroid_distance'] = abs(merged_df['average_x_2016']-merged_df['xvalue_lag'])
+merged_df['centroid_'] = merged_df['average_x_2016']-merged_df['xvalue_lag']
 
 # average values by SD of beliefs
 # is it that each belief is more likely to change, or that the aggregate (individual) is more likely to change? 
@@ -100,7 +101,13 @@ def plot_question(df, col_x, col_y, title, xlab, ylab, save=None):
     for question, color in zip(unique_questions, palette):
         legend_handles.append(mlines.Line2D([], [], color=color, marker='o', linestyle='None', label=question))
     legend_handles.append(mlines.Line2D([], [], color=color_pop, label='Population'))
-    ax.legend(handles=legend_handles, title='Question')
+    ax.legend(
+        handles=legend_handles,
+        title='Question',
+        bbox_to_anchor=(1.05, 1),  # Move legend outside the plot (to the right)
+        loc='upper left',          # Position at the upper-left corner of the bounding box
+        borderaxespad=0            # Adjust padding
+    )
     ax.set_title(title)
     plt.ylabel(ylab)
     plt.xlabel(xlab)
@@ -169,7 +176,7 @@ plot_question(
     title = r'$|\Delta x_{a, i}| \sim |dist(x_{p, i}, x_{a, i})|_{t-1}$',
     xlab = r'$|dist(x_{p, i}, x_{a, i})|_{t-1}$',
     ylab = r'$|\Delta x_{a, i}|$',
-    #save = 'figres/m3.png'
+    save = 'figres/m3_p2.png'
 )
 
 # plot model 4 
@@ -214,3 +221,91 @@ plot_individual(
     ylab = r'$avg(|\Delta x_{a, i}|)$',
     #save = 'figres/m6.png'
 )
+
+plot_question(
+    df = merged_df,
+    col_x = 'centroid_',
+    col_y = 'xvalue_delta_abs',
+    title = r'$|\Delta x_{a, i}| \sim |dist(x_{p, i}, x_{a, i})|_{t-1}$',
+    xlab = r'$|dist(x_{p, i}, x_{a, i})|_{t-1}$',
+    ylab = r'$|\Delta x_{a, i}|$',
+    #save = 'figres/m3.png'
+)
+
+from numpy.polynomial.polynomial import Polynomial
+
+# now do it for each one;
+unique_question = merged_df['question'].unique()
+degree = 2
+colors = plt.cm.get_cmap("tab10", len(unique_question))  # Use a categorical colormap
+fig, ax = plt.subplots(figsize=(7, 4))
+for i, q in enumerate(unique_question): 
+    df_sub = merged_df[merged_df['question'] == q]
+
+    x = df_sub['centroid_']
+    y = df_sub['xvalue_delta_abs']
+    coefficients = np.polyfit(x, y, degree)
+    polynomial = np.poly1d(coefficients)
+
+    # Predict values
+    x_fit = np.linspace(min(x), max(x), 200)  # High resolution for a smooth curve
+    y_fit = polynomial(x_fit)
+
+    # Plot data points and fit line (label only on the line to avoid duplication)
+    plt.scatter(x, y, alpha=0.02, color=colors(i))  # Scatter plot without label
+    plt.plot(x_fit, y_fit, color=colors(i), label=f"{q}")  # Polynomial fit with label
+
+# Add legend
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', title="Questions")
+plt.xlabel("Centroid")
+plt.ylabel("Delta Abs")
+plt.title("Polynomial Fit by Question")
+plt.tight_layout()
+plt.show();
+
+# Even more naturally
+# We can do both not ABS. 
+merged_df['xvalue_delta'] = merged_df['xvalue']-merged_df['xvalue_lag']
+plot_question(
+    df = merged_df,
+    col_x = 'centroid_',
+    col_y = 'xvalue_delta',
+    title = 'Belief Change by Centroid Distance',
+    xlab = r'$x_{p, i, (t-1)}-x_{a, i, (t-1)}$',
+    ylab = r'$x_{a, i, (t)}-x_{a, i, (t-1)}$',
+    save = 'figres/directional.png'
+)
+
+# Probably we would have to test 
+# This against a baseline, e.g. 
+# How do opinions move just against
+# Where the were before 
+plot_question(
+    df = merged_df,
+    col_x = 'xvalue',
+    col_y = 'xvalue_delta',
+    title = 'Baseline',
+    xlab = r'x(t-1)',
+    ylab = r'x(t)-x(t-1)',
+    save = 'figres/baseline.png'
+)
+
+unique_question = merged_df['question'].unique()
+degree = 2
+for q in unique_question: 
+    df_sub = merged_df[merged_df['question'] == q]
+
+    x = df_sub['centroid_']
+    y = df_sub['xvalue_delta']
+    coefficients = np.polyfit(x, y, degree)
+    polynomial = np.poly1d(coefficients)
+
+    # Predict values
+    x_fit = np.linspace(min(x), max(x), 200)  # High resolution for a smooth curve
+    y_fit = polynomial(x_fit)
+
+    # Plot
+    plt.scatter(x, y, alpha=0.5) #, label="Data")
+    plt.plot(x_fit, y_fit) #, label=f"Polynomial Fit (degree {degree})")
+    #plt.legend()
+    #plt.show()
