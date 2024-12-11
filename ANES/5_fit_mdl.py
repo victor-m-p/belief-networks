@@ -107,14 +107,70 @@ question_importance = shap_aggregated.abs().mean().sort_values(ascending=False)
 question_importance
 
 ### local
+class_idx = 3 
+classes = ['Democrat', 'No Vote', 'Other', 'Republican']
 class_of_interest = 'Republican'
 
 correct_idx = np.where((y_test == class_of_interest) & (y_pred == class_of_interest))[0][0]
 incorrect_idx = np.where((y_test == class_of_interest) & (y_pred != class_of_interest))[0][0]
 
-print(f"Shape of shap_values[class_index]: {shap_values[class_index].shape}")
-print(f"Shape of X_test: {X_test.shape}")
-print(f"Length of feature_names: {len(all_feature_names)}")
+# correctly classified (consistent) republican
+'''
+The model does not really understand, than
+when it has already learned that the person
+is identified as R then it does not learn 
+anything from figuring out that the person is not D.
+It does not understand that dependency. 
+'''
+
+shap.plots.waterfall(
+    shap.Explanation(
+        values=shap_values[correct_idx, :, class_idx],
+        base_values = explainer.expected_value[class_index],
+        data=X_test[correct_idx, :],
+        feature_names = all_feature_names
+    ),
+    max_display=10,
+    show=False
+)
+plt.tight_layout()
+plt.savefig("ml/shap_correct.png", dpi=300)
+plt.close();
+shap.plots.waterfall(
+    shap.Explanation(
+        values=shap_values[incorrect_idx, :, class_idx],
+        base_values = explainer.expected_value[class_idx],
+        data=X_test[incorrect_idx, :],
+        feature_names = all_feature_names
+    ),
+    max_display=10,
+    show=False
+)
+plt.tight_layout()
+plt.savefig("ml/shap_incorrect.png", dpi=300)
+plt.close();
+
+res = shap.plots.waterfall(
+    shap.Explanation(
+        values=shap_values[correct_idx, :, class_idx],
+        base_values=explainer.expected_value[class_idx],
+        data=X_test[correct_idx, :],
+        feature_names=all_feature_names,
+    ),
+    max_display=10,
+    show=False
+)
+
+# Check what 'res' is
+print(res)
+
+X_test[correct_idx, :].shape
+shap_values[3][:,].shape
+explainer.expected_value[3]
+
+print("X_test shape:", X_test.shape)  # e.g., (n_samples, 48)
+print("shap_values shape:", np.array(shap_values).shape) # For multiclass: (n_classes, n_samples, n_features)
+
 
 def plot_shap_explanation_precomputed(shap_values, X, index, feature_names, class_index, save_path=None):
     """
@@ -161,7 +217,10 @@ plot_shap_explanation_precomputed(
         class_index=3,
         #save_path="ml/shap_correct_class_3.png"
     )
-    
+
+# individual SHAP explanations # 
+
+
 '''
 Suggestions for Improvement
 
