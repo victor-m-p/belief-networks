@@ -207,7 +207,3 @@ sns.scatterplot(data=stability_df, x='p_stay', y='stability')
 sns.regplot(data=stability_df, x='p_stay', y='stability')
 plt.xlabel(r'$p(i \rightarrow i)$')
 plt.ylabel(r'obs$(i \rightarrow i)$')
-
-# get the local maxima + everything that flows there 
-# probably best is some dynamic programming
-

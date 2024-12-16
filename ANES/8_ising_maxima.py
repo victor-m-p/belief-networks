@@ -28,10 +28,10 @@ anes_2016 = pd.read_csv('mpf/anes_2016_wide.csv')
 local_maxima, basin_map = ConfObj.find_all_local_maxima()
 local_maxima # 0, 4, 6, 47, 63 
 configs[0] # pure conservative
-configs[4] # conservative +imm
-configs[2]
-
-basin_map
+configs[4] # conservative +imm (does not really make sense because this can go up further)
+configs[6] # conservative +imm +tax
+configs[47] # liberal +church
+configs[63] # pure liberal 
 
 #### look a bit at individual transitions ####
 # e.g., how many 0-bit flips, how many 1-bit flips, etc. 

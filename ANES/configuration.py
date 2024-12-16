@@ -71,7 +71,8 @@ class Configuration:
     def p_move(self, summary=True):
         prob_moves = 1 - (self.p / (self.p + self.neighbor_probabilities))
         return np.mean(prob_moves) if summary else prob_moves
-    
+   
+    # some issue here where we get too many local maxima  
     def find_all_local_maxima(self):
         """
         Compute local maxima and basins of attraction for all configurations.
