@@ -179,11 +179,11 @@ from configuration import Configuration
 states = np.arange(0, 64)
 prob_move = []
 for id in states: 
-    cn = Configuration(
+    ConfObj = Configuration(
         id=id, 
         states=configs, 
         probabilities=p_2016)
-    prob_move.append((id, cn.p_move()))
+    prob_move.append((id, ConfObj.p_move()))
 
 # a bit hacky here
 df_pmove = pd.DataFrame(prob_move, columns=['id', 'p_move'])
@@ -211,17 +211,3 @@ plt.ylabel(r'obs$(i \rightarrow i)$')
 # get the local maxima + everything that flows there 
 # probably best is some dynamic programming
 
-
-# count up the observed bit-flips
-
-
-# plot this against each other 
-plot_probabilities(
-    p_true = empirical_stability['log_prop'], 
-    p_est = empirical_stability['stability'], 
-    ymax = 0.3)
-
-
-#### look a bit at individual transitions ####
-# e.g., how many 0-bit flips, how many 1-bit flips, etc. 
-# stability ~ how probably the state is 
