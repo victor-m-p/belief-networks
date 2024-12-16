@@ -318,6 +318,56 @@ code_answers = [
 code_answers = pd.DataFrame(code_answers, columns=['question', 'value', 'answer'])
 df_long = pd.merge(df_long, code_answers, on=['question', 'value'], how='inner')
 
+# recode such that ordering makes sense 
+# most liberal is highest number 
+df_long['question'].unique()
+df_long[df_long['question']=='gay'][['value', 'answer']].value_counts()
+df_long[df_long['question']=='imm'][['value', 'answer']].value_counts()
+df_long[df_long['question']=='temp'][['value', 'answer']].value_counts()
+df_long[df_long['question']=='abort'][['value', 'answer']].value_counts()
+df_long[df_long['question']=='tax'][['value', 'answer']].value_counts()
+df_long[df_long['question']=='econ'][['value', 'answer']].value_counts()
+df_long[df_long['question']=='church'][['value', 'answer']].value_counts()
+df_long[df_long['question']=='partyID'][['value', 'answer']].value_counts()
+
+mapping_dict = {
+    "gay": {
+        "no": 1,
+        "union": 2,
+        "marry": 3,
+    },
+    "temp": {
+        "do less": 1,
+        "right": 2, 
+        "do more": 3
+    },
+    "tax": {
+        "oppose": 1,
+        "neither": 2,
+        "favor": 3
+    },
+    "econ": {
+        "worse": 1,
+        "same": 2,
+        "better": 3
+    },
+    "partyID": {
+        "Republican": 1,
+        "Other": 2,
+        "Democrat": 3
+    }
+}
+
+def recode_value(row): 
+    q = row['question']
+    ans = row['answer']
+    if q in mapping_dict and ans in mapping_dict[q]:
+        return mapping_dict[q][ans]
+    else: 
+        return row['value']
+
+df_long['value'] = df_long.apply(recode_value, axis=1)
+
 # for now just subset the voting answers # 
 variable_type = [
     # beliefs 

@@ -2,6 +2,20 @@ import numpy as np
 import itertools 
 import matplotlib.pyplot as plt 
 import os 
+import pandas as pd 
+
+def node_edge_lst(J, h, labels=None): 
+    if not labels: 
+        labels = [node+1 for node in range(len(h))]
+    comb = list(itertools.combinations(labels, 2))
+    df_edgelist = pd.DataFrame(comb, columns = ['n1', 'n2'])
+    df_edgelist['weight'] = J
+    df_nodes = pd.DataFrame(labels, columns = ['n'])
+    df_nodes['size'] = h
+    df_nodes = df_nodes.set_index('n')
+    dict_nodes = df_nodes.to_dict('index')
+    return df_edgelist, dict_nodes
+
 
 def generate_valid_states(group_sizes, coding_no=0):
     # Generate all valid rows for each group
@@ -26,11 +40,11 @@ def generate_valid_states(group_sizes, coding_no=0):
     # Convert to NumPy array
     return np.array(allowed_rows)
 
-def plot_probabilities(p_true, p_est, alpha=1, save=False):
+def plot_probabilities(p_true, p_est, alpha=1, ymax = 1, save=False):
     plt.figure(figsize=(5, 4))
     plt.grid(True, zorder=1)
     plt.scatter(p_true, p_est, color='tab:blue', alpha=alpha, label='Probabilities', zorder=2)
-    plt.plot([0, 1], [0, 1], color='black', linestyle='--', label='', zorder=3)
+    plt.plot([0, ymax], [0, ymax], color='black', linestyle='--', label='', zorder=3)
     plt.xlabel('True Probabilities')
     plt.ylabel('Inferred Probabilities')
     plt.title('True vs. Inferred Probabilities')
