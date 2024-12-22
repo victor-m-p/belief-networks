@@ -9,7 +9,6 @@ from sklearn.decomposition import PCA
 df, meta = pyreadstat.read_sav("data/2016_2020_mergedpanel.sav")
 df['id'] = df.index
 
-
 # new variables that could be fun # 
 ### "symbolic"
 # V161156: Party identification strong - Democrat Republican
