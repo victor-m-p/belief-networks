@@ -79,12 +79,37 @@ def create_persona_messages(item_1_answer, item_2_answer):
 
 # okay now actually build belief network # 
 questions = [
-    "which topics are mentioned in your survey responses? please list each topic separately and formulate it as an assertion that one can be `for` or `against`. Then indicate your stance on a scale from -1 to 1 (where -1 is complete disagreement and 1 is complete agreement) and how important the topic is to you (not important, somewhat important, very important).",
-    #"for all pairs of topics that you mentioned, please evaluate which one is more important to you.",
-    "for all pairs of topics that you mentioned, please evaluate how related they are to each other on a scale from 0 to 1 where 0 is not related at all and 1 is perfectly related.",
-    "based on your previous answers, please provide a list of tuples of all your topic relatedness evaluations. Please provide it in the following format: [('topic', 'topic', related score), ('topic', 'topic', related score), ...]",
-    #"list all things with which the person agrees or disagrees in this text, even if not stated directly. For each topic identified, evaluate how much they agree or disagree on a scale from -1 to 1 (where -1 is complete disagreement and 1 is complete agreement).",
-    #"besides the topics that you mentioned, are there any other topics that are important to you? if yes, please list the most important ones (maximum 5)",
+    # question 1: nodes 
+    '''which topics are mentioned in your survey responses? 
+    please list each topic separately and formulate it as an 
+    assertion that one can be `for` or `against`. 
+    Then indicate your stance on a scale from -1 to 1 
+    (where -1 is complete disagreement and 1 is complete agreement). 
+    Finally, evaluate how important the topic is to you on a scale 
+    from 0 to 1 (where 0 is not important at all and 1 is extremely important).
+    Please provide this information in the following format: 
+    [('topic', 'assertion', agreement, importance), ('topic', 'assertion', agreement, importance), ...]''',
+    
+    # question 2: edges (the tricky part)
+    '''For all pairs of topics that you mentioned, 
+    please evaluate if they are related to each other or not.
+    If they are not related assign a score of 0. If they are 
+    related assign a score between 0 and 1 where 1 is perfectly related.
+    Please provide this information in the following format:
+    [('topic', 'topic', related score), ('topic', 'topic', related score), ...]''',
+    
+    # question 3: additional nodes (maybe not directly mentioned)
+    '''list all things with which the person agrees or disagrees 
+    in this text, even if not stated directly. For each topic 
+    identified, evaluate how much they agree or disagree on a 
+    scale from -1 to 1 (where -1 is complete disagreement and 
+    1 is complete agreement). Please provide this information in the following format:
+    [('topic', agreement), ('topic', agreement), ...]''',
+    
+    # question 4: additional edges (predictions)
+    '''besides the topics that you mentioned, are there any other topics that are important to you? 
+    if yes, please list the most important ones (maximum 5)''',
+    
     #"would you support a tax increase to fund public health care?",
     #"would you support a tax on carbon emissions?",
     #"are you more likely to vote for a left-wing party, a centrist party, or a right-wing party?"
@@ -112,14 +137,28 @@ def save_answers_with_id(id_value, answers_list, outpath):
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-# now try to run this for each of us;
+# now try to run this for each of us
 data_input = os.listdir(inpath)
 for taker in data_input:
     with open(os.path.join(inpath, taker), 'r') as f:
         data = json.load(f)
+    # this needs to be more flexible of course
     item_1_answer = data['item_1_answer']
     item_2_answer = data['item_2_answer']
     id = data['id']
     persona = create_persona_messages(item_1_answer, item_2_answer)
     answers = ask_as_persona(persona, questions, model)
     save_answers_with_id(id, answers, outpath)
+
+# okay so we need to do something more advanced for the "ask as persona".
+# we cannot really pre-determine all of the questions because we would need 
+# to actually know the belief nodes (what are the labels that we are using).
+# we could do it in 2 steps I guess. 
+# 1) first we get the belief nodes (maybe both the "small" and the "large" one.
+# 2) then we extract these and append them to questions for the Mirta formulation.
+
+# we might also actually want to think about what we do with memory, and what we do fresh.
+# we could also simply have the first part being simply "give me belief nodes". 
+
+# and then both the attention + stance + importance + edges we can do afterwards
+# and potentially separately. 
