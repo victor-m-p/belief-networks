@@ -1,0 +1,3 @@
+- Mirta formulation for edges better (getting fewer edges). 
+- Not a big difference between node size (attention) here. 
+- Some networks basically fully connected--some very sparse: reasonable? 

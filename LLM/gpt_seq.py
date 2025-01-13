@@ -11,9 +11,10 @@ from tenacity import (
     stop_after_attempt,
     wait_random_exponential,
 )
+from fun import load_and_clean, replacements
 
 # setup
-outpath='data_output'
+outpath='data_output_seq'
 inpath='data_input'
 model='gpt-4o-mini' # gpt-4o being the flagship
 num_generations=10 
@@ -27,10 +28,6 @@ client = OpenAI(
     api_key = os.getenv("OPENAI_API_KEY")
 )
 
-# function to create completion
-# figure out how this actually works
-# I think now it does it sequentially (i.e., feeds responses back in)
-# which we might or might not want. 
 @retry(wait=wait_random_exponential(min=1, max=200), stop=stop_after_attempt(10))
 def ask_as_persona(persona_background, questions, model, temperature=0.7, max_tokens=5000): 
     messages = [{
@@ -59,12 +56,12 @@ def ask_as_persona(persona_background, questions, model, temperature=0.7, max_to
             'role': 'assistant',
             'content': assistant_content
         })
-    return responses
+    return responses # , messages 
 
 # consider name, age, gender, country (demographics)
 def create_persona_messages(item_1_answer, item_2_answer): 
     persona_background = f'''
-    You are GPT, but you will respond as an individual who provided a set of answers to a survey.
+    A research participant answered the following questions: 
     
     1) 
     Question: Which topics are most likely to decide how you vote in the next national election? (feel free to mention as many or as few topics as you please).
@@ -73,10 +70,46 @@ def create_persona_messages(item_1_answer, item_2_answer):
     2) 
     Question: For each of these topics, could you tell me a little more about why this is important to you? (maximum 5 topics)
     Answer: {item_2_answer}
-    
-    Use first-person language when answering questions about yourself.
     '''
     return persona_background
+
+# test 
+taker = os.listdir(inpath)
+taker = taker[0]
+with open(os.path.join(inpath, taker), 'r') as f:
+    data = json.load(f)
+
+background_persona = create_persona_messages(data['item_1_answer'], data['item_2_answer'])
+
+# first we just need to actually have it code belief nodes 
+m1 = """
+I would like you to help me understand the beliefs of this person.
+Please list all things with which the person agrees or disagrees, even if not stated directly. 
+Please formulate each belief as an assertion that one can be `for` or `against`.
+Then provide a short-hand for the belief (very short). Please use the following format: 
+[("assertion A", "assertion A (short-hand)"), ("assertion B", "assertion B (short-hand)"), ...]
+"""
+
+# excract them 
+response = ask_as_persona(background_persona, [m1], model)
+clean_responses = load_and_clean(response[0], replacements)
+responses_long = [x for x, _ in clean_responses]
+responses_short = [y for _, y in clean_responses]
+
+# now we need a rating for each of these belief nodes  
+m2 = """
+You are GPT, but I would like to have you answer as this person using first-person language.
+Based on the answers to the previous questions, please indicate your stance on `{belief}` on a scale from -1 to 1,
+where -1 is complete disagreement and 1 is complete agreement. Please evaluate how important the belief is to you 
+on a scale from 0 to 1, where 0 is not important at all and 1 is extremely important.
+Please provide this information in the following format:
+("belief", agreement, importance)
+"""
+
+new_messages = [m2.format(belief=belief) for belief in responses_short]
+
+# why does this take forever?
+response, messages = ask_as_persona(background_persona, new_messages[0], model)
 
 # okay now actually build belief network # 
 questions = [
