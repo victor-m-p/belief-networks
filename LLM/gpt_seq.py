@@ -13,6 +13,7 @@ from tenacity import (
 )
 from fun import load_and_clean, replacements
 import pandas as pd 
+from itertools import permutations, product
 
 # setup
 outpath='data_output_seq'
@@ -77,15 +78,15 @@ def create_persona_messages(item_1_answer, item_2_answer):
     return persona_background
 
 # just do it for one person first 
-taker = os.listdir(inpath)
-taker = taker[0]
+# taker = os.listdir(inpath)
+taker = 'z6k.json'
 with open(os.path.join(inpath, taker), 'r') as f:
     data = json.load(f)
 
 background_persona = create_persona_messages(data['item_1_answer'], data['item_2_answer'])
 
 # 1. first we just need to actually have it code belief nodes 
-m1 = """
+p1 = """
 I would like you to help me understand the beliefs of this person.
 Please list all things with which the person agrees or disagrees, even if not stated directly. 
 Please formulate each belief as an assertion that one can be `for` or `against`.
@@ -94,14 +95,14 @@ Then provide a short-hand for the belief (very short). Please use the following 
 """
 
 # excract them 
-response = ask_as_persona(background_persona, [m1], model)
-clean_responses = load_and_clean(response[0], replacements)
-responses_long = [x for x, _ in clean_responses]
-responses_short = [y for _, y in clean_responses]
+response_p1 = ask_as_persona(background_persona, [p1], model)
+response_p1_clean = load_and_clean(response_p1[0], replacements)
+response_p1_long = [x for x, _ in response_p1_clean]
+response_p1_short = [y for _, y in response_p1_clean]
 
 # 2. now we need a rating for each of these belief nodes.
 # here we aer getting a really strong ceiling effect.
-m2 = """
+p2 = """
 You are GPT, but I would like you to answer as the person who gave the responses above.
 Based on the these responses, please indicate your stance on `{belief}` on a scale from -1 to 1,
 where -1 is complete disagreement and 1 is complete agreement. 
@@ -111,24 +112,24 @@ Please provide this information in the following format:
 ("belief", agreement, importance)
 """
 
-new_messages = [m2.format(belief=belief) for belief in responses_short]
+p2_formatted = [p2.format(belief=belief) for belief in response_p1_short]
 
 # why does this take forever?
 # honestly; what the fuck.
-belief_ratings = []
-for message in new_messages: 
-    response = ask_as_persona(background_persona, [message], model)
-    belief_ratings.append(response[0])
-clean_belief_ratings = [load_and_clean(x, replacements) for x in belief_ratings]
-belief_ratings_df = pd.DataFrame(clean_belief_ratings, columns=['belief', 'stance', 'attention'])
-belief_ratings_df.to_csv(os.path.join(outpath, f'{taker}_nodes.csv'), index=False)
+belief_ratings_p2 = []
+for message in p2_formatted: 
+    response_p2 = ask_as_persona(background_persona, [message], model)
+    belief_ratings_p2.append(response_p2[0])
+
+beliefs_p2_clean = [load_and_clean(x, replacements) for x in belief_ratings_p2]
+beliefs_p2_df = pd.DataFrame(beliefs_p2_clean, columns=['belief', 'stance', 'attention'])
+beliefs_p2_df.to_csv(os.path.join(outpath, f'{taker}_nodes.csv'), index=False)
 
 # 3. now make all combinations of these beliefs
-clean_belief_list = [x for x, y, z in clean_belief_ratings]
-from itertools import permutations 
-pairs = list(permutations(clean_belief_list, 2))
+beliefs_p2_node = [x for x, y, z in beliefs_p2_clean]
+beliefs_p2_pairs = list(permutations(beliefs_p2_node, 2))
 
-m3 = """
+p3 = """
 You are GPT, but I would like you to answer as the person who gave the responses above.
 Imagine that you changed your stance on `{belief_x}`. Would that affect your stance on `{belief_y}`.
 If changing your mind on `{belief_x}` would not at all change your mind on `{belief_y}` then assign 0.
@@ -142,27 +143,27 @@ Please return only the rating and no additional text.
 # think it is struggling with this. 
 # maybe if you do this many times you get something reasonable.
 # wondering whether this improves on Brandt actually. 
-pair_ratings = []
-for belief_x, belief_y in pairs: 
-    message = m3.format(belief_x=belief_x, belief_y=belief_y)
-    response = ask_as_persona(background_persona, [message], model)
-    pair_ratings.append((belief_x, belief_y, response[0]))
+couplings_p3 = []
+for belief_x, belief_y in beliefs_p2_pairs: 
+    message = p3.format(belief_x=belief_x, belief_y=belief_y)
+    response_p3 = ask_as_persona(background_persona, [message], model)
+    couplings_p3.append((belief_x, belief_y, response_p3[0]))
 
-pair_ratings_df = pd.DataFrame(pair_ratings, columns=['belief_x', 'belief_y', 'influence'])
-pair_ratings_df['influence'] = pair_ratings_df['influence'].astype(float)
-pair_ratings_df.to_csv(os.path.join(outpath, f'{taker}_edges_directed.csv'), index=False)
+couplings_p3_df = pd.DataFrame(couplings_p3, columns=['belief_x', 'belief_y', 'influence'])
+couplings_p3_df['influence'] = couplings_p3_df['influence'].astype(float)
+couplings_p3_df.to_csv(os.path.join(outpath, f'{taker}_edges_directed.csv'), index=False)
 
 # also get the undirected one # 
-pair_ratings_symmetric = pair_ratings_df.copy()
-pair_ratings_symmetric['undirected_pair'] = pair_ratings_symmetric.apply(lambda x: tuple(sorted([x['belief_x'], x['belief_y']])), axis=1)
-pair_ratings_symmetric = pair_ratings_symmetric.groupby('undirected_pair', as_index=False)['influence'].mean()
-pair_ratings_symmetric[['belief_x', 'belief_y']] = pd.DataFrame(pair_ratings_symmetric['undirected_pair'].tolist(), index=pair_ratings_symmetric.index)
-pair_ratings_symmetric = pair_ratings_symmetric.drop(columns='undirected_pair')
-pair_ratings_symmetric.to_csv(os.path.join(outpath, f'{taker}_edges_undirected.csv'), index=False)
+couplings_p3_sym = couplings_p3_df.copy()
+couplings_p3_sym['undirected_pair'] = couplings_p3_sym.apply(lambda x: tuple(sorted([x['belief_x'], x['belief_y']])), axis=1)
+couplings_p3_sym = couplings_p3_sym.groupby('undirected_pair', as_index=False)['influence'].mean()
+couplings_p3_sym[['belief_x', 'belief_y']] = pd.DataFrame(couplings_p3_sym['undirected_pair'].tolist(), index=couplings_p3_sym.index)
+couplings_p3_sym = couplings_p3_sym.drop(columns='undirected_pair')
+couplings_p3_sym.to_csv(os.path.join(outpath, f'{taker}_edges_undirected.csv'), index=False)
 
 ### now we are moving past what is in the data ### 
 # m4 (basically m1)
-m4 = """
+p4 = """
 The person who gave the responses above was coded agree with the following stances: 
 {belief_list}
 
@@ -173,28 +174,20 @@ Then provide a short-hand for the belief (very short). Please use the following 
 [("assertion A", "assertion A (short-hand)"), ("assertion B", "assertion B (short-hand)"), ...]
 """
 
-# try this out. 
-takes = 'onw.json'
-belief_ratings_df = pd.read_csv(os.path.join(outpath, f'{taker}_nodes.csv'))
+belief_string_p4 = ""
+for num, ele in enumerate(beliefs_p2_node): 
+    belief_string_p4 += str(num+1) + ": " + ele + "\n"
 
-test_lst = []
-for num, row in belief_ratings_df.iterrows():
-    test_lst.append(row['belief'])
+message_4 = p4.format(belief_list=belief_string_p4)
+response_4 = ask_as_persona(background_persona, [message_4], model)
 
-belief_string = ""
-for num, ele in enumerate(test_lst): 
-    belief_string += str(num+1) + ": " + ele + "\n"
-
-message = m4.format(belief_list=belief_string)
-
-response = ask_as_persona(background_persona, [message], model)
-response_clean = load_and_clean(response[0], replacements)
-responses_long = [x for x, _ in response_clean]
-responses_short = [y for _, y in response_clean]
+response_4_clean = load_and_clean(response_4[0], replacements)
+response_4_long = [x for x, _ in response_4_clean]
+response_4_short = [y for _, y in response_4_clean]
 
 ### and now we can repeat steps ### 
 ### this is almost the same as m2 ### 
-m5 = """
+p5 = """
 You are GPT, but I would like you to answer as the person who gave the responses above.
 Based on the these responses, please indicate your stance on `{belief}` on a scale from -1 to 1,
 where -1 is complete disagreement and 1 is complete agreement. You might not have 
@@ -205,14 +198,49 @@ Please provide this information in the following format:
 ("belief", agreement, importance)
 """
 
-belief_ratings_2 = []
-for belief in responses_short: 
-    message = m5.format(belief=belief)
+belief_ratings_p5 = []
+for belief in response_4_short: 
+    message = p5.format(belief=belief)
     response = ask_as_persona(background_persona, [message], model)
-    belief_ratings_2.append(response[0])
+    belief_ratings_p5.append(response[0])
 
-belief_ratings_2
-clean_belief_ratings_2 = [load_and_clean(x, replacements) for x in belief_ratings_2]
-belief_ratings_df_2 = pd.DataFrame(clean_belief_ratings_2, columns=['belief', 'stance', 'attention'])
-belief_ratings_df_2.to_csv(os.path.join(outpath, f'{taker}_nodes_additional.csv'), index=False)
+beliefs_clean_p5 = [load_and_clean(x, replacements) for x in belief_ratings_p5]
+beliefs_clean_p5_df = pd.DataFrame(beliefs_clean_p5, columns=['belief', 'stance', 'attention'])
+beliefs_clean_p5_df.to_csv(os.path.join(outpath, f'{taker}_nodes_additional.csv'), index=False)
 
+beliefs_p5_node = [x for x, y, z in beliefs_clean_p5]
+
+# 3. now make all combinations of these beliefs
+within_pairs = list(permutations(beliefs_p5_node, 2))
+forward_pairs = list(product(beliefs_p5_node, beliefs_p2_node))
+reverse_pairs = list(product(beliefs_p2_node, beliefs_p5_node))
+all_couplings_p6 = within_pairs + forward_pairs + reverse_pairs
+
+p6 = """
+You are GPT, but I would like you to answer as the person who gave the responses above.
+I am going to ask you about some stances that you might or might not have mentioned directly in the text.
+Either way is fine.
+Imagine that you changed your stance on `{belief_x}`. Would that affect your stance on `{belief_y}`.
+If changing your mind on `{belief_x}` would not at all change your mind on `{belief_y}` then assign 0.
+If changing your mind on `{belief_x}` would certainly change your mind on `{belief_y}` then assign 1.
+Otherwise, assign a score between 0 and 1. 
+Please return only the rating and no additional text. 
+"""
+
+couplings_p6 = []
+for belief_x, belief_y in all_couplings_p6: 
+    message = p6.format(belief_x=belief_x, belief_y=belief_y)
+    response_p6 = ask_as_persona(background_persona, [message], model)
+    couplings_p6.append((belief_x, belief_y, response_p6[0]))
+
+couplings_p6_df = pd.DataFrame(couplings_p6, columns=['belief_x', 'belief_y', 'influence'])
+couplings_p6_df['influence'] = couplings_p6_df['influence'].astype(float)
+couplings_p6_df.to_csv(os.path.join(outpath, f'{taker}_edges_directed_additional.csv'), index=False)
+
+# also get the undirected one # 
+couplings_p6_sym = couplings_p6_df.copy()
+couplings_p6_sym['undirected_pair'] = couplings_p6_sym.apply(lambda x: tuple(sorted([x['belief_x'], x['belief_y']])), axis=1)
+couplings_p6_sym = couplings_p6_sym.groupby('undirected_pair', as_index=False)['influence'].mean()
+couplings_p6_sym[['belief_x', 'belief_y']] = pd.DataFrame(couplings_p6_sym['undirected_pair'].tolist(), index=couplings_p6_sym.index)
+couplings_p6_sym = couplings_p6_sym.drop(columns='undirected_pair')
+couplings_p6_sym.to_csv(os.path.join(outpath, f'{taker}_edges_undirected_additional.csv'), index=False)

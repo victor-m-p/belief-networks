@@ -1,0 +1,43 @@
+belief_x,belief_y,influence
+against nationalism,for progressive migration,0.5
+against nationalism,for public spending,0.5
+against nationalism,against anti-immigration,0.5
+against nationalism,for globalist policies,0.5
+against nationalism,against isolationism,0.5
+against nationalism,against austerity,0.5
+for progressive migration,against nationalism,0.5
+for progressive migration,for public spending,0.5
+for progressive migration,against anti-immigration,0.5
+for progressive migration,for globalist policies,0.5
+for progressive migration,against isolationism,0.5
+for progressive migration,against austerity,0.5
+for public spending,against nationalism,0.5
+for public spending,for progressive migration,0.5
+for public spending,against anti-immigration,0.5
+for public spending,for globalist policies,0.5
+for public spending,against isolationism,0.5
+for public spending,against austerity,0.5
+against anti-immigration,against nationalism,0.5
+against anti-immigration,for progressive migration,1.0
+against anti-immigration,for public spending,0.5
+against anti-immigration,for globalist policies,0.5
+against anti-immigration,against isolationism,0.5
+against anti-immigration,against austerity,0.5
+for globalist policies,against nationalism,0.5
+for globalist policies,for progressive migration,0.5
+for globalist policies,for public spending,0.5
+for globalist policies,against anti-immigration,0.5
+for globalist policies,against isolationism,0.5
+for globalist policies,against austerity,0.5
+against isolationism,against nationalism,0.5
+against isolationism,for progressive migration,0.5
+against isolationism,for public spending,0.5
+against isolationism,against anti-immigration,0.5
+against isolationism,for globalist policies,0.7
+against isolationism,against austerity,0.5
+against austerity,against nationalism,0.5
+against austerity,for progressive migration,0.5
+against austerity,for public spending,1.0
+against austerity,against anti-immigration,0.5
+against austerity,for globalist policies,0.5
+against austerity,against isolationism,0.5
