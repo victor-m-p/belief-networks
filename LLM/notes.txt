@@ -1,3 +1,8 @@
-- Mirta formulation for edges better (getting fewer edges). 
+- Mirta formulation for edges better (getting fewer edges). But might be interesting to ask in both ways (also as Brandt)
+- Wondering whether asking it for numeric (e.g. 0-1) ratings is worse than likert with labels.
+
+# for the one where we ask in bulk + have memory
 - Not a big difference between node size (attention) here. 
 - Some networks basically fully connected--some very sparse: reasonable? 
+
+# for the sequential 
