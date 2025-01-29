@@ -31,35 +31,7 @@ client = OpenAI(
 # figure out how this actually works
 # I think now it does it sequentially (i.e., feeds responses back in)
 # which we might or might not want. 
-@retry(wait=wait_random_exponential(min=1, max=200), stop=stop_after_attempt(10))
-def ask_as_persona(persona_background, questions, model, temperature=0.7, max_tokens=5000): 
-    messages = [{
-        'role': 'system',
-        'content': persona_background
-    }]
-    responses = []
-    for question in questions: 
-        # add users question to message list
-        messages.append({
-            'role': 'user',
-            'content': question
-        })
-        # get model response
-        response = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens
-        )
-        # extract message
-        assistant_content = response.choices[0].message.content
-        responses.append(assistant_content)
-        # append messages
-        messages.append({
-            'role': 'assistant',
-            'content': assistant_content
-        })
-    return responses
+
 
 # consider name, age, gender, country (demographics)
 def create_persona_messages(item_1_answer, item_2_answer): 

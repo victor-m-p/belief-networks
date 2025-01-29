@@ -10,19 +10,31 @@ def networkx_simple(G, node_size, edge_width, node_color, output=None):
     fig, ax = plt.subplots(figsize=(8, 8))
     plt.axis('off')
     pos = nx.spring_layout(G, seed=516)
-    nx.draw_networkx_nodes(
-        G, 
-        pos=pos, 
-        node_size=[ns*500 for ns in node_size],
-        node_color=node_color,
-        #cmap=plt.cm.coolwarm,
-        #vmin=-1,
-        #vmax=1
+    
+    # determine if node_color is already assigned (string)
+    # or whether it is not (a number)
+    if isinstance(node_color[0], str): 
+        print('string')
+        nx.draw_networkx_nodes(
+            G,
+            pos=pos,
+            node_size=[ns*700 for ns in node_size],
+            node_color=node_color
         )
+    else: 
+        nx.draw_networkx_nodes(
+            G, 
+            pos=pos, 
+            node_size=[ns*700 for ns in node_size],
+            node_color=node_color,
+            cmap=plt.cm.coolwarm,
+            vmin=-1,
+            vmax=1
+            )
     nx.draw_networkx_edges(
         G, 
         pos=pos, 
-        width=[ew*10 for ew in edge_width], 
+        width=[ew*5 for ew in edge_width], 
         edge_color='gray')
     nx.draw_networkx_labels(
         G, 
@@ -35,6 +47,7 @@ def networkx_simple(G, node_size, edge_width, node_color, output=None):
         plt.show();
 
 inpath = 'data_output_seq'
+outpath = 'fig_seq'
 case = 'z6k.json'
 df_nodes = pd.read_csv(os.path.join(inpath, f'{case}_nodes.csv'))
 df_edges_directed = pd.read_csv(os.path.join(inpath, f'{case}_edges_directed.csv'))
@@ -50,7 +63,7 @@ edge_width = [G[u][v]['influence'] for u,v in G.edges()]
 node_size = [G.nodes[n]['attention'] for n in G.nodes()] # not good at getting difference here: might be better to just have it order from most to least.
 node_color = [G.nodes[n]['stance'] for n in G.nodes()]
 
-networkx_simple(G, node_size, edge_width, node_color)
+networkx_simple(G, node_size, edge_width, node_color, output=os.path.join(outpath, f'{case}_simple.png'))
 
 ## okay now do the extended network ## 
 # nodes
@@ -75,4 +88,4 @@ edge_width = [G[u][v]['influence'] for u,v in G.edges()]
 node_size = [G.nodes[n]['attention'] for n in G.nodes()] # not good at getting difference here: might be better to just have it order from most to least.
 node_color = [G.nodes[n]['color'] for n in G.nodes()]
 
-networkx_simple(G, node_size, edge_width, node_color)
+networkx_simple(G, node_size, edge_width, node_color, output=os.path.join(outpath, f'{case}_extended.png'))
