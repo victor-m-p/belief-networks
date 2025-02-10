@@ -6,3 +6,4 @@ LLM/.env
 LLM/data_input
 LLM/data_output
 corona_survey
+Survey/data

@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <graphml
+    xmlns="http://graphml.graphdrawing.org/xmlns"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns
+    http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd"
+    xmlns:nc="http://schema.networkcanvas.com/xmlns">
+<key id="4ab18994-a252-47cb-ba19-20b6ffc0e927" attr.name="first_name" attr.type="string" for="graph"/>
+<key id="3b5197a9-d024-421c-8663-1e06e0587999" attr.name="last_name" attr.type="string" for="graph"/>
+<key id="198bdb95-9556-4775-9c82-22531a382aa5" attr.name="dob" attr.type="string" for="graph"/>
+<key id="92326a8e-f5a1-4918-8717-a4d6917a9264_1b669334dae8ebafa433f0175b5fd418a7bc0975" attr.name="languages_spoken_english" attr.type="boolean" for="graph"/>
+<key id="92326a8e-f5a1-4918-8717-a4d6917a9264_1490df822e6fb3af3f764e6bbb159754a659d1c0" attr.name="languages_spoken_mandarin-chinese" attr.type="boolean" for="graph"/>
+<key id="92326a8e-f5a1-4918-8717-a4d6917a9264_6f1c601a03a181f1e34d951ad606b5c49e99f02f" attr.name="languages_spoken_hindi" attr.type="boolean" for="graph"/>
+<key id="92326a8e-f5a1-4918-8717-a4d6917a9264_e3d92827c04e8bd003692ed8189f8467b9e58178" attr.name="languages_spoken_spanish" attr.type="boolean" for="graph"/>
+<key id="92326a8e-f5a1-4918-8717-a4d6917a9264_32f897f04b545b8da26e1e2ebac7eeb732b0cbb1" attr.name="languages_spoken_french" attr.type="boolean" for="graph"/>
+<key id="92326a8e-f5a1-4918-8717-a4d6917a9264_d7011c505dcc23f97382e7a6060f140b4e8137ca" attr.name="languages_spoken_arabic" attr.type="boolean" for="graph"/>
+<key id="92326a8e-f5a1-4918-8717-a4d6917a9264_da4e97faf2fd252d27c5cb89b1070288bc4af43a" attr.name="languages_spoken_bengali" attr.type="boolean" for="graph"/>
+<key id="92326a8e-f5a1-4918-8717-a4d6917a9264_f8fd5fa7675349b5c4bdd55d271ca94e845580cf" attr.name="languages_spoken_russian" attr.type="boolean" for="graph"/>
+<key id="aa418971-ce17-4f0f-8060-438197298a82" attr.name="existing_software" attr.type="int" for="graph"/>
+<key id="d2ac00d6-337a-4ce4-87de-028eccd81617" attr.name="research_support" attr.type="int" for="graph"/>
+<key id="3609188b-dfbe-482a-995c-d71387e22054" attr.name="operation_pain" attr.type="float" for="graph"/>
+<key id="5a77b483-8120-4a64-aff1-c8c5d4ac33d1" attr.name="other_info" attr.type="string" for="graph"/>
+<key id="835ea5b5-1fbf-472d-ad3a-df74ec1d6870_a88b7dcd1a9e3e17770bbaa6d7515b31a2d7e85d" attr.name="preferred_contact_method_email" attr.type="boolean" for="graph"/>
+<key id="835ea5b5-1fbf-472d-ad3a-df74ec1d6870_9b466094ec991a03cb95c489c19c4d75635f0ae5" attr.name="preferred_contact_method_post" attr.type="boolean" for="graph"/>
+<key id="835ea5b5-1fbf-472d-ad3a-df74ec1d6870_83b04e2653917150804a1a71da678664e3e509b5" attr.name="preferred_contact_method_sms" attr.type="boolean" for="graph"/>
+<key id="835ea5b5-1fbf-472d-ad3a-df74ec1d6870_f6be6ca910984ef05a237a180d464ceb8847c14a" attr.name="preferred_contact_method_phone" attr.type="boolean" for="graph"/>
+<key id="09306238-68e4-498c-8c12-923eb2eec760" attr.name="participant_consent" attr.type="boolean" for="graph"/>
+<key id="label" attr.name="label" attr.type="string" for="all"/>
+<key id="networkCanvasType" attr.name="networkCanvasType" attr.type="string" for="all"/>
+<key id="networkCanvasUUID" attr.name="networkCanvasUUID" attr.type="string" for="all"/>
+<key id="c7053a78-bcd5-44bb-bfca-36c8aefa793f" attr.name="name" attr.type="string" for="node"/>
+<key id="ee090c9b-2b70-4648-a6db-328d4ef4dbfe_X" attr.name="sociogram_layout_X" attr.type="double" for="node"/>
+<key id="ee090c9b-2b70-4648-a6db-328d4ef4dbfe_Y" attr.name="sociogram_layout_Y" attr.type="double" for="node"/>
+<key id="88271ba2-301d-402c-8407-cfa89446ca1d_X" attr.name="box_layout_X" attr.type="double" for="node"/>
+<key id="88271ba2-301d-402c-8407-cfa89446ca1d_Y" attr.name="box_layout_Y" attr.type="double" for="node"/>
+<key id="6637c4a8-c383-4a54-bfd8-7f093a1cb4e1" attr.name="communication_freq" attr.type="int" for="node"/>
+<key id="7e84034b-9aa5-4996-a1c4-2deb3e38c645" attr.name="provides_advice" attr.type="boolean" for="node"/>
+<key id="20cf8ab4-9356-4568-81e2-8460258e1b45" attr.name="provides_material_support" attr.type="boolean" for="node"/>
+<key id="132ad372-2ef2-4eec-820e-9eae91829e53_c33f059b0ca7725fbfd6c9ea4f2f012cc7ac5a74" attr.name="group_family" attr.type="boolean" for="node"/>
+<key id="132ad372-2ef2-4eec-820e-9eae91829e53_3d9209c4598bfbc38b3c096081bee3a09697e939" attr.name="group_friends" attr.type="boolean" for="node"/>
+<key id="132ad372-2ef2-4eec-820e-9eae91829e53_ace6752be4cc248506f0fa641bf7a18b199e4e04" attr.name="group_colleague" attr.type="boolean" for="node"/>
+<key id="132ad372-2ef2-4eec-820e-9eae91829e53_655f83be7512e5b5b3ba4c9976c043ece4b3ce51" attr.name="group_school" attr.type="boolean" for="node"/>
+<key id="1380a661-ae08-4477-8e53-253f6c928ed9" attr.name="group_other" attr.type="string" for="node"/>
+<key id="1d6a2675-3cff-4740-8c56-d5f26982eaeb" attr.name="discuss_network_research" attr.type="boolean" for="node"/>
+<key id="52138688-e1e9-418b-9c33-ec9f3def499b_a76d7a93e2a85254b45d15357c7af4b41c428abe" attr.name="social_networks_research_relationship_Work_Colleague" attr.type="boolean" for="node"/>
+<key id="52138688-e1e9-418b-9c33-ec9f3def499b_4f52f464c0d0d87ae8b9ffa931d5729c3dfb0056" attr.name="social_networks_research_relationship_Classmate" attr.type="boolean" for="node"/>
+<key id="52138688-e1e9-418b-9c33-ec9f3def499b_6d24aab0d5eeb6f64c0c9e3842f6bd075668c6e9" attr.name="social_networks_research_relationship_Co-author" attr.type="boolean" for="node"/>
+<key id="52138688-e1e9-418b-9c33-ec9f3def499b_2cd4fa195ed5b220930149c31cc72fbb131921db" attr.name="social_networks_research_relationship_Supervisor" attr.type="boolean" for="node"/>
+<key id="2bee574a-a12e-4ee0-8610-263130299a2d" attr.name="social_network_research_relationship_other" attr.type="string" for="node"/>
+<key id="45a62b9c-42ec-4735-bf1a-4074a2001d2c" attr.name="name" attr.type="string" for="node"/>
+<key id="1d1460f2-8c11-4f66-8647-83801116aebf" attr.name="last_visit" attr.type="string" for="node"/>
+<key id="37fb19da-3ec0-4427-bb4b-3b59003a7e60" attr.name="visit_purpose" attr.type="string" for="node"/>
+<key id="6ae999552a0d2dca14d62e2bc8b764d377b1dd6c" attr.name="name" attr.type="string" for="node"/>
+<key id="f9b4cb17f595c013261905993692e9858a28b565" attr.name="first_name" attr.type="string" for="node"/>
+<key id="5280754584995674fb45b6a2911c29172dcfc501" attr.name="last_name" attr.type="string" for="node"/>
+<key id="c508c6b7a3c9fe723d01562da0332c601d243d78" attr.name="first_language" attr.type="string" for="node"/>
+<key id="d91ca102-954d-4da1-b8b8-d9490c7bca44" attr.name="overall_review" attr.type="string" for="node"/>
+<key id="95c5bb4d-5ac2-4ddd-8dd9-fca518f15748" attr.name="visited" attr.type="boolean" for="node"/>
+<key id="8e68b3e5af636475363c23b52ade8e6064b05806" attr.name="country" attr.type="string" for="node"/>
+<key id="3ab3e0b020a6d41f3d259ddd3ed8ff273843839b" attr.name="website" attr.type="string" for="node"/>
+<key id="networkCanvasTargetUUID" attr.name="networkCanvasTargetUUID" attr.type="string" for="edge"/>
+<key id="networkCanvasSourceUUID" attr.name="networkCanvasSourceUUID" attr.type="string" for="edge"/>
+<graph
+  edgedefault="undirected"
+  nc:caseId="vmp-30-01-2025"
+  nc:sessionUUID="b80bd5f1-793f-4665-aaa6-af12f027bcfb"
+  nc:protocolName="Sample Protocol v4"
+  nc:protocolUID="e06c29ef0fc3b4c4feae5cd8a603067b896aa79c536cb5254dc6bbeb5c7cf73e"
+  nc:codebookHash="25ef2a245503894d9a33c52e78661f89b53c2a60"
+  nc:sessionExportTime="2025-01-30T10:29:30.733Z"
+    nc:sessionStartTime="2025-01-30T09:58:42.319Z"
+    nc:sessionFinishTime="2025-01-30T10:28:23.535Z"
+>
+<data key="networkCanvasUUID">3b1067a1-be83-44e0-b993-a80a4347a559</data>
+<data key="4ab18994-a252-47cb-ba19-20b6ffc0e927">Victor </data>
+<data key="3b5197a9-d024-421c-8663-1e06e0587999">Poulsen</data>
+<data key="198bdb95-9556-4775-9c82-22531a382aa5">1996-01-20</data>
+<data key="92326a8e-f5a1-4918-8717-a4d6917a9264_1b669334dae8ebafa433f0175b5fd418a7bc0975">true</data>
+<data key="92326a8e-f5a1-4918-8717-a4d6917a9264_1490df822e6fb3af3f764e6bbb159754a659d1c0">false</data>
+<data key="92326a8e-f5a1-4918-8717-a4d6917a9264_6f1c601a03a181f1e34d951ad606b5c49e99f02f">false</data>
+<data key="92326a8e-f5a1-4918-8717-a4d6917a9264_e3d92827c04e8bd003692ed8189f8467b9e58178">false</data>
+<data key="92326a8e-f5a1-4918-8717-a4d6917a9264_32f897f04b545b8da26e1e2ebac7eeb732b0cbb1">false</data>
+<data key="92326a8e-f5a1-4918-8717-a4d6917a9264_d7011c505dcc23f97382e7a6060f140b4e8137ca">false</data>
+<data key="92326a8e-f5a1-4918-8717-a4d6917a9264_da4e97faf2fd252d27c5cb89b1070288bc4af43a">false</data>
+<data key="92326a8e-f5a1-4918-8717-a4d6917a9264_f8fd5fa7675349b5c4bdd55d271ca94e845580cf">false</data>
+<data key="aa418971-ce17-4f0f-8060-438197298a82">3</data>
+<data key="d2ac00d6-337a-4ce4-87de-028eccd81617">2</data>
+<data key="3609188b-dfbe-482a-995c-d71387e22054">0.141</data>
+<data key="5a77b483-8120-4a64-aff1-c8c5d4ac33d1">I would like to know how to export this data. </data>
+<data key="835ea5b5-1fbf-472d-ad3a-df74ec1d6870_a88b7dcd1a9e3e17770bbaa6d7515b31a2d7e85d">true</data>
+<data key="835ea5b5-1fbf-472d-ad3a-df74ec1d6870_9b466094ec991a03cb95c489c19c4d75635f0ae5">false</data>
+<data key="835ea5b5-1fbf-472d-ad3a-df74ec1d6870_83b04e2653917150804a1a71da678664e3e509b5">false</data>
+<data key="835ea5b5-1fbf-472d-ad3a-df74ec1d6870_f6be6ca910984ef05a237a180d464ceb8847c14a">false</data>
+<data key="09306238-68e4-498c-8c12-923eb2eec760">true</data>
+<node id="1">
+	<data key="networkCanvasUUID">8a8e7361-4b44-4e35-a930-c5c96403dff1</data>
+	<data key="networkCanvasType">Person</data>
+	<data key="label">Mikkel</data>
+	<data key="c7053a78-bcd5-44bb-bfca-36c8aefa793f">Mikkel</data>
+	<data key="ee090c9b-2b70-4648-a6db-328d4ef4dbfe_X">0.4963101175738874</data>
+	<data key="ee090c9b-2b70-4648-a6db-328d4ef4dbfe_Y">0.5092552422270427</data>
+	<data key="88271ba2-301d-402c-8407-cfa89446ca1d_X">0.5108543543004772</data>
+	<data key="88271ba2-301d-402c-8407-cfa89446ca1d_Y">0.7267534345625452</data>
+	<data key="6637c4a8-c383-4a54-bfd8-7f093a1cb4e1">4</data>
+	<data key="7e84034b-9aa5-4996-a1c4-2deb3e38c645">true</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_c33f059b0ca7725fbfd6c9ea4f2f012cc7ac5a74">false</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_3d9209c4598bfbc38b3c096081bee3a09697e939">true</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_ace6752be4cc248506f0fa641bf7a18b199e4e04">false</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_655f83be7512e5b5b3ba4c9976c043ece4b3ce51">false</data>
+	<data key="1d6a2675-3cff-4740-8c56-d5f26982eaeb">true</data>
+	<data key="52138688-e1e9-418b-9c33-ec9f3def499b_a76d7a93e2a85254b45d15357c7af4b41c428abe">false</data>
+	<data key="52138688-e1e9-418b-9c33-ec9f3def499b_4f52f464c0d0d87ae8b9ffa931d5729c3dfb0056">true</data>
+	<data key="52138688-e1e9-418b-9c33-ec9f3def499b_6d24aab0d5eeb6f64c0c9e3842f6bd075668c6e9">false</data>
+	<data key="52138688-e1e9-418b-9c33-ec9f3def499b_2cd4fa195ed5b220930149c31cc72fbb131921db">false</data>
+</node>
+<node id="2">
+	<data key="networkCanvasUUID">3df63d75-a000-4e0c-90ba-61c8d29e27dc</data>
+	<data key="networkCanvasType">Person</data>
+	<data key="label">Alina</data>
+	<data key="c7053a78-bcd5-44bb-bfca-36c8aefa793f">Alina</data>
+	<data key="ee090c9b-2b70-4648-a6db-328d4ef4dbfe_X">0.40368629420981494</data>
+	<data key="ee090c9b-2b70-4648-a6db-328d4ef4dbfe_Y">0.7417932031814896</data>
+	<data key="88271ba2-301d-402c-8407-cfa89446ca1d_X">0.33249608286387505</data>
+	<data key="88271ba2-301d-402c-8407-cfa89446ca1d_Y">0.8320318148951554</data>
+	<data key="6637c4a8-c383-4a54-bfd8-7f093a1cb4e1">5</data>
+	<data key="7e84034b-9aa5-4996-a1c4-2deb3e38c645">true</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_c33f059b0ca7725fbfd6c9ea4f2f012cc7ac5a74">false</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_3d9209c4598bfbc38b3c096081bee3a09697e939">true</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_ace6752be4cc248506f0fa641bf7a18b199e4e04">false</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_655f83be7512e5b5b3ba4c9976c043ece4b3ce51">false</data>
+	<data key="1d6a2675-3cff-4740-8c56-d5f26982eaeb">true</data>
+	<data key="2bee574a-a12e-4ee0-8610-263130299a2d">Not academically connected</data>
+</node>
+<node id="3">
+	<data key="networkCanvasUUID">4d48d85e-7076-4592-a868-a7ec374e08f2</data>
+	<data key="networkCanvasType">Person</data>
+	<data key="label">Oscar</data>
+	<data key="c7053a78-bcd5-44bb-bfca-36c8aefa793f">Oscar</data>
+	<data key="ee090c9b-2b70-4648-a6db-328d4ef4dbfe_X">0.4832968531343069</data>
+	<data key="ee090c9b-2b70-4648-a6db-328d4ef4dbfe_Y">0.7279103398409256</data>
+	<data key="88271ba2-301d-402c-8407-cfa89446ca1d_X">0.33479254129438923</data>
+	<data key="88271ba2-301d-402c-8407-cfa89446ca1d_Y">0.7857556037599421</data>
+	<data key="6637c4a8-c383-4a54-bfd8-7f093a1cb4e1">4</data>
+	<data key="7e84034b-9aa5-4996-a1c4-2deb3e38c645">false</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_c33f059b0ca7725fbfd6c9ea4f2f012cc7ac5a74">false</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_3d9209c4598bfbc38b3c096081bee3a09697e939">true</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_ace6752be4cc248506f0fa641bf7a18b199e4e04">false</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_655f83be7512e5b5b3ba4c9976c043ece4b3ce51">false</data>
+</node>
+<node id="4">
+	<data key="networkCanvasUUID">d0e5a7d2-acb0-4fe1-b67e-e2c1e355a046</data>
+	<data key="networkCanvasType">Person</data>
+	<data key="label">Laurits</data>
+	<data key="c7053a78-bcd5-44bb-bfca-36c8aefa793f">Laurits</data>
+	<data key="ee090c9b-2b70-4648-a6db-328d4ef4dbfe_X">0.42282344779743325</data>
+	<data key="ee090c9b-2b70-4648-a6db-328d4ef4dbfe_Y">0.5740419378163413</data>
+	<data key="88271ba2-301d-402c-8407-cfa89446ca1d_X">0.33096511057686556</data>
+	<data key="88271ba2-301d-402c-8407-cfa89446ca1d_Y">0.8007953723788864</data>
+	<data key="6637c4a8-c383-4a54-bfd8-7f093a1cb4e1">4</data>
+	<data key="7e84034b-9aa5-4996-a1c4-2deb3e38c645">true</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_c33f059b0ca7725fbfd6c9ea4f2f012cc7ac5a74">false</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_3d9209c4598bfbc38b3c096081bee3a09697e939">true</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_ace6752be4cc248506f0fa641bf7a18b199e4e04">false</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_655f83be7512e5b5b3ba4c9976c043ece4b3ce51">false</data>
+</node>
+<node id="5">
+	<data key="networkCanvasUUID">5f59c475-8433-493b-bbd4-3780e2c2873a</data>
+	<data key="networkCanvasType">Person</data>
+	<data key="label">Peter</data>
+	<data key="c7053a78-bcd5-44bb-bfca-36c8aefa793f">Peter</data>
+	<data key="ee090c9b-2b70-4648-a6db-328d4ef4dbfe_X">0.5506596337627232</data>
+	<data key="ee090c9b-2b70-4648-a6db-328d4ef4dbfe_Y">0.7718727404193781</data>
+	<data key="88271ba2-301d-402c-8407-cfa89446ca1d_X">0.33096511057686556</data>
+	<data key="88271ba2-301d-402c-8407-cfa89446ca1d_Y">0.7822848879248011</data>
+	<data key="6637c4a8-c383-4a54-bfd8-7f093a1cb4e1">3</data>
+	<data key="7e84034b-9aa5-4996-a1c4-2deb3e38c645">true</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_c33f059b0ca7725fbfd6c9ea4f2f012cc7ac5a74">false</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_3d9209c4598bfbc38b3c096081bee3a09697e939">true</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_ace6752be4cc248506f0fa641bf7a18b199e4e04">false</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_655f83be7512e5b5b3ba4c9976c043ece4b3ce51">false</data>
+	<data key="1d6a2675-3cff-4740-8c56-d5f26982eaeb">true</data>
+	<data key="52138688-e1e9-418b-9c33-ec9f3def499b_a76d7a93e2a85254b45d15357c7af4b41c428abe">true</data>
+	<data key="52138688-e1e9-418b-9c33-ec9f3def499b_4f52f464c0d0d87ae8b9ffa931d5729c3dfb0056">false</data>
+	<data key="52138688-e1e9-418b-9c33-ec9f3def499b_6d24aab0d5eeb6f64c0c9e3842f6bd075668c6e9">false</data>
+	<data key="52138688-e1e9-418b-9c33-ec9f3def499b_2cd4fa195ed5b220930149c31cc72fbb131921db">false</data>
+</node>
+<node id="6">
+	<data key="networkCanvasUUID">bbd4e46e-0d2a-4c91-8534-b7085cf476ad</data>
+	<data key="networkCanvasType">Person</data>
+	<data key="label">Laura</data>
+	<data key="c7053a78-bcd5-44bb-bfca-36c8aefa793f">Laura</data>
+	<data key="ee090c9b-2b70-4648-a6db-328d4ef4dbfe_X">0.6118985252431016</data>
+	<data key="ee090c9b-2b70-4648-a6db-328d4ef4dbfe_Y">0.7221258134490238</data>
+	<data key="88271ba2-301d-402c-8407-cfa89446ca1d_X">0.324075735285323</data>
+	<data key="88271ba2-301d-402c-8407-cfa89446ca1d_Y">0.8135213304410701</data>
+	<data key="6637c4a8-c383-4a54-bfd8-7f093a1cb4e1">5</data>
+	<data key="7e84034b-9aa5-4996-a1c4-2deb3e38c645">true</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_c33f059b0ca7725fbfd6c9ea4f2f012cc7ac5a74">false</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_3d9209c4598bfbc38b3c096081bee3a09697e939">true</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_ace6752be4cc248506f0fa641bf7a18b199e4e04">false</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_655f83be7512e5b5b3ba4c9976c043ece4b3ce51">false</data>
+</node>
+<node id="7">
+	<data key="networkCanvasUUID">a529271f-26ca-40bc-8ff5-df8de47cd201</data>
+	<data key="networkCanvasType">Person</data>
+	<data key="label">Josh</data>
+	<data key="c7053a78-bcd5-44bb-bfca-36c8aefa793f">Josh</data>
+	<data key="ee090c9b-2b70-4648-a6db-328d4ef4dbfe_X">0.32254476299831353</data>
+	<data key="ee090c9b-2b70-4648-a6db-328d4ef4dbfe_Y">0.7070860448300795</data>
+	<data key="88271ba2-301d-402c-8407-cfa89446ca1d_X">0.5521906060497327</data>
+	<data key="88271ba2-301d-402c-8407-cfa89446ca1d_Y">0.562472885032538</data>
+	<data key="6637c4a8-c383-4a54-bfd8-7f093a1cb4e1">5</data>
+	<data key="7e84034b-9aa5-4996-a1c4-2deb3e38c645">true</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_c33f059b0ca7725fbfd6c9ea4f2f012cc7ac5a74">false</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_3d9209c4598bfbc38b3c096081bee3a09697e939">true</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_ace6752be4cc248506f0fa641bf7a18b199e4e04">false</data>
+	<data key="132ad372-2ef2-4eec-820e-9eae91829e53_655f83be7512e5b5b3ba4c9976c043ece4b3ce51">false</data>
+	<data key="1d6a2675-3cff-4740-8c56-d5f26982eaeb">true</data>
+	<data key="52138688-e1e9-418b-9c33-ec9f3def499b_a76d7a93e2a85254b45d15357c7af4b41c428abe">true</data>
+	<data key="52138688-e1e9-418b-9c33-ec9f3def499b_4f52f464c0d0d87ae8b9ffa931d5729c3dfb0056">false</data>
+	<data key="52138688-e1e9-418b-9c33-ec9f3def499b_6d24aab0d5eeb6f64c0c9e3842f6bd075668c6e9">false</data>
+	<data key="52138688-e1e9-418b-9c33-ec9f3def499b_2cd4fa195ed5b220930149c31cc72fbb131921db">false</data>
+</node>
+<node id="8">
+	<data key="networkCanvasUUID">36e73042-6b80-4016-86e0-9569772faa99</data>
+	<data key="networkCanvasType">Clinic</data>
+	<data key="label">Aarhus Sygehus</data>
+	<data key="45a62b9c-42ec-4735-bf1a-4074a2001d2c">Aarhus Sygehus</data>
+	<data key="1d1460f2-8c11-4f66-8647-83801116aebf">2023-01-11</data>
+	<data key="37fb19da-3ec0-4427-bb4b-3b59003a7e60">Testing functionality. </data>
+</node>
+<node id="9">
+	<data key="networkCanvasUUID">ac440207835bd2f8e84e0ff8c8a3f4bba8045e4b</data>
+	<data key="networkCanvasType">Classmate</data>
+	<data key="label">Node</data>
+	<data key="6ae999552a0d2dca14d62e2bc8b764d377b1dd6c">Alanah</data>
+	<data key="f9b4cb17f595c013261905993692e9858a28b565">Alanah</data>
+	<data key="5280754584995674fb45b6a2911c29172dcfc501">Coffin</data>
+	<data key="c508c6b7a3c9fe723d01562da0332c601d243d78">Fijian</data>
+</node>
+<node id="10">
+	<data key="networkCanvasUUID">49c9d8a60dadcaf35dee73da35dd45244f1e3009</data>
+	<data key="networkCanvasType">Classmate</data>
+	<data key="label">Node</data>
+	<data key="6ae999552a0d2dca14d62e2bc8b764d377b1dd6c">Allsun</data>
+	<data key="f9b4cb17f595c013261905993692e9858a28b565">Allsun</data>
+	<data key="5280754584995674fb45b6a2911c29172dcfc501">Buckler</data>
+	<data key="c508c6b7a3c9fe723d01562da0332c601d243d78">Ndebele</data>
+</node>
+<node id="11">
+	<data key="networkCanvasUUID">1381894ca7e19cd61cbdc0f98fcfc45bad986a7b</data>
+	<data key="networkCanvasType">Classmate</data>
+	<data key="label">Node</data>
+	<data key="6ae999552a0d2dca14d62e2bc8b764d377b1dd6c">Boycie</data>
+	<data key="f9b4cb17f595c013261905993692e9858a28b565">Boycie</data>
+	<data key="5280754584995674fb45b6a2911c29172dcfc501">Gonnin</data>
+	<data key="c508c6b7a3c9fe723d01562da0332c601d243d78">Fijian</data>
+</node>
+<node id="12">
+	<data key="networkCanvasUUID">21c317e22ef747081e9b1cab9444df4ec2aafc6f</data>
+	<data key="networkCanvasType">University</data>
+	<data key="label">Node</data>
+	<data key="95c5bb4d-5ac2-4ddd-8dd9-fca518f15748">false</data>
+	<data key="8e68b3e5af636475363c23b52ade8e6064b05806">DK</data>
+	<data key="6ae999552a0d2dca14d62e2bc8b764d377b1dd6c">Aarhus University</data>
+	<data key="3ab3e0b020a6d41f3d259ddd3ed8ff273843839b">http://www.au.dk/</data>
+</node>
+<node id="13">
+	<data key="networkCanvasUUID">56532af13fc10a7d4b3166386e570f138eacd318</data>
+	<data key="networkCanvasType">University</data>
+	<data key="label">Node</data>
+	<data key="95c5bb4d-5ac2-4ddd-8dd9-fca518f15748">false</data>
+	<data key="8e68b3e5af636475363c23b52ade8e6064b05806">US</data>
+	<data key="6ae999552a0d2dca14d62e2bc8b764d377b1dd6c">Carnegie Mellon University</data>
+	<data key="3ab3e0b020a6d41f3d259ddd3ed8ff273843839b">http://www.cmu.edu/</data>
+</node>
+<edge id="1" source="1" target="4">
+	<data key="networkCanvasUUID">5e636391-f3af-42e0-aeeb-30e5f652d66e</data>
+	<data key="networkCanvasType">know</data>
+	<data key="networkCanvasSourceUUID">8a8e7361-4b44-4e35-a930-c5c96403dff1</data>
+	<data key="networkCanvasTargetUUID">d0e5a7d2-acb0-4fe1-b67e-e2c1e355a046</data>
+</edge>
+<edge id="2" source="7" target="5">
+	<data key="networkCanvasUUID">6ad6c034-638c-4bf7-a248-086751712557</data>
+	<data key="networkCanvasType">know</data>
+	<data key="networkCanvasSourceUUID">a529271f-26ca-40bc-8ff5-df8de47cd201</data>
+	<data key="networkCanvasTargetUUID">5f59c475-8433-493b-bbd4-3780e2c2873a</data>
+</edge>
+<edge id="3" source="1" target="3">
+	<data key="networkCanvasUUID">19b0c147-8266-4ddb-9c8e-2d4827da25a2</data>
+	<data key="networkCanvasType">know</data>
+	<data key="networkCanvasSourceUUID">8a8e7361-4b44-4e35-a930-c5c96403dff1</data>
+	<data key="networkCanvasTargetUUID">4d48d85e-7076-4592-a868-a7ec374e08f2</data>
+</edge>
+<edge id="4" source="9" target="11">
+	<data key="networkCanvasUUID">574721f7-f1e6-40bb-9b9d-3f99b9e6bb2f</data>
+	<data key="networkCanvasType">know</data>
+	<data key="networkCanvasSourceUUID">ac440207835bd2f8e84e0ff8c8a3f4bba8045e4b</data>
+	<data key="networkCanvasTargetUUID">1381894ca7e19cd61cbdc0f98fcfc45bad986a7b</data>
+</edge>
+</graph>
+</graphml>

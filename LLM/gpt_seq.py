@@ -79,7 +79,7 @@ def create_persona_messages(item_1_answer, item_2_answer):
 
 # just do it for one person first 
 # taker = os.listdir(inpath)
-taker = 'vmp.json'
+taker = 'onw.json'
 with open(os.path.join(inpath, taker), 'r') as f:
     data = json.load(f)
 

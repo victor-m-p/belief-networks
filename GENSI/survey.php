@@ -17,7 +17,6 @@
 
       const queryString = window.location.search;
       const urlParams = new URLSearchParams(queryString);
-      
 
       // Prevent window close
       var hook = true;
@@ -118,12 +117,12 @@
 
     <div class="input-group radio_slide" display="none" id="self_strictness" method="get">
       <form id="self_strictness_form" display="none">
-        <span class="slideText" style="">Hoe strikt houdt u zich op dit moment aan de coronamaatregelen van de regering? </span><br><br>
-        <div class="radio" onclick="$('#self_strictness_radio_0').prop('checked', true)"><label class="container"><input type="radio" id="self_strictness_radio_0" name="self_strictness_radio" value=1><span class="checkmark"></span></label><span class="questionText">Helemaal niet</span></div>
-        <div class="radio" onclick="$('#self_strictness_radio_1').prop('checked', true)"><label class="container"><input type="radio" id="self_strictness_radio_1" name="self_strictness_radio" value=2><span class="checkmark"></span></label><span class="questionText">  Een beetje</span></div>
-        <div class="radio" onclick="$('#self_strictness_radio_2').prop('checked', true)"><label class="container"><input type="radio" id="self_strictness_radio_2" name="self_strictness_radio" value=3><span class="checkmark"></span></label><span class="questionText">  Best wel</span></div>
-        <div class="radio" onclick="$('#self_strictness_radio_3').prop('checked', true)"><label class="container"><input type="radio" id="self_strictness_radio_3" name="self_strictness_radio" value=4><span class="checkmark"></span></label><span class="questionText">  Strikt</span></div>
-        <div class="radio" onclick="$('#self_strictness_radio_4').prop('checked', true)"><label class="container"><input type="radio" id="self_strictness_radio_4" name="self_strictness_radio" value=5><span class="checkmark"></span></label><span class="questionText">  Heel strikt</span></div>
+        <span class="slideText" style="">What do you think about something? </span><br><br>
+        <div class="radio" onclick="$('#self_strictness_radio_0').prop('checked', true)"><label class="container"><input type="radio" id="self_strictness_radio_0" name="self_strictness_radio" value=1><span class="checkmark"></span></label><span class="questionText">Strong Agree</span></div>
+        <div class="radio" onclick="$('#self_strictness_radio_1').prop('checked', true)"><label class="container"><input type="radio" id="self_strictness_radio_1" name="self_strictness_radio" value=2><span class="checkmark"></span></label><span class="questionText">  Weak agree</span></div>
+        <div class="radio" onclick="$('#self_strictness_radio_2').prop('checked', true)"><label class="container"><input type="radio" id="self_strictness_radio_2" name="self_strictness_radio" value=3><span class="checkmark"></span></label><span class="questionText">  Medium</span></div>
+        <div class="radio" onclick="$('#self_strictness_radio_3').prop('checked', true)"><label class="container"><input type="radio" id="self_strictness_radio_3" name="self_strictness_radio" value=4><span class="checkmark"></span></label><span class="questionText">  Weak Disagree</span></div>
+        <div class="radio" onclick="$('#self_strictness_radio_4').prop('checked', true)"><label class="container"><input type="radio" id="self_strictness_radio_4" name="self_strictness_radio" value=5><span class="checkmark"></span></label><span class="questionText">  Strong Disagree</span></div>
       </form>
     </div>
 
@@ -561,12 +560,11 @@
 
 
     <div class="input-group" id="name_input" method="get" onsubmit="addAlter()">
-      <input type="text" id="alterName" class="form-control" placeholder="Naam" size="10">
-      <button type="submit" id="alterSubmit" class="btn btn-default" position="inline" value="Enter" onclick="addAlter()">Voeg toe</button>
+      <input type="text" id="alterName" class="form-control" placeholder="Name" size="10">
+      <button type="submit" id="alterSubmit" class="btn btn-default" position="inline" value="Enter" onclick="addAlter()">Add</button>
     </div>
 
-
-    
+ 
     <div class="popop_box" id="nonresponse_box">
       <div class="popup_box" id="popup">
             <p class="popup_text">U hebt de vraag nog niet volledig beantwoord! Het zou fijn zijn voor het onderzoek als u de vraag volledig beantwoordt. Als u wel naar de volgende vraag wil gaan, dan kunt u weer op “Ga door” klikken.</p>
@@ -598,7 +596,7 @@
     <div id="NextDiv">
       <input type="button" 
         class="btn btn-default" 
-        value="Ga door"
+        value="Continue"
         id="Next"
         onclick="showNext(); pauseShowNext();" />
     </div>
@@ -606,14 +604,14 @@
     <div id="JaDiv">
       <input type="button" 
         class="btn btn-default" 
-        value="Ja, ik ben akkoord met deelname"
+        value="Yes, I consent"
         id="Ja"
         onclick="showNext(); pauseShowNext();" />
     </div>
     <div id="NeeDiv">
       <input type="button" 
         class="btn btn-default" 
-        value="Nee, ik ben niet akkoord met deelname"
+        value="No, I do not consent"
         id="Nee"
         onclick="currSlide = 100; showNext(); pauseShowNext();" />
     </div>

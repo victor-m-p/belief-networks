@@ -2,15 +2,11 @@
 VMP 2025-09-01
 '''
 
+from fun import ask_as_persona
 from openai import OpenAI
 import os 
 from dotenv import load_dotenv
 import json 
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_random_exponential,
-)
 
 # setup
 outpath='data_output'
@@ -31,7 +27,6 @@ client = OpenAI(
 # figure out how this actually works
 # I think now it does it sequentially (i.e., feeds responses back in)
 # which we might or might not want. 
-
 
 # consider name, age, gender, country (demographics)
 def create_persona_messages(item_1_answer, item_2_answer): 
@@ -129,6 +124,8 @@ def save_answers_with_id(id_value, answers_list, outpath):
 
 # now try to run this for each of us
 data_input = os.listdir(inpath)
+
+# loop over these 
 for taker in data_input:
     print(taker)
     with open(os.path.join(inpath, taker), 'r') as f:
@@ -140,6 +137,18 @@ for taker in data_input:
     persona = create_persona_messages(item_1_answer, item_2_answer)
     answers = ask_as_persona(persona, questions, model)
     save_answers_with_id(id, answers, outpath)
+
+# can do an example
+data_input = os.listdir(inpath)
+taker = data_input[0]
+with open(os.path.join(inpath, taker), 'r') as f:
+    data = json.load(f)
+item_1_answer = data['item_1_answer']
+item_2_answer = data['item_2_answer']
+id = data['id']
+persona = create_persona_messages(item_1_answer, item_2_answer)
+answers = ask_as_persona(persona, questions, model)
+
 
 # okay so we need to do something more advanced for the "ask as persona".
 # we cannot really pre-determine all of the questions because we would need 
