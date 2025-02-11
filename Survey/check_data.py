@@ -2,14 +2,24 @@ import numpy as np
 import pandas as pd 
 import os 
 
+def is_numeric_string(s: str) -> bool:
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
 # data
-d = pd.read_csv('data/export.csv', sep=';')
+d = pd.read_csv('data/data_project_1044868_2025_02_11.csv', sep=';')
+
+# just start with one person 
+d = d[d['lfdn'] == 22].reset_index()
 focal_topic = 'animal products'
 
 ### textual data ###
 free_thoughts = d['v_722'][0]
-#production_thoughts = d['v_1348'][0]
-#impact_thoughts = d['v_1349'][0]
+production_thoughts = d['v_1348'][0]
+impact_thoughts = d['v_1349'][0]
 consumption_thoughts = d['v_723'][0]
 
 ### behavioral outcome (focal) ### 
@@ -23,26 +33,40 @@ consumption_coding = {
 consumption_likert = d['v_1269'][0]
 
 ### central belief nodes ###
-belief_labels = [
-    ("v_1001", 'c_1'), 
-    ("v_1002", 'c_2'), 
-    ("v_1003", 'c_3'),
-    ("v_1004", 'c_4'),
-    ("v_1005", 'c_5'),
-    ('v_1012', 'p_1'),
-    ('v_1013', 'p_2'),
-    ('v_1014', 'p_3'),
-    ('v_1015', 'p_4'),
-    ('v_1016', 'p_5')]
+n_beliefs = 10
+belief_keys = [f'v_{x+1001}' for x in range(int(n_beliefs/2))] + [f'v_{x+1012}' for x in range(int(n_beliefs/2))]
+belief_labels = [f'c_{x+1}' for x in range(int(n_beliefs/2))] + [f'p_{x+1}' for x in range(int(n_beliefs/2))]
 belief_nodes = {}
-
-for col_name, node_type in belief_labels:
+for col_name, node_type in zip(belief_keys, belief_labels):
     # Check if col_val is actually a string (and not one of the sentinel numbers)
-    if isinstance(d[col_name][0], str):
+    if isinstance(d[col_name][0], str) and not is_numeric_string(d[col_name][0]):
         belief_nodes[node_type] = d[col_name][0]
 
+# belief node importance?
+
+
 ### secondary beliefs ### 
-# how the fuck do I get that out? # 
+secondary_order = ['v_717', 'v_718', 'v_719']
+secondary_beliefs = [f'{x+11}' for x in range(10)]
+
+secondary_belief_dict = {}
+for i, label in zip(secondary_beliefs, belief_labels): 
+    temporary_list = []
+    for j in secondary_order: 
+        if isinstance(d[f'{j}_{i}'][0], str) and not is_numeric_string(d[f'{j}_{i}'][0]): 
+            temporary_list.append(d[f'{j}_{i}'][0])
+    if temporary_list:
+        secondary_belief_dict[label] = temporary_list
+
+str_cols = d.select_dtypes(include=['object'])
+str_cols.dtypes
+str_cols['v_717_11']
+str_cols['v_717_12']
+str_cols['v_718_11']
+str_cols['v_718_12']
+
+### coupling to focal ### 
+
 
 ### social contacts ### 
 n_social_max = 8
@@ -55,6 +79,7 @@ for col_name, col_rating, col_focal, node_type in social_labels:
             "name": d[col_name][0],
             "rating": d[col_rating][0],
             "focal": d[col_focal][0]} 
+
 
 ### social --> focal ###
 
