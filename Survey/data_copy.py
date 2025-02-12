@@ -12,8 +12,16 @@ d = pd.read_csv('data/data_project_1044868_2025_02_11.csv', sep=';')
 
 # just start with one person 
 d = d[d['lfdn'] == 22].reset_index()
+
 focal_topic = 'animal products'
 
+### textual data ###
+free_thoughts = d['v_722'][0]
+production_thoughts = d['v_1348'][0]
+impact_thoughts = d['v_1349'][0]
+consumption_thoughts = d['v_723'][0]
+
+### behavioral outcome (focal) ### 
 consumption_coding = {
     1: f'Only eat {focal_topic}',
     2: f'Daily {focal_topic}',
@@ -22,113 +30,67 @@ consumption_coding = {
     5: 'Vegan',
 }
 
-# Initialize master node/edge containers
-nodes = {}
-edges = []
+### focal belief ### 
+consumption_likert = d['v_1269'][0]
 
-# 1) Focal node
-nodes['focal'] = {
-    'type': 'belief',
-    'level': 0,
-    'domain': 'consumption of animal products',
-    'likert': d['v_1269'][0],
-    'likert_code': consumption_coding[d['v_1269'][0]],
-    'brainstorm': d['v_722'][0],
-    'production': d['v_1348'][0],
-    'impact': d['v_1349'][0],
-    'consumption': d['v_723'][0],
-}
-
-# We'll store a dict that maps "con_1" -> "b_1", "pro_1" -> "b_6", etc.
+### central belief nodes ###
 n_beliefs = 10
 
+# labels for positive and negative beliefs
+belief_labels_con = [f'con_{x+1}' for x in range(int(n_beliefs/2))]
+belief_labels_pro = [f'pro_{x+1}' for x in range(int(n_beliefs/2))]
+belief_labels = belief_labels_con + belief_labels_pro 
+
+# keys for positive and negative belief free writing
 belief_free_pro_idx = [f"v_{x+1001}" for x in range(int(n_beliefs/2))]
 belief_free_con_idx = [f"v_{x+1012}" for x in range(int(n_beliefs/2))]
 belief_free_idx = belief_free_pro_idx + belief_free_con_idx
 
+# keys for positive and negative belief ratings (absolute)
 belief_importance_pro_abs_idx = [f"v_{x+1017}" for x in range(int(n_beliefs/2))]
 belief_importance_con_abs_idx = [f"v_{x+1072}" for x in range(int(n_beliefs/2))]
 belief_importance_abs_idx = belief_importance_pro_abs_idx + belief_importance_con_abs_idx
 
+# keys for positive and negative belief ratings (relative)
 belief_importance_pro_rel_idx = [f"v_{x+1022}" for x in range(int(n_beliefs/2))]
 belief_importance_con_rel_idx = [f"v_{x+1077}" for x in range(int(n_beliefs/2))]
 belief_importance_rel_idx = belief_importance_pro_rel_idx + belief_importance_con_rel_idx
 
+# keys for attention rating 
 belief_attention_idx = [f"v_{x+1338}" for x in range(n_beliefs)]
 
-# Now let's build the first-level beliefs properly
-first_level_ids = []  # We'll keep track of which IDs we create, in order.
-
-node_counter = 0
-for i in range(n_beliefs):
-    node_counter += 1
-    # direction is 'con' if i < 5, else 'pro'
-    direction = "con" if i < 5 else "pro"
-    
-    # Check if there's a valid string for the free text
-    free_val = d[belief_free_idx[i]][0]
-    if isinstance(free_val, str) and not is_numeric_string(free_val):
-        b_id = f"b_{node_counter}"   # "b_1", "b_2", etc.
-        
-        # Build the node
-        nodes[b_id] = {
-            "type": "belief",
-            "level": 1,
-            "direction": direction,
-            "belief_text": free_val,
-            "abs_importance": d[belief_importance_abs_idx[i]][0],
-            "rel_importance": d[belief_importance_rel_idx[i]][0],
-            "attention": d[belief_attention_idx[i]][0],
+belief_nodes = {}
+num = 0
+for label, free, abs_rating, rel_rating, attention in zip(
+    belief_labels, 
+    belief_free_idx, 
+    belief_importance_abs_idx, 
+    belief_importance_rel_idx,
+    belief_attention_idx):
+    num += 1
+    # Check if col_val is actually a string (and not one of the sentinel numbers)
+    if isinstance(d[free][0], str) and not is_numeric_string(d[free][0]):
+        belief_nodes[f"b_{num}"] = {
+            "direction": label.split('_')[0],
+            "num": label.split('_')[1],
+            "belief": d[free][0],
+            "abs_importance": d[abs_rating][0],
+            "rel_importance": d[rel_rating][0],
+            "attention": d[attention][0],
         }
-        
-        # Keep track of it (for edges or later reference)
-        first_level_ids.append(b_id)
 
-# Now create edges from the focal node to each first-level belief
-for b_id in first_level_ids:
-    edges.append({
-        "source": "focal",
-        "target": b_id,
-        "type": "focal_to_belief"
-    })
-
-        
 ### secondary beliefs ### 
 secondary_order = ['v_717', 'v_718', 'v_719']
 secondary_beliefs = [f'{x+11}' for x in range(n_beliefs)]
-secondary_labels = [f'b_{x+1}' for x in range(n_beliefs)]
 
 secondary_belief_dict = {}
-for i, label in zip(secondary_beliefs, secondary_labels): 
+for i, label in zip(secondary_beliefs, belief_labels): 
     temporary_list = []
     for j in secondary_order: 
         if isinstance(d[f'{j}_{i}'][0], str) and not is_numeric_string(d[f'{j}_{i}'][0]): 
             temporary_list.append(d[f'{j}_{i}'][0])
     if temporary_list:
         secondary_belief_dict[label] = temporary_list
-
-# add secondary beliefs to nodes
-# add secondary beliefs to edges
-for parent_b_id, sec_belief_list in secondary_belief_dict.items():
-    for i, sec_text in enumerate(sec_belief_list, start=1):
-        # Construct a new node ID like "b_1_1", "b_1_2", etc.
-        new_b_id = f"{parent_b_id}_{i}"
-        
-        # Create the node
-        nodes[new_b_id] = {
-            "type": "belief",
-            "level": 2,               # or "second_level"
-            "belief_text": sec_text,
-            "parent": parent_b_id
-        }
-
-        # Create an edge from the parent (first-level) belief to this new second-level node
-        edges.append({
-            "source": new_b_id,
-            "target": parent_b_id,
-            "type": "personal_belief_connection"
-        })
-
 
 ### social contacts ### 
 n_social_max = 8
@@ -140,146 +102,19 @@ for col_name, col_importance, col_focal, node_type in social_labels:
             "name": d[col_name][0],
             "rating": d[col_importance][0],
             "focal": d[col_focal][0]} 
-        nodes[node_type] = {
-            "type": "social_belief",
-            "level": 0,
-            "value": d[col_focal][0],
-            "social_name": d[col_name][0],
-            "social_rating": d[col_importance][0],
-        }
-        edges.append({
-            "source": node_type,
-            "target": "focal",
-            "type": "social_to_focal",
-        })
 
 ### social --> other ### 
-# must be a smarter way to do this 
-potential_beliefs = [f"b_{x+1}" for x in range(10)]
-actual_beliefs = [x for x in nodes.keys() if nodes[x]['level'] == 1]
-social_belief_idx = [f"v_{x+1358}" for x in range(n_beliefs)]
-indices = [potential_beliefs.index(b) for b in actual_beliefs]
-social_belief_idx = [social_belief_idx[x] for x in indices]
-
 n_social = len(social_nodes)
+social_belief_idx = [f"v_{x+1358}" for x in range(n_social_max)]
 social_contact_idx = [x+1 for x in range(n_social_max)]
-
-# social_beliefs = {}
-social_i = 0
+social_beliefs = {}
 for person in range(n_social): 
-    social_i += 1
     belief_list = []
-    for belief_idx, belief_link in zip(social_belief_idx, actual_beliefs): 
-        social_belief_string = f"{belief_idx}_{person+1}"
-        social_belief = d[social_belief_string][0]
-        nodes[f"s_{person+1}_{social_i}"] = {
-            "type": "social_belief",
-            "level": 1,
-            "belief_text": social_belief,
-            "social_contact": social_nodes[f"s_{person+1}"]['name'],
-            "social_rating": social_nodes[f"s_{person+1}"]['rating'],
-            "focal": social_nodes[f"s_{person+1}"]['focal']
-        }
-        edges.append({
-            "source": f"s_{person}_{social_i}",
-            "target": belief_link,
-            "type": "social_belief_connection"
-        })
-        
-# quick plot # 
-import networkx as nx
-import matplotlib.pyplot as plt
-
-G_personal = nx.Graph()
-
-# Add only personal-belief nodes to G_personal
-for node_id, data in nodes.items():
-    if data.get("type") == "belief":
-        G_personal.add_node(node_id, **data)
-
-# Add edges only if both ends are personal-belief nodes
-for e in edges:
-    src = e["source"]
-    tgt = e["target"]
-    if src in G_personal and tgt in G_personal:
-        G_personal.add_edge(src, tgt, **e)
-        
-pos_personal = nx.spring_layout(G_personal)
-
-plt.figure(figsize=(8, 6))
-nx.draw_networkx(
-    G_personal,
-    pos=pos_personal,
-    with_labels=True,
-    node_size=500,
-    node_color="skyblue"
-)
-plt.axis("off")
-plt.show()
-
-### try to plot social ###
-
-# store attributes
-nx.set_node_attributes(G_personal, pos_personal, "pos")
-
-# build full graph 
-G_full = nx.Graph()
-
-# Add all nodes from the master dictionary
-for node_id, data in nodes.items():
-    G_full.add_node(node_id, **data)
-
-# Add all edges
-for e in edges:
-    G_full.add_edge(e["source"], e["target"], **e)
-
-pos_full = {}
-
-# Copy the known positions for personal nodes from pos_personal
-for node_id in G_personal.nodes:
-    pos_full[node_id] = pos_personal[node_id]
-
-social_nodes_list = []
-for node_id, data in nodes.items():
-    if data.get("type") == "social_belief":
-        social_nodes_list.append(node_id)
-
-
-
-# Different styles for personal vs. social
-personal_nodelist = [n for n, d in G_full.nodes(data=True) if d.get("type") == "belief"]
-social_nodelist = [n for n, d in G_full.nodes(data=True) if d.get("type") in ("social_belief", "social_contact")]
-
-# Draw personal nodes
-nx.draw_networkx_nodes(
-    G_full, pos_full,
-    nodelist=personal_nodelist,
-    node_size=600,
-    node_color="lightblue",
-    label="Personal"
-)
-
-# Draw social nodes
-nx.draw_networkx_nodes(
-    G_full, pos_full,
-    nodelist=social_nodelist,
-    node_size=300,
-    node_color="pink",
-    label="Social"
-)
-
-# Draw edges
-nx.draw_networkx_edges(G_full, pos_full, width=1.0)
-
-# Draw labels
-nx.draw_networkx_labels(G_full, pos_full, font_size=8)
-
-plt.axis("off")
-plt.title("Full Network: Personal + Social")
-plt.legend()
-plt.show()
-
-
+    for belief in social_belief_idx: 
+        social_belief_string = f"{belief}_{person+1}"
+        if d[social_belief_string][0] > 0: 
+            belief_list.append(d[social_belief_string][0])
+        social_beliefs[f"s_{person+1}"] = belief_list
 
 
 ### mapping things ### 
