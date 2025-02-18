@@ -55,15 +55,15 @@ edges = []
 
 # 1) Focal node
 coupling_focal = d['v_1460'][0]
-nodes['focal'] = {
-    'type': 'belief',
+nodes['b_focal'] = {
+    'type': 'personal_belief',
     'level': 0,
+    'value': coupling_focal,
     'direction': coupling_codes[coupling_focal],
     'direction_num': likert_scale_7.get(coupling_focal),
-    'domain': 'consumption of animal products',
-    'likert': coupling_focal,
-    'abs_importance': d['v_1615'][0],
-    'belief_text': d['v_722'][0],
+    #'likert': coupling_focal,
+    'importance': d['v_1615'][0],
+    'label': d['v_722'][0],
 }
 
 n_beliefs = 10
@@ -100,18 +100,19 @@ for i in range(n_beliefs):
         
         # add node
         nodes[b_id] = {
-            "type": "belief",
+            "type": "personal_belief",
             "level": 1,
+            "value": 1 if direction == 'pro' else -1, 
             "direction": direction,
             "direction_num": 1 if direction == "pro" else -1,
-            "belief_text": free_val,
-            "abs_importance": d[belief_val_idx[i]][0],
+            "label": free_val,
+            "importance": d[belief_val_idx[i]][0],
         }
         
         # add edge
         edges.append({
             "source": b_id,
-            "target": "focal",
+            "target": "b_focal",
             "direction": direction,
             "direction_num": 1 if direction == "pro" else -1,
             "type": "belief_to_focal",
@@ -154,74 +155,68 @@ for n_source in range(n_beliefs):
             })
 
 # save data
-with open(f'data/nodes_{participant_id}.json', 'w') as f:
+with open(f'data/personal_nodes_{participant_id}.json', 'w') as f:
     f.write(json.dumps(nodes, cls=NumpyEncoder))
 
 df_edges = pd.DataFrame(edges)
-df_edges.to_csv(f'data/edges_{participant_id}.csv', index=False)
+df_edges.to_csv(f'data/personal_edges_{participant_id}.csv', index=False)
 
 # social overall here # 
 
 ### social contacts ### 
 n_social_max = 3
-social_labels = [(f"v_{x+901}", f"v_{x+927}", f"v_{x+1285}", f"s_{x+1}") for x in range(n_social_max)]
+social_labels = [(f"v_{x+901}", f"v_{x+927}", f"v_{x+1674}", f"s_{x}") for x in range(n_social_max)]
 social_nodes = {}
+social_edges = []
 for col_name, col_importance, col_focal, node_type in social_labels: 
     if isinstance(d[col_name][0], str) and not is_numeric_string(d[col_name][0]): 
         social_nodes[node_type] = {
-            "name": d[col_name][0],
-            "rating": d[col_importance][0],
-            "focal": d[col_focal][0]} 
-        nodes[node_type] = {
             "type": "social_belief",
             "level": 0,
+            "label": d[col_name][0],
             "value": d[col_focal][0],
-            "social_name": d[col_name][0],
-            "abs_importance": d[col_importance][0],
-        }
-        edges.append({
+            "importance": d[col_importance][0]
+            }
+        social_edges.append({
             "source": node_type,
-            "target": "focal",
+            "target": "b_focal",
             "type": "social_to_focal",
+            "coupling": d[col_focal][0]
         })
 
 ### social --> other ### 
-# must be a smarter way to do this 
-potential_beliefs = [f"b_{x+1}" for x in range(10)]
-actual_beliefs = [x for x in nodes.keys() if nodes[x]['level'] == 1]
-social_belief_idx = [f"v_{x+1358}" for x in range(n_beliefs)]
-indices = [potential_beliefs.index(b) for b in actual_beliefs]
-social_belief_idx = [social_belief_idx[x] for x in indices]
-
-n_social = len(social_nodes)
-social_contact_idx = [x+1 for x in range(n_social_max)]
-
-# social_beliefs = {}
-#social_i = 0
-for person in range(n_social): 
-    social_i = 0
+# first do couplings to CON
+social_con = [f'v_{x+1684}' for x in range(5)]
+social_pro = [f'v_{x+1694}' for x in range(5)]
+social_beliefs = social_con + social_pro 
+for person in range(n_social_max): 
     belief_list = []
-    for belief_idx, belief_link in zip(social_belief_idx, actual_beliefs): 
-        social_i += 1
+    for num, belief_idx in enumerate(social_beliefs): 
         social_belief_string = f"{belief_idx}_{person+1}"
         social_belief = d[social_belief_string][0]
-        nodes[f"s_{person+1}_{social_i}"] = {
-            "type": "social_belief",
-            "level": 1,
-            "belief_text": social_belief,
-            "social_contact": social_nodes[f"s_{person+1}"]['name'],
-            "abs_importance": social_nodes[f"s_{person+1}"]['rating'],
-            "focal": social_nodes[f"s_{person+1}"]['focal']
-        }
-        edges.append({
-            "source": f"s_{person+1}_{social_i}",
-            "target": belief_link,
-            "type": "social_belief_connection"
-        })
+        if social_belief >= 0:
+            social_nodes[f"s_{person}_{num}"] = {
+                "type": "social_belief",
+                "level": 1,
+                "value": social_belief,
+                "label": social_nodes[f"s_{person}"]['label'],
+                "importance": social_nodes[f"s_{person}"]['importance'],
+                #"focal": social_nodes[f"s_{person}"]['focal']
+            }
+            social_edges.append({
+                "source": f"s_{person}_{num}",
+                "target": f"b_{fix_mapping[num]}",
+                "type": "social_belief_connection",
+                "coupling": social_belief,
+            })
 
 # save data
-with open('data/nodes.json', 'w') as f:
-    f.write(json.dumps(nodes, cls=NumpyEncoder))
+with open(f'data/social_nodes_{participant_id}.json', 'w') as f:
+    f.write(json.dumps(social_nodes, cls=NumpyEncoder))
 
-df_edges = pd.DataFrame(edges)
-df_edges.to_csv('data/edges.csv', index=False)
+social_edges = pd.DataFrame(social_edges)
+social_edges.to_csv(f'data/social_edges_{participant_id}.csv', index=False)
+
+# test data types 
+dfn = pd.DataFrame(nodes)
+dfns = pd.DataFrame(social_nodes)

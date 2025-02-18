@@ -10,19 +10,19 @@ from matplotlib.patches import Patch
 participant_id = 17
 
 # load nodes 
-with open(f'data/nodes_{participant_id}.json') as f:
-        nodes = json.loads(f.read())
+with open(f'data/personal_nodes_{participant_id}.json') as f:
+        personal_nodes = json.loads(f.read())
 
 ### fix edges ###
-df_edges = pd.read_csv(f'data/edges_{participant_id}.csv')
+personal_edges = pd.read_csv(f'data/personal_edges_{participant_id}.csv')
 
 # first drop neutral edges
-df_edges = df_edges[df_edges['direction'] != 'neut']
+personal_edges = personal_edges[personal_edges['direction'] != 'neut']
 
 # first fix the inner layer
-focal_edges = df_edges[df_edges['target'] == 'focal']
-focal_edges['coupling_direction'] = focal_edges['coupling'] * focal_edges['direction'].apply(lambda x: 1 if x == 'pro' else -1)
-focal_edges['coupling_scaled'] = focal_edges['coupling_direction'] * 0.01
+p_edges_focal = personal_edges[personal_edges['target'] == 'focal']
+p_edges_focal['coupling_direction'] = p_edges_focal['coupling'] * p_edges_focal['direction'].apply(lambda x: 1 if x == 'pro' else -1)
+p_edges_focal['coupling_scaled'] = p_edges_focal['coupling_direction'] * 0.01
 
 # now fix outer layer 
 def likert_conversion(n): 
@@ -33,24 +33,27 @@ def likert_conversion(n):
     return scale_dict
 likert_scale_7 = likert_conversion(7)
 
-belief_edges = df_edges[df_edges['target'] != 'focal']
-belief_edges['coupling_scaled'] = belief_edges['coupling'].map(likert_scale_7)
+p_edges_secondary = personal_edges[personal_edges['target'] != 'focal']
+p_edges_secondary['coupling_scaled'] = p_edges_secondary['coupling'].map(likert_scale_7)
 
 # basically our sanity check here # 
 # this should be 1 or very close to 1. 
-belief_edges[belief_edges['source'] == belief_edges['target']]['coupling_scaled'].mean()
+p_edges_secondary[p_edges_secondary['source'] == p_edges_secondary['target']]['coupling_scaled'].mean()
 
 # okay now collect the edges
-belief_edges = belief_edges[['source', 'target', 'coupling_scaled']]
-focal_edges = focal_edges[['source', 'target', 'coupling_scaled']]
-edges = pd.concat([belief_edges, focal_edges])
+p_edges_secondary = p_edges_secondary[['source', 'target', 'coupling_scaled']]
+p_edges_focal = p_edges_focal[['source', 'target', 'coupling_scaled']]
+p_edges = pd.concat([p_edges_secondary, p_edges_focal])
+
+# threshold edges ? # 
+# ...
 
 # remove self-loops
-edges = edges[edges['source'] != edges['target']]
+p_edges = p_edges[p_edges['source'] != p_edges['target']]
 
-# initialize graph from edgeslist 
+# initialize graph from edgeslist
 G = nx.from_pandas_edgelist(
-    edges, 
+    p_edges, 
     'source', 
     'target', 
     edge_attr=True,
@@ -58,7 +61,7 @@ G = nx.from_pandas_edgelist(
 )
 
 # add node information 
-for node_id, data in nodes.items():
+for node_id, data in personal_nodes.items():
     G.add_node(node_id, **data)
 
 # collect node information
@@ -92,10 +95,39 @@ nx.draw_networkx_edges(
 plt.axis("off")
 plt.show();
 
+# curate social # 
+with open(f'data/social_nodes_{participant_id}.json') as f:
+        social_nodes = json.loads(f.read())
+
+### fix edges ###
+social_edges = pd.read_csv(f'data/social_edges_{participant_id}.csv')
+
+# ahh this might not completely work # 
+# actually cannot really remove null edges here
+# because they are really the ones with pressure
+# like if you said something is an important reason for
+# and they thing it is not a reason at all... 
+social_edges['coupling_scaled'] = social_edges['coupling'].map(likert_scale_7)
+s_edges = social_edges[['source', 'target', 'coupling_scaled']]
+
+# collect combined edges 
+all_edges = pd.concat([p_edges, s_edges])
+
+# collect combined nodes 
+df_p_nodes = pd.DataFrame(personal_nodes)
+df_p_nodes
 
 
 ### try to plot social ###
-G_master = nx.Graph()
+G_combined = nx.from_pandas_edgelist(
+    all_edges, 
+    'source', 
+    'target', 
+    edge_attr=True,
+    create_using=nx.DiGraph()
+)
+
+
 
 for node_id, data in nodes.items():
     G_master.add_node(node_id, **data)
