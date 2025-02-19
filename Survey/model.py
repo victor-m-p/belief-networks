@@ -1,14 +1,11 @@
-
-
 import pandas as pd 
 import json
 
-# load nodes 
-with open('data/nodes.json') as f:
-        nodes = json.loads(f.read())
+# load data
+participant_id = 18
+with open(f'data/personal_nodes_{participant_id}.json') as f:
+        personal_nodes = json.loads(f.read())
 
-# load edges
-df_edges = pd.read_csv('data/edges.csv')
 
 ''' personal beliefs
 H_pers = -sum h_i b_i -sum J_ij b_i b_j
@@ -33,6 +30,10 @@ attached to the node like:
 
 H_pers = -sum h_i ab_i -sum J_ij a_bi a_bj
 '''
+
+
+
+hi = 1 # we do not know right now
 
 H_pers = 0 
 

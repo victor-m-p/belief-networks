@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
 # participant id 
-participant_id = 16
+participant_id = 18
 
 # load nodes 
 with open(f'data/personal_nodes_{participant_id}.json') as f:
