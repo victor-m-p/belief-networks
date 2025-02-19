@@ -1,57 +1,220 @@
 import pandas as pd 
 import json
+import numpy as np 
+
+def calc_H_pers(metadict): 
+        personal_nodes = metadict['personal_nodes']
+        personal_edges = metadict['personal_edges']
+
+        # first take out the edges
+        personal_edges_df = pd.DataFrame(personal_edges)
+        personal_edges_df = personal_edges_df[personal_edges_df['source'] != personal_edges_df['target']]
+
+        # 1. Pre-aggregate edges by taking the mean strength for each pair (A,B)
+        p_edges_agg = (
+            personal_edges_df
+            .groupby(['source', 'target'], as_index=False)
+            .agg({'coupling_scaled': 'mean'})
+        )
+
+        ### do the personal dissonance ###
+        H_pers = 0
+        for num, row in p_edges_agg.iterrows():
+                # extract params 
+                source = row['source']
+                target = row['target']
+                wij = row['coupling_scaled']
+
+                xi = personal_nodes[source]['importance_scaled'] 
+                bi = personal_nodes[source]['value_num']
+                xj = personal_nodes[target]['importance_scaled']
+                bj = personal_nodes[target]['value_num']
+
+                # sum 
+                H_pers += wij * xi * bi * xj * bj
+
+        # then it should be negative 
+        H_pers = -H_pers
+
+        # then apply the attention parameter
+        attention_pers = metadict['metavar']['attention_pers_num']
+        H_pers_att = H_pers * attention_pers
+
+        return H_pers, H_pers_att
+
+def calc_H_soc(metadict): 
+        social_edges = metadict['social_edges']
+        social_nodes = metadict['social_nodes']
+        personal_nodes = metadict['personal_nodes']
+        
+        H_soc = 0
+        for list_ele in social_edges: 
+
+                source = list_ele['source']
+                target = list_ele['target']
+                pik = list_ele['coupling_scaled']
+
+                bi = personal_nodes[target]['value_num']
+                sik = social_nodes[source]['value_num'] 
+
+                H_soc += pik * bi * sik
+
+        # negative 
+        H_soc = -H_soc
+
+        # divide by 3 because n=3 contacts
+        # this I am not sure about.
+        H_soc = H_soc / 3
+
+        # then apply attention parameter
+        H_soc_att = H_soc * metadict['metavar']['attention_soc_num']
+
+        return H_soc, H_soc_att
 
 # load data
-participant_id = 18
-with open(f'data/personal_nodes_{participant_id}.json') as f:
-        personal_nodes = json.loads(f.read())
+participant_ids = [16, 17, 18, 19]
 
+def load_data(participant_id): 
+        
+        with open(f'data/metadict_{participant_id}.json') as f:
+                metadict = json.loads(f.read())
 
-''' personal beliefs
-H_pers = -sum h_i b_i -sum J_ij b_i b_j
+        return metadict
 
-question is: 
-1. what is h_i in our model? 
-2. what is J_ij in our model? 
+likert_mapping = {
+        1: -1.0,
+        2: -0.6666666666666667,
+        3: -0.33333333333333337,
+        4: 0.0,
+        5: 0.33333333333333326,
+        6: 0.6666666666666667,
+        7: 1.0
+        }
 
-like we ask how important each belief is. 
-but I think that it is a little difficult
-whether this gives us 
+results = []
+for p_id in participant_ids: 
+        metadict = load_data(p_id)
+        key_true = metadict['personal_nodes']['b_focal']['value']
+        for key, val in likert_mapping.items(): 
+                metadict_copy = metadict.copy()
+                metadict_copy['personal_nodes']['b_focal']['value_num'] = val
+                H_pers, H_pers_att = calc_H_pers(metadict_copy)
+                H_soc, H_soc_att = calc_H_soc(metadict_copy)
+                D_total = H_pers + H_soc
+                D_total_att = H_pers_att + H_soc_att
+                results.append((p_id, key_true, key, val, H_pers, H_pers_att, H_soc, H_soc_att, D_total, D_total_att))
 
-a) the importance of the belief in general
-b) the strength of coupling to focal 
+df_results = pd.DataFrame(
+        results, 
+        columns=['participant_id', 
+                 'key_true', 
+                 'key', 
+                 'value_num', 
+                 'H_pers', 
+                 'H_pers_att', 
+                 'H_soc', 
+                 'H_soc_att', 
+                 'D_total', 
+                 'D_total_att']
+        )
 
-Seems equally plausible to interpret in either way.
-I am not sure that we are plausibly separating these two. 
+# plot the curves # 
+# also work back what is actually high and low dissonance
+# is there really anything constraining this to be linear and boring?
+import seaborn as sns 
+import matplotlib.pyplot as plt
 
-also we have attention. 
-attention should probably be [0, 1] and
-attached to the node like: 
+sns.lineplot(
+        data=df_results, 
+        x='value_num', 
+        y='D_total', 
+        hue='participant_id'
+        ) 
 
-H_pers = -sum h_i ab_i -sum J_ij a_bi a_bj
+sns.lineplot(
+        data=df_results, 
+        x='value_num', 
+        y='D_total_att', 
+        hue='participant_id'
+        )
+
+'''
+Basically, prediction for everyone is: 
+1. They *should* eat less meat.
+2. There must be an external field. 
+-- e.g., price, convenience, habit, etc. 
+-- that we are currently not capturing.
+3. Could we have gotten something else?
+-- yes the social component allows this.
+-- i.e., if all friends are really mixed.
+
+Outstanding questions: 
+1. how do we scale things? 
+-- e.g., social vs. personal.
+-- we have some limitations (e.g., 3 contacts, 10 beliefs).
 '''
 
+# look at CMV and felt dissonance # 
 
 
-hi = 1 # we do not know right now
+# do the calculation only for the focal
+# i.e., friends + beliefs towards this 
 
-H_pers = 0 
+personal_nodes = metadict['personal_nodes']
+personal_edges = metadict['personal_edges']
 
-''' social beliefs
-H_soc = -sum p_ik b_i s_ik
+# first take out the edges
+personal_edges_df = pd.DataFrame(personal_edges)
+personal_edges_df = personal_edges_df[personal_edges_df['source'] != personal_edges_df['target']]
 
-Question is whether we can approximate p_ik 
-by just the overall importance of the person (k).
-I think we can, so we have this, basically. 
+# 1. Pre-aggregate edges by taking the mean strength for each pair (A,B)
+p_edges_agg = (
+        personal_edges_df
+        .groupby(['source', 'target'], as_index=False)
+        .agg({'coupling_scaled': 'mean'})
+)
+personal_edges_df[personal_edges_df['target']=='b_focal']
 
-This is again really hard for us. 
-We do not actually have what we need here.
-I have basically assumed that friends *must* agree with you.
-This is not a good assumption.
+p_edges_agg = p_edges_agg[(p_edges_agg['source'] == 'b_focal') | (p_edges_agg['target'] == 'b_focal')]
+p_edges_agg
 
-'''
 
-# gather all 
+def calc_H_pers(metadict): 
+        personal_nodes = metadict['personal_nodes']
+        personal_edges = metadict['personal_edges']
 
-H_soc = 0
-nodes['s_1_1']
+        # first take out the edges
+        personal_edges_df = pd.DataFrame(personal_edges)
+        personal_edges_df = personal_edges_df[personal_edges_df['source'] != personal_edges_df['target']]
+
+        # 1. Pre-aggregate edges by taking the mean strength for each pair (A,B)
+        p_edges_agg = (
+            personal_edges_df
+            .groupby(['source', 'target'], as_index=False)
+            .agg({'coupling_scaled': 'mean'})
+        )
+
+        ### do the personal dissonance ###
+        H_pers = 0
+        for num, row in p_edges_agg.iterrows():
+                # extract params 
+                source = row['source']
+                target = row['target']
+                wij = row['coupling_scaled']
+
+                xi = personal_nodes[source]['importance_scaled'] 
+                bi = personal_nodes[source]['value_num']
+                xj = personal_nodes[target]['importance_scaled']
+                bj = personal_nodes[target]['value_num']
+
+                # sum 
+                H_pers += wij * xi * bi * xj * bj
+
+        # then it should be negative 
+        H_pers = -H_pers
+
+        # then apply the attention parameter
+        attention_pers = metadict['metavar']['attention_pers_num']
+        H_pers_att = H_pers * attention_pers
+
+        return H_pers, H_pers_att

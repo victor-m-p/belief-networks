@@ -109,7 +109,7 @@ for i in range(n_beliefs):
             "level": 1,
             "value": 1 if direction == 'pro' else -1, 
             "direction": direction,
-            "value_num": 1, # all beliefs are positive
+            "value_num": 1 if direction == "pro" else -1,
             "label": free_val,
             "importance": importance,
             "importance_scaled": importance * 0.01,
@@ -117,15 +117,14 @@ for i in range(n_beliefs):
         
         # add edge
         coupling = d[belief_coupling_idx[i]][0]
-        value_num = 1 if direction == "pro" else -1
         personal_edges.append({
             "source": b_id,
             "target": "b_focal",
             "direction": direction,
-            "value_num": value_num,
+            "value_num": 1 if direction == "pro" else -1,
             "type": "belief_coupling",
-            "coupling": coupling * value_num, # flip importance given direction
-            "coupling_scaled": coupling * value_num * 0.01, # same
+            "coupling": coupling,
+            "coupling_scaled": coupling * 0.01,
         })
         
     node_counter += 1
@@ -154,16 +153,24 @@ for n_source in range(n_beliefs):
             coupling_value = d[coupling_column][0]
             source_raw = fix_mapping[n_source]
             target_raw = fix_mapping[n_target]
-            value_num = 1 if coupling_codes[coupling_value] == "pro" else -1
             personal_edges.append({
                 "source": f"b_{source_raw}", 
                 "target": f"b_{target_raw}", 
                 "direction": coupling_codes[coupling_value],
-                "value_num": value_num,
+                "value_num": 1 if coupling_codes[coupling_value] == "pro" else -1,
                 "type": "belief_coupling",
-                "coupling": coupling_value * value_num,
-                "coupling_scaled": likert_scale_7[coupling_value] * value_num,
+                "coupling": coupling_value,
+                "coupling_scaled": likert_scale_7[coupling_value]
             })
+
+# save data
+with open(f'data/personal_nodes_{participant_id}.json', 'w') as f:
+    f.write(json.dumps(personal_nodes, cls=NumpyEncoder))
+
+personal_edges_df = pd.DataFrame(personal_edges)
+personal_edges_df.to_csv(f'data/personal_edges_{participant_id}.csv', index=False)
+
+# social overall here # 
 
 ### social contacts ### 
 n_social_max = 3
@@ -220,6 +227,13 @@ for person in range(n_social_max):
                 "coupling": importance, 
                 "coupling_scaled": importance * 0.01
             })
+
+# save data
+with open(f'data/social_nodes_{participant_id}.json', 'w') as f:
+    f.write(json.dumps(social_nodes, cls=NumpyEncoder))
+
+social_edges_df = pd.DataFrame(social_edges)
+social_edges_df.to_csv(f'data/social_edges_{participant_id}.csv', index=False)
 
 ### curate other items ###
 # CMV 
@@ -524,5 +538,5 @@ meta_dict = {
 }
 
 # save meta_dict
-with open(f'data/metadict_test_{participant_id}.json', 'w') as f:
+with open(f'data/metadict_{participant_id}.json', 'w') as f:
     f.write(json.dumps(meta_dict, cls=NumpyEncoder))
