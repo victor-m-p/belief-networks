@@ -51,7 +51,7 @@ def is_numeric_string(s: str) -> bool:
         return False
 
 # data [16, 17, 18, 19]
-participant_id = 17
+participant_id = 19
 d = pd.read_csv('data/data_project_1046442_2025_02_19.csv', sep=';')
 d = d[d['lfdn'] == participant_id].reset_index()
 

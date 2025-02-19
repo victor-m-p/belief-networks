@@ -154,8 +154,60 @@ Outstanding questions:
 -- we have some limitations (e.g., 3 contacts, 10 beliefs).
 '''
 
-# look at CMV and felt dissonance # 
+# although actually I might have done this wrong
+# try with the other approach 
+participant_ids = [16, 17, 18, 19]
 
+def load_data_2(participant_id): 
+        
+        with open(f'data/metadict_test_{participant_id}.json') as f:
+                metadict = json.loads(f.read())
+
+        return metadict
+
+results_2 = []
+for p_id in participant_ids:
+        metadict = load_data_2(p_id)
+        key_true = metadict['personal_nodes']['b_focal']['value']
+        for key, val in likert_mapping.items(): 
+                metadict_copy = metadict.copy()
+                metadict_copy['personal_nodes']['b_focal']['value_num'] = val
+                H_pers, H_pers_att = calc_H_pers(metadict_copy)
+                H_soc, H_soc_att = calc_H_soc(metadict_copy)
+                D_total = H_pers + H_soc
+                D_total_att = H_pers_att + H_soc_att
+                results_2.append((p_id, key_true, key, val, H_pers, H_pers_att, H_soc, H_soc_att, D_total, D_total_att))
+
+df_2 = pd.DataFrame(
+        results_2,
+        columns=['participant_id',
+                        'key_true',
+                        'key',
+                        'value_num',
+                        'H_pers',
+                        'H_pers_att',
+                        'H_soc',
+                        'H_soc_att',
+                        'D_total',
+                        'D_total_att']
+        )
+
+# quick plot 
+sns.lineplot(
+        data=df_2,
+        x='value_num',
+        y='D_total',
+        hue='participant_id'
+        )
+
+sns.lineplot(
+        data=df_2,
+        x='value_num',
+        y='D_total_att',
+        hue='participant_id'
+        )
+
+# look at CMV and felt dissonance # 
 
 # do the calculation only for the focal
 # i.e., friends + beliefs towards this 

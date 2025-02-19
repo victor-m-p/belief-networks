@@ -22,7 +22,7 @@ personal_edges = personal_edges[personal_edges['direction'] != 'neut']
 
 # remove self-loops
 p_edges = personal_edges[personal_edges['source'] != personal_edges['target']]
-
+p_edges
 # initialize graph from edgeslist
 G = nx.from_pandas_edgelist(
     p_edges, 
@@ -44,7 +44,6 @@ pos = nx.spring_layout(G, seed=4, weight='coupling_scaled')
 
 # collect edge information
 edge_coupling = nx.get_edge_attributes(G, 'coupling_scaled')
-
 nx.draw_networkx_nodes(
     G, 
     pos, 
@@ -62,6 +61,7 @@ nx.draw_networkx_edges(
     edge_cmap=plt.cm.coolwarm,
     edge_vmin=-1,
     edge_vmax=1,
+    width=[abs(v)*2 for v in edge_coupling.values()],
     arrowstyle='->',
     arrowsize=12   
 )
