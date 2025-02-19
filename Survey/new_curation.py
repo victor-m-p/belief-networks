@@ -45,7 +45,7 @@ def is_numeric_string(s: str) -> bool:
 d = pd.read_csv('data/data_project_1046442_2025_02_18.csv', sep=';')
 
 # just start with one person 
-participant_id = 17
+participant_id = 18
 d = d[d['lfdn'] == participant_id].reset_index()
 focal_topic = 'animal products'
 
@@ -60,9 +60,10 @@ nodes['b_focal'] = {
     'level': 0,
     'value': coupling_focal,
     'direction': coupling_codes[coupling_focal],
-    'direction_num': likert_scale_7.get(coupling_focal),
+    'value_num': likert_scale_7.get(coupling_focal),
     #'likert': coupling_focal,
     'importance': d['v_1615'][0],
+    'importance_scaled': d['v_1615'][0] * 0.01,
     'label': d['v_722'][0],
 }
 
@@ -104,9 +105,10 @@ for i in range(n_beliefs):
             "level": 1,
             "value": 1 if direction == 'pro' else -1, 
             "direction": direction,
-            "direction_num": 1 if direction == "pro" else -1,
+            "value_num": 1 if direction == "pro" else -1,
             "label": free_val,
             "importance": d[belief_val_idx[i]][0],
+            "importance_scaled": d[belief_val_idx[i]][0] * 0.01,
         }
         
         # add edge
@@ -114,8 +116,8 @@ for i in range(n_beliefs):
             "source": b_id,
             "target": "b_focal",
             "direction": direction,
-            "direction_num": 1 if direction == "pro" else -1,
-            "type": "belief_to_focal",
+            "value_num": 1 if direction == "pro" else -1,
+            "type": "belief_coupling",
             "coupling": d[belief_coupling_idx[i]][0]
         })
         
@@ -149,8 +151,8 @@ for n_source in range(n_beliefs):
                 "source": f"b_{source_raw}", 
                 "target": f"b_{target_raw}", 
                 "direction": coupling_codes[coupling_value],
-                "direction_num": 1 if coupling_codes[coupling_value] == "pro" else -1,
-                "type": "belief_to_belief",
+                "value_num": 1 if coupling_codes[coupling_value] == "pro" else -1,
+                "type": "belief_coupling",
                 "coupling": coupling_value,
             })
 
@@ -170,18 +172,21 @@ social_nodes = {}
 social_edges = []
 for col_name, col_importance, col_focal, node_type in social_labels: 
     if isinstance(d[col_name][0], str) and not is_numeric_string(d[col_name][0]): 
+        value = d[col_focal][0]
         social_nodes[node_type] = {
             "type": "social_belief",
             "level": 0,
             "label": d[col_name][0],
-            "value": d[col_focal][0],
-            "importance": d[col_importance][0]
+            "value": value,
+            "value_num": likert_scale_7[value],
+            "importance": d[col_importance][0],
+            "importance_scaled": d[col_importance][0] * 0.01
             }
         social_edges.append({
             "source": node_type,
             "target": "b_focal",
-            "type": "social_to_focal",
-            "coupling": d[col_focal][0]
+            "type": "social_coupling",
+            "coupling": d[col_importance][0], #d[col_focal][0]
         })
 
 ### social --> other ### 
@@ -199,15 +204,17 @@ for person in range(n_social_max):
                 "type": "social_belief",
                 "level": 1,
                 "value": social_belief,
+                "value_num": likert_scale_7[social_belief],
                 "label": social_nodes[f"s_{person}"]['label'],
                 "importance": social_nodes[f"s_{person}"]['importance'],
+                "importance_scaled": social_nodes[f"s_{person}"]["importance_scaled"],
                 #"focal": social_nodes[f"s_{person}"]['focal']
             }
             social_edges.append({
                 "source": f"s_{person}_{num}",
                 "target": f"b_{fix_mapping[num]}",
-                "type": "social_belief_connection",
-                "coupling": social_belief,
+                "type": "social_coupling",
+                "coupling": social_nodes[f"s_{person}"]["importance"]
             })
 
 # save data
