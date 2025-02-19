@@ -145,13 +145,18 @@ Basically, prediction for everyone is:
 -- e.g., price, convenience, habit, etc. 
 -- that we are currently not capturing.
 3. Could we have gotten something else?
--- yes the social component allows this.
+-- yes the social component allows this, right?
 -- i.e., if all friends are really mixed.
+-- or maybe it does not actually...
 
 Outstanding questions: 
 1. how do we scale things? 
 -- e.g., social vs. personal.
 -- we have some limitations (e.g., 3 contacts, 10 beliefs).
+2. how do we get non-linearity? 
+-- is the model just garbage? 
+
+Do a manual calculation of this. 
 '''
 
 # although actually I might have done this wrong
@@ -211,7 +216,6 @@ sns.lineplot(
 
 # do the calculation only for the focal
 # i.e., friends + beliefs towards this 
-
 personal_nodes = metadict['personal_nodes']
 personal_edges = metadict['personal_edges']
 

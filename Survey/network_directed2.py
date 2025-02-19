@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
 # participant id 
-participant_id = 17
+participant_id = 16
 
 # load nodes 
 with open(f'data/metadict_test_{participant_id}.json') as f:
@@ -22,7 +22,7 @@ personal_edges = personal_edges[personal_edges['direction'] != 'neut']
 
 # remove self-loops
 p_edges = personal_edges[personal_edges['source'] != personal_edges['target']]
-p_edges
+
 # initialize graph from edgeslist
 G = nx.from_pandas_edgelist(
     p_edges, 
@@ -78,17 +78,13 @@ plt.legend(
 )
 plt.axis("off")
 plt.tight_layout()
-plt.savefig(f"fig/personal_{participant_id}_directed.png")
+plt.savefig(f"fig/personal_test_{participant_id}_directed.png")
 
 #### plot social network ####
-
-# curate social # 
-with open(f'data/social_nodes_{participant_id}.json') as f:
-        social_nodes = json.loads(f.read())
-
-### fix edges ###
-social_edges = pd.read_csv(f'data/social_edges_{participant_id}.csv')
-social_edges['coupling_scaled'] = social_edges['coupling'] * 0.01
+social_nodes = metadict['social_nodes']
+social_edges = metadict['social_edges']
+social_edges = pd.DataFrame(social_edges)
+p_edges = p_edges[['source', 'target', 'coupling_scaled', 'type']]
 s_edges = social_edges[['source', 'target', 'coupling_scaled', 'type']]
 
 # collect combined edges 
@@ -191,4 +187,4 @@ plt.legend(
 )
 plt.axis("off")
 plt.tight_layout()
-plt.savefig(f'fig/complete_{participant_id}_directed.png')
+plt.savefig(f'fig/complete_test_{participant_id}_directed.png')

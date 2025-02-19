@@ -202,12 +202,15 @@ for person in range(n_social_max):
         social_belief_string = f"{belief_idx}_{person+1}"
         social_belief = d[social_belief_string][0]
         if social_belief >= 0:
+            # quick hack but do better way 
+            multiplier = 1 if num >= 5 else -1 
+            
             importance = social_nodes[f"s_{person}"]["importance"]
             social_nodes[f"s_{person}_{num}"] = {
                 "type": "social_belief",
                 "level": 1,
                 "value": social_belief,
-                "value_num": likert_scale_7[social_belief],
+                "value_num": likert_scale_7[social_belief] * multiplier,
                 "label": social_nodes[f"s_{person}"]['label'],
                 "importance": importance,
                 "importance_scaled": importance * 0.01,
