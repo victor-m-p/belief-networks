@@ -27,7 +27,8 @@ def likert_conversion_0_to_1(n):
         val = (i - 1) / (n - 1) if n > 1 else 0
         scale_dict[i] = val
     return scale_dict
-likert_scale_7_0_to_1 = likert_conversion_0_to_1(7)
+likert_forwards = likert_conversion_0_to_1(7)
+likert_backwards = {k: 1.0 - v for k, v in likert_forwards.items()}
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -50,9 +51,9 @@ def is_numeric_string(s: str) -> bool:
     except ValueError:
         return False
 
-# data [16, 17, 18, 19]
+# data [16, 17, 18, 19, 22]
 participant_id = 19
-d = pd.read_csv('data/data_project_1046442_2025_02_19.csv', sep=';')
+d = pd.read_csv('data/data_project_1046442_2025_02_20.csv', sep=';')
 d = d[d['lfdn'] == participant_id].reset_index()
 
 # Initialize personal node/edge containers
@@ -161,8 +162,8 @@ for n_source in range(n_beliefs):
                 "direction": coupling_codes[coupling_value],
                 "value_num": value_num,
                 "type": "belief_coupling",
-                "coupling": coupling_value * value_num,
-                "coupling_scaled": likert_scale_7[coupling_value] * value_num,
+                "coupling": coupling_value,
+                "coupling_scaled": likert_scale_7[coupling_value],
             })
 
 ### social contacts ### 
@@ -269,17 +270,17 @@ social_perception['consumption_USA'] = {
 # meta-variables (attention, dissonance, etc.)
 metavar = {
     'attention_pers': d['v_1613'][0],
-    'attention_pers_num': likert_scale_7_0_to_1[d['v_1613'][0]],
+    'attention_pers_num': likert_forwards[d['v_1613'][0]],
     'attention_soc': d['v_1614'][0],
-    'attention_soc_num': likert_scale_7_0_to_1[d['v_1614'][0]],
+    'attention_soc_num': likert_forwards[d['v_1614'][0]],
     'dissonance_pers': d['down_con'][0],
-    'dissonance_pers_num': likert_scale_7_0_to_1[d['down_con'][0]],
+    'dissonance_pers_num': likert_backwards[d['down_con'][0]],
     'dissonance_soc': d['down_ind'][0],
-    'dissonance_soc_num': likert_scale_7_0_to_1[d['down_ind'][0]],
+    'dissonance_soc_num': likert_backwards[d['down_ind'][0]],
     'temp_distracted': d['temp_dis'][0],
-    'temp_distracted_num': likert_scale_7_0_to_1[d['temp_dis'][0]],
+    'temp_distracted_num': likert_forwards[d['temp_dis'][0]],
     'temp_attention': d['temp_dbt'][0],
-    'temp_attention_num': likert_scale_7_0_to_1[d['temp_dbt'][0]],
+    'temp_attention_num': likert_forwards[d['temp_dbt'][0]],
 }
 
 # demographics
