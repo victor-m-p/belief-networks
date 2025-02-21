@@ -1,9 +1,11 @@
 AUTNES
+Survey/.env
 GENSI2020.zip
 ANES/data
 GESIS/data
 LLM/.env
 LLM/data_input
 LLM/data_output
+LLM/text
 corona_survey
 Survey/data

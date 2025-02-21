@@ -130,11 +130,11 @@ Do a manual calculation of this.
 
 # although actually I might have done this wrong
 # try with the other approach 
-participant_ids = [16, 17, 18, 19, 22]
+participant_ids = [16, 17, 18, 19, 22, 26, 27]
 
 def load_data_2(participant_id): 
         
-        with open(f'data/metadict_test_{participant_id}.json') as f:
+        with open(f'data/metadict_{participant_id}.json') as f:
                 metadict = json.loads(f.read())
 
         return metadict

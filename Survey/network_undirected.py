@@ -5,135 +5,76 @@ import json
 import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
+import math 
 
-# participant id 
-participant_id = 19
+type = 'gpt'
+participant_id = 17
 
-# load nodes 
-with open(f'data/personal_nodes_{participant_id}.json') as f:
-        personal_nodes = json.loads(f.read())
+# back to the drawing board #
+with open(f'data/gpt_clean/metadict_gpt_{participant_id}.json', 'r') as f:
+    metadict_gpt = json.load(f)
+
+with open(f'data/human_clean/metadict_{participant_id}.json', 'r') as f:
+    metadict_human = json.load(f)
+
+# go through social couplings to understand
+# something clearly is not quite working.
+metadict_gpt['social_edges'] # 70, 85, 90
+metadict_human['social_edges'] # 37, 100, 39
+
+if type == 'gpt': 
+    with open(f'data/gpt_clean/metadict_gpt_{participant_id}.json', 'r') as f:
+        metadict = json.load(f)
+else: 
+    with open(f'data/human_clean/metadict_{participant_id}.json', 'r') as f:
+        metadict = json.load(f)
 
 ### fix edges ###
-personal_edges = pd.read_csv(f'data/personal_edges_{participant_id}.csv')
+personal_edges = metadict['personal_edges']
+personal_edges = pd.DataFrame(personal_edges)
 
 # first drop neutral edges
 personal_edges = personal_edges[personal_edges['direction'] != 'neut']
 
-# first fix the inner layer
-p_edges_focal = personal_edges[personal_edges['target'] == 'b_focal']
-p_edges_focal['coupling_direction'] = p_edges_focal['coupling'] * p_edges_focal['direction'].apply(lambda x: 1 if x == 'pro' else -1)
-p_edges_focal['coupling_scaled'] = p_edges_focal['coupling_direction'] * 0.01
-
-# now fix outer layer 
-def likert_conversion(n): 
-    scale_dict = {}
-    for i in range(1, n+1):
-        val = -1 + 2 * (i - 1) / (n - 1) if n > 1 else 0
-        scale_dict[i] = val
-    return scale_dict
-likert_scale_7 = likert_conversion(7)
-
-p_edges_secondary = personal_edges[personal_edges['target'] != 'b_focal']
-p_edges_secondary['coupling_scaled'] = p_edges_secondary['coupling'].map(likert_scale_7)
-
-# basically our sanity check here # 
-# this should be 1 or very close to 1. 
-p_edges_secondary[p_edges_secondary['source'] == p_edges_secondary['target']]['coupling_scaled'].mean()
-
-# okay now collect the edges
-p_edges_secondary = p_edges_secondary[['source', 'target', 'coupling_scaled', 'type']]
-p_edges_focal = p_edges_focal[['source', 'target', 'coupling_scaled', 'type']]
-p_edges = pd.concat([p_edges_secondary, p_edges_focal])
-
-# threshold edges ? # 
-# ...
-
 # remove self-loops
-p_edges = p_edges[p_edges['source'] != p_edges['target']]
+p_edges = personal_edges[personal_edges['source'] != personal_edges['target']]
 
-# 1. Pre-aggregate edges by taking the mean strength for each pair (A,B)
+# make it undirected 
 p_edges_agg = (
     p_edges
     .groupby(['source', 'target'], as_index=False)
     .agg({'coupling_scaled': 'mean'})
 )
 
-# 2. Create an undirected Graph from the aggregated DataFrame
+# initialize graph from edgeslist
 G = nx.from_pandas_edgelist(
     p_edges_agg, 
-    source='source', 
-    target='target', 
-    edge_attr=True, 
-    create_using=nx.Graph()  # undirected
+    'source', 
+    'target', 
+    edge_attr=True,
+    create_using=nx.Graph()
 )
 
 # add node information 
+personal_nodes = metadict['personal_nodes']
 for node_id, data in personal_nodes.items():
     G.add_node(node_id, **data)
 
 # collect node information
 node_size = nx.get_node_attributes(G, 'importance')
 node_color = nx.get_node_attributes(G, 'value_num')
-pos = nx.spring_layout(G, seed=4, weight='coupling_scaled')
-
-# collect edge information
-edge_coupling = nx.get_edge_attributes(G, 'coupling_scaled')
-
-nx.draw_networkx_nodes(
-    G, 
-    pos, 
-    node_size=[x*10 for x in node_size.values()],
-    vmin=-1,
-    vmax=1,
-    cmap=plt.cm.coolwarm,
-    node_color=node_color.values(),
-)
-nx.draw_networkx_labels(G, pos, font_size=8)
-nx.draw_networkx_edges(
-    G,
-    pos,
-    edge_color=edge_coupling.values(),
-    edge_cmap=plt.cm.coolwarm,
-    edge_vmin=-1,
-    edge_vmax=1,
-    arrowstyle='->',
-    arrowsize=12   
-)
-
-legend_elems = [
-    #Patch(facecolor="tab:gray", label="Focal Belief"),
-    Patch(facecolor="tab:red", label="For meat consumption"),
-    Patch(facecolor="tab:blue", label="Against meat consumption"),
-]
-plt.legend(
-    handles=legend_elems, 
-    #loc="upper left", 
-    bbox_to_anchor=(0.5, 1.1)  # Move legend just outside the axes
-)
-plt.axis("off")
-plt.tight_layout()
-plt.savefig(f"fig/personal_{participant_id}_undirected.png")
+pos = nx.spring_layout(G, seed=4, weight='coupling_scaled', k=1)
 
 #### plot social network ####
-
-# curate social # 
-with open(f'data/social_nodes_{participant_id}.json') as f:
-        social_nodes = json.loads(f.read())
-
-### fix edges ###
-social_edges = pd.read_csv(f'data/social_edges_{participant_id}.csv')
-social_edges['coupling_scaled'] = social_edges['coupling'] * 0.01
+social_nodes = metadict['social_nodes']
+social_edges = metadict['social_edges']
+social_edges = pd.DataFrame(social_edges)
+p_edges_agg['type'] = 'personal'
+p_edges_agg = p_edges_agg[['source', 'target', 'coupling_scaled', 'type']]
 s_edges = social_edges[['source', 'target', 'coupling_scaled', 'type']]
 
 # collect combined edges 
-all_edges = pd.concat([p_edges, s_edges])
-
-# 1. Pre-aggregate edges by taking the mean strength for each pair (A,B)
-all_edges_agg = (
-    all_edges
-    .groupby(['source', 'target'], as_index=False)
-    .agg({'coupling_scaled': 'mean'})
-)
+all_edges = pd.concat([p_edges_agg, s_edges])
 
 ### try to plot social ###
 G_combined = nx.from_pandas_edgelist(
@@ -155,9 +96,6 @@ pos_combined = {}
 for node_id, attr in G.nodes(data=True):
     pos_combined[node_id] = pos[node_id]
 
-# 2) Place social nodes around their personal node
-import math
-
 r = 0.25  # small radius for the social nodes
 quick_maths = {
     '0': 0.25,
@@ -167,6 +105,7 @@ quick_maths = {
 
 for node_id, attr in G_combined.nodes(data=True):
     if attr.get("type") == "social_belief":
+        print(node_id)
         # find personal neighbor
         personal_neighbor = social_edges[social_edges['source']==node_id]['target'].values[0]
         px, py = pos_combined[personal_neighbor]
@@ -198,6 +137,7 @@ node_color = nx.get_node_attributes(G_combined, 'value_num')
 G_combined.edges(data=True)
 
 edge_color = nx.get_edge_attributes(G_combined, 'coupling_scaled')
+edge_coupling = nx.get_edge_attributes(G, 'coupling_scaled')
 
 nx.draw_networkx_nodes(
     G_combined, 
@@ -217,6 +157,7 @@ nx.draw_networkx_edges(
     edge_vmin=-1,
     edge_vmax=1,
     arrowstyle='->',
+    width=[abs(x)*2 for x in edge_coupling.values()],
     arrowsize=12   
 )
 
@@ -227,9 +168,8 @@ legend_elems = [
 ]
 plt.legend(
     handles=legend_elems, 
-    #loc="upper left", 
     bbox_to_anchor=(0.5, 1.1)  # Move legend just outside the axes
 )
 plt.axis("off")
 plt.tight_layout()
-plt.savefig(f'fig/complete_{participant_id}_undirected.png')
+plt.savefig(f'fig/net_sym_{type}_{participant_id}.png')
