@@ -291,75 +291,206 @@ plot_simple(
 
 # okay calculation for focal
 # something is going wrong here. 
-results_focal = []
-for p_id in participant_ids:
-        metadict = load_data(p_id)
-        key_true = metadict['personal_nodes']['b_focal']['value']
-        for key, val in likert_mapping.items(): 
-                metadict_copy = metadict.copy()
-                metadict_copy['personal_nodes']['b_focal']['value_num'] = val
-                H_pers, H_pers_att = calc_H_pers(metadict_copy, filter='b_focal')
-                H_soc, H_soc_att = calc_H_soc(metadict_copy, filter='b_focal')
-                H_soc_abs, H_soc_abs_att = calc_H_soc(metadict_copy, filter='b_focal', aggfunc='abs')
-                D_total = H_pers + H_soc
-                D_total_att = H_pers_att + H_soc_att
-                D_total_abs = H_pers + H_soc_abs 
-                D_total_abs_att = H_pers_att + H_soc_abs_att
-                results_focal.append((
-                        p_id, 
-                        key_true, 
-                        key, 
-                        val, 
-                        H_pers, 
-                        H_pers_att, 
-                        H_soc, 
-                        H_soc_att, 
-                        H_soc_abs, 
-                        H_soc_abs_att,
-                        D_total,
-                        D_total_att,
-                        D_total_abs,
-                        D_total_abs_att
-                        ))
-                
-df_focal = pd.DataFrame(
-        results_focal,
-        columns=['participant_id',
-                        'key_true',
-                        'key',
-                        'value_num',
-                        'H_pers',
-                        'H_pers_att',
-                        'H_soc',
-                        'H_soc_att',
-                        'H_soc_abs',
-                        'H_soc_abs_att',
-                        'D_total',
-                        'D_total_att',
-                        'D_total_abs',
-                        'D_total_abs_att']
-        )
-df_focal_actual = df_focal[df_focal['key_true'] == df_focal['key']]
+def calculate_focal(participant_ids, data_type):
+        results_focal = []
+        for p_id in participant_ids:
+                metadict = load_data(p_id, data_type)
+                key_true = metadict['personal_nodes']['b_focal']['value']
+                for key, val in likert_mapping.items(): 
+                        metadict_copy = metadict.copy()
+                        metadict_copy['personal_nodes']['b_focal']['value_num'] = val
+                        H_pers, H_pers_att = calc_H_pers(metadict_copy, filter='b_focal')
+                        H_soc, H_soc_att = calc_H_soc(metadict_copy, filter='b_focal')
+                        H_soc_abs, H_soc_abs_att = calc_H_soc(metadict_copy, filter='b_focal', aggfunc='abs')
+                        D_total = H_pers + H_soc
+                        D_total_att = H_pers_att + H_soc_att
+                        D_total_abs = H_pers + H_soc_abs 
+                        D_total_abs_att = H_pers_att + H_soc_abs_att
+                        results_focal.append((
+                                p_id, 
+                                key_true, 
+                                key, 
+                                val, 
+                                H_pers, 
+                                H_pers_att, 
+                                H_soc, 
+                                H_soc_att, 
+                                H_soc_abs, 
+                                H_soc_abs_att,
+                                D_total,
+                                D_total_att,
+                                D_total_abs,
+                                D_total_abs_att
+                                ))
+                        
+        results_focal = pd.DataFrame(
+                results_focal,
+                columns=['participant_id',
+                                'key_true',
+                                'key',
+                                'value_num',
+                                'H_pers',
+                                'H_pers_att',
+                                'H_soc',
+                                'H_soc_att',
+                                'H_soc_abs',
+                                'H_soc_abs_att',
+                                'D_total',
+                                'D_total_att',
+                                'D_total_abs',
+                                'D_total_abs_att']
+                )
+        return results_focal
 
+results_focal_human = calculate_focal(participant_ids, 'human')
+results_focal_gpt = calculate_focal(participant_ids, 'gpt')
+
+results_focal_human_true = results_focal_human[results_focal_human['key_true'] == results_focal_human['key']]
+results_focal_gpt_true = results_focal_gpt[results_focal_gpt['key_true'] == results_focal_gpt['key']]
+
+# plot h human
 plot_simple(
         nrows=3,
         ncols=2,
         figsize=(6, 8),
         elements=['H_pers', 'H_pers_att', 'H_soc', 'H_soc_att', 'H_soc_abs', 'H_soc_abs_att'],
-        results=df_focal,
-        results_actual=df_focal_actual,
-        outname='H_focal'
+        results=results_focal_human,
+        results_actual=results_focal_human_true,
+        outname='H_focal_human'
 )
+# plot h gpt 
+plot_simple(
+        nrows=3,
+        ncols=2,
+        figsize=(6, 8),
+        elements=['H_pers', 'H_pers_att', 'H_soc', 'H_soc_att', 'H_soc_abs', 'H_soc_abs_att'],
+        results=results_focal_gpt,
+        results_actual=results_focal_gpt_true,
+        outname='H_focal_gpt'
+)
+# plot d human
 plot_simple(
         nrows=2,
         ncols=2,
         figsize=(6, 6),
         elements=['D_total', 'D_total_att', 'D_total_abs', 'D_total_abs_att'],
-        results=df_focal,
-        results_actual=df_focal_actual,
-        outname='D_focal'
+        results=results_focal_human,
+        results_actual=results_focal_human_true,
+        outname='D_focal_human'
+)
+# plot d gpt
+plot_simple(
+        nrows=2,
+        ncols=2,
+        figsize=(6, 6),
+        elements=['D_total', 'D_total_att', 'D_total_abs', 'D_total_abs_att'],
+        results=results_focal_gpt,
+        results_actual=results_focal_gpt_true,
+        outname='D_focal_gpt'
 )
 
+# plots 
+# PERSONAL FOCAL -- PERSONAL SOCIAL -- PERSONAL DISSONANCE
+# GPT FOCAL -- GPT SOCIAL -- GPT DISSONANCE
+# Convert participant_id to a categorical column in your dataframes
+results_focal_human['participant_id'] = results_focal_human['participant_id'].astype('category')
+results_focal_human_true['participant_id'] = results_focal_human_true['participant_id'].astype('category')
+
+results_focal_gpt['participant_id'] = results_focal_gpt['participant_id'].astype('category')
+results_focal_gpt_true['participant_id'] = results_focal_gpt_true['participant_id'].astype('category')
+
+def sub_plot(data_line, data_scat, x, y, ax_idx, title=""):
+        sns.lineplot(
+                data=data_line,
+                x=x,
+                y=y,
+                hue='participant_id',
+                ax=ax[ax_idx],
+                legend=False
+        )
+        sns.scatterplot(
+                data=data_scat,
+                x=x,
+                y=y,
+                hue='participant_id',
+                ax=ax[ax_idx],
+                legend=False
+        )
+        ax[ax_idx].set_xlabel("")
+        ax[ax_idx].set_ylabel("")
+        ax[ax_idx].set_title(title)
+
+# hacky way to get legend #
+fig, ax = plt.subplots()
+sns.scatterplot(
+        data=results_focal_human,
+        x='value_num',
+        y='H_pers',
+        hue='participant_id',
+        legend=True
+)
+handles, labels = ax.get_legend_handles_labels()
+plt.close()
+
+fig, ax = plt.subplots(2, 3, figsize=(8, 5))
+ax = ax.flatten()
+sub_plot(
+        results_focal_human, 
+        results_focal_human_true, 
+        'value_num', 
+        'H_pers', 
+        0,
+        title=r"$H_{pers}$ (Human)")
+sub_plot(
+        results_focal_human, 
+        results_focal_human_true, 
+        'value_num', 
+        'H_soc_abs', 
+        1,
+        title=r"$H_{soc}$ (Human)")
+sub_plot(
+        results_focal_human, 
+        results_focal_human_true, 
+        'value_num', 
+        'D_total_abs', 
+        2,
+        title=r"$D_{total}$ (Human)")
+sub_plot(
+        results_focal_gpt, 
+        results_focal_gpt_true, 
+        'value_num',
+        'H_pers', 
+        3,
+        title=r"$H_{pers}$ (Human + GPT)")
+sub_plot(
+        results_focal_gpt,
+        results_focal_gpt_true, 
+        'value_num', 
+        'H_soc_abs', 
+        4,
+        title=r"$H_{soc}$ (Human + GPT)")
+sub_plot(
+        results_focal_gpt, 
+        results_focal_gpt_true, 
+        'value_num',
+        'D_total_abs', 
+        5,
+        title=r"$D_{total}$ (Human + GPT)")
+
+fig.legend(
+    handles,
+    labels,
+    loc='center left',
+    bbox_to_anchor=(1, 0.5),  # move legend to the right
+    ncol=1,                   # single column
+    frameon=False             # no border
+)
+plt.tight_layout(rect=[0, 0, 1, 1]) 
+
+plt.savefig(f'fig/paper/focal_social_dissonance_legend.pdf')
+
+
+### things it might correspond with ###
 
 # Look at felt dissonance # 
 cmv_collected = []
