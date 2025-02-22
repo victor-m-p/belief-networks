@@ -107,72 +107,58 @@ def calc_H_soc(metadict, filter = None, aggfunc = 'mult'):
 
         return H_soc, H_soc_att
 
-'''
-Basically, prediction for everyone is: 
-1. They *should* eat less meat.
-2. There must be an external field. 
--- e.g., price, convenience, habit, etc. 
--- that we are currently not capturing.
-3. Could we have gotten something else?
--- yes the social component allows this, right?
--- i.e., if all friends are really mixed.
--- or maybe it does not actually...
-
-Outstanding questions: 
-1. how do we scale things? 
--- e.g., social vs. personal.
--- we have some limitations (e.g., 3 contacts, 10 beliefs).
-2. how do we get non-linearity? 
--- is the model just garbage? 
-
-Do a manual calculation of this. 
-'''
-
-# although actually I might have done this wrong
-# try with the other approach 
-participant_ids = [16, 17, 18, 19, 22, 26, 27]
-
-def load_data_2(participant_id): 
+# load data
+def load_data(participant_id, data_type='human'): 
         
-        with open(f'data/metadict_{participant_id}.json') as f:
-                metadict = json.loads(f.read())
+        if data_type=='human':
+                with open(f'data/human_clean/metadict_{participant_id}.json') as f:
+                        metadict = json.loads(f.read())
+        elif data_type=='gpt':
+                with open(f'data/gpt_clean/metadict_{participant_id}.json') as f:
+                        metadict = json.loads(f.read())
 
         return metadict
 
-results = []
-for p_id in participant_ids:
-        metadict = load_data_2(p_id)
-        key_true = metadict['personal_nodes']['b_focal']['value']
-        for key, val in likert_mapping.items(): 
-                metadict_copy = metadict.copy()
-                metadict_copy['personal_nodes']['b_focal']['value_num'] = val
-                H_pers, H_pers_att = calc_H_pers(metadict_copy)
-                H_soc, H_soc_att = calc_H_soc(metadict_copy)
-                H_soc_abs, H_soc_abs_att = calc_H_soc(metadict_copy, aggfunc='abs')
-                D_total = H_pers + H_soc
-                D_total_att = H_pers_att + H_soc_att
-                D_total_abs = H_pers + H_soc_abs
-                D_total_abs_att = H_pers_att + H_soc_abs_att
-                results.append((
-                        p_id, 
-                        key_true, 
-                        key, 
-                        val, 
-                        H_pers, 
-                        H_pers_att, 
-                        H_soc, 
-                        H_soc_att, 
-                        H_soc_abs, 
-                        H_soc_abs_att,
-                        D_total,
-                        D_total_att,
-                        D_total_abs,
-                        D_total_abs_att
-                        ))
+# calculate:
+# consider whether we are double-counting personal edges here.
+def calculate_total(participant_ids, data_type):
+        results = []
+        for p_id in participant_ids:
+                metadict = load_data(p_id, data_type)
+                key_true = metadict['personal_nodes']['b_focal']['value']
+                for key, val in likert_mapping.items(): 
+                        metadict_copy = metadict.copy()
+                        metadict_copy['personal_nodes']['b_focal']['value_num'] = val
+                        H_pers, H_pers_att = calc_H_pers(metadict_copy)
+                        H_soc, H_soc_att = calc_H_soc(metadict_copy)
+                        H_soc_abs, H_soc_abs_att = calc_H_soc(metadict_copy, aggfunc='abs')
+                        D_total = H_pers + H_soc
+                        D_total_att = H_pers_att + H_soc_att
+                        D_total_abs = H_pers + H_soc_abs
+                        D_total_abs_att = H_pers_att + H_soc_abs_att
+                        results.append((
+                                p_id, 
+                                data_type,
+                                key_true, 
+                                key, 
+                                val, 
+                                H_pers, 
+                                H_pers_att, 
+                                H_soc, 
+                                H_soc_att, 
+                                H_soc_abs, 
+                                H_soc_abs_att,
+                                D_total,
+                                D_total_att,
+                                D_total_abs,
+                                D_total_abs_att
+                                ))
 
-results = pd.DataFrame(
-        results,
-        columns=['participant_id',
+        results = pd.DataFrame(
+                results,
+                columns=[
+                        'participant_id',
+                        'data_type',
                         'key_true',
                         'key',
                         'value_num',
@@ -185,10 +171,17 @@ results = pd.DataFrame(
                         'D_total',
                         'D_total_att',
                         'D_total_abs',
-                        'D_total_abs_att']
+                        'D_total_abs_att'
+                        ]
         )
+        return results
 
-results_actual = results[results['key_true'] == results['key']]
+participant_ids = [16, 17, 18, 19, 22, 26, 27]
+results_human = calculate_total(participant_ids, 'human')
+results_gpt = calculate_total(participant_ids, 'gpt')
+
+results_human_true = results_human[results_human['key_true'] == results_human['key']]
+results_gpt_true = results_gpt[results_gpt['key_true'] == results_gpt['key']]
 
 # plot personal vs social
 # what if we make a huge plot? 
@@ -250,46 +243,57 @@ def plot_simple(
     plt.tight_layout()
     
     if outname:
-        plt.savefig(f"fig/mod_{outname}_directed.png")
+        plt.savefig(f"fig/mod_{outname}.png")
         plt.close()
     else: 
         plt.show()
 
+# results human H
 plot_simple(
         nrows=3,
         ncols=2,
         figsize=(6, 8),
         elements=['H_pers', 'H_pers_att', 'H_soc', 'H_soc_att', 'H_soc_abs', 'H_soc_abs_att'],
-        results=results,
-        results_actual=results_actual,
-        outname='H_overall'
+        results=results_human,
+        results_actual=results_human_true,
+        outname='H_overall_human'
 )
+# results gpt H
+plot_simple(
+        nrows=3,
+        ncols=2,
+        figsize=(6, 8),
+        elements=['H_pers', 'H_pers_att', 'H_soc', 'H_soc_att', 'H_soc_abs', 'H_soc_abs_att'],
+        results=results_gpt,
+        results_actual=results_gpt_true,
+        outname='H_overall_gpt'
+)
+# results human H
 plot_simple(
         nrows=2,
         ncols=2,
         figsize=(6, 6),
         elements=['D_total', 'D_total_att', 'D_total_abs', 'D_total_abs_att'],
-        results=results,
-        results_actual=results_actual,
-        outname='D_overall'
+        results=results_human,
+        results_actual=results_human_true,
+        outname='D_overall_human'
 )
-
-'''
-Hahaha, okay so, for the two ones that actually curve a bit,
-We get that they actually are MAXIMIZING dissonance.
-Which is amazing. 
-Any other behavior would give lower dissonance.
-
-But also the ones with more dissonance (22) 
-and with stronger curve (16) are the ones that 
-actually have beliefs in sync with behavior.
-'''
+# results gpt H
+plot_simple(
+        nrows=2,
+        ncols=2,
+        figsize=(6, 6),
+        elements=['D_total', 'D_total_att', 'D_total_abs', 'D_total_abs_att'],
+        results=results_gpt,
+        results_actual=results_gpt_true,
+        outname='D_overall_gpt'
+)
 
 # okay calculation for focal
 # something is going wrong here. 
 results_focal = []
 for p_id in participant_ids:
-        metadict = load_data_2(p_id)
+        metadict = load_data(p_id)
         key_true = metadict['personal_nodes']['b_focal']['value']
         for key, val in likert_mapping.items(): 
                 metadict_copy = metadict.copy()

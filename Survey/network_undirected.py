@@ -8,26 +8,10 @@ from matplotlib.patches import Patch
 import math 
 
 type = 'gpt'
-participant_id = 17
+participant_id = 27
 
-# back to the drawing board #
-with open(f'data/gpt_clean/metadict_gpt_{participant_id}.json', 'r') as f:
-    metadict_gpt = json.load(f)
-
-with open(f'data/human_clean/metadict_{participant_id}.json', 'r') as f:
-    metadict_human = json.load(f)
-
-# go through social couplings to understand
-# something clearly is not quite working.
-metadict_gpt['social_edges'] # 70, 85, 90
-metadict_human['social_edges'] # 37, 100, 39
-
-if type == 'gpt': 
-    with open(f'data/gpt_clean/metadict_gpt_{participant_id}.json', 'r') as f:
-        metadict = json.load(f)
-else: 
-    with open(f'data/human_clean/metadict_{participant_id}.json', 'r') as f:
-        metadict = json.load(f)
+with open(f'data/gpt_clean/metadict_{participant_id}.json', 'r') as f:
+    metadict = json.load(f)
 
 ### fix edges ###
 personal_edges = metadict['personal_edges']
@@ -134,19 +118,21 @@ node_size = {
 node_color = nx.get_node_attributes(G_combined, 'value_num')
 
 # get edge attributes
-G_combined.edges(data=True)
-
+# ahh here it goes wrong I think
 edge_color = nx.get_edge_attributes(G_combined, 'coupling_scaled')
-edge_coupling = nx.get_edge_attributes(G, 'coupling_scaled')
+edge_coupling = nx.get_edge_attributes(G_combined, 'coupling_scaled')
+
+fig, ax = plt.subplots(figsize=(5, 4))
 
 nx.draw_networkx_nodes(
     G_combined, 
     pos_combined, 
-    node_size=[x*5 for x in node_size.values()],
+    node_size=[x*6 for x in node_size.values()],
     vmin=-1,
     vmax=1,
     cmap=plt.cm.coolwarm,
     node_color=node_color.values(),
+    edgecolors='black',
 )
 nx.draw_networkx_labels(G_combined, pos_combined, font_size=8)
 nx.draw_networkx_edges(
@@ -156,9 +142,7 @@ nx.draw_networkx_edges(
     edge_cmap=plt.cm.coolwarm,
     edge_vmin=-1,
     edge_vmax=1,
-    arrowstyle='->',
-    width=[abs(x)*2 for x in edge_coupling.values()],
-    arrowsize=12   
+    width=[abs(x)*3 for x in edge_coupling.values()],
 )
 
 legend_elems = [

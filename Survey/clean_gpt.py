@@ -9,7 +9,7 @@ def likert_conversion(x, y, n):
 
 # import data 
 def clean_gpt(participant_id):
-    with open(f'data/gpt_raw/metadict_gpt_{participant_id}.json', 'r') as f:
+    with open(f'data/gpt_raw/metadict_{participant_id}.json', 'r') as f:
         data = json.load(f)
 
     focal_node_gpt = data['focal_node_gpt']
@@ -17,6 +17,7 @@ def clean_gpt(participant_id):
     personal_edges_gpt = data['personal_edges_gpt']
     social_focal_gpt = data['social_focal_gpt']
     social_personal_gpt = data['social_personal_gpt']
+    metavar_gpt = data['metavar_gpt']
 
     likert_scale_7 = likert_conversion(-1, 1, 7)
 
@@ -151,10 +152,11 @@ def clean_gpt(participant_id):
         'personal_nodes': personal_nodes,
         'personal_edges': personal_edges,
         'social_nodes': social_nodes,
-        'social_edges': social_edges
+        'social_edges': social_edges,
+        'metavar': metavar_gpt
     }
 
-    with open(f'data/gpt_clean/metadict_gpt_{participant_id}.json', 'w') as f:
+    with open(f'data/gpt_clean/metadict_{participant_id}.json', 'w') as f:
         f.write(json.dumps(metadict_gpt))
 
 # run 
