@@ -7,155 +7,277 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 import math 
 
-type = 'gpt'
-participant_id = 27
+# get labels 
+def get_labels(G):
+    labels = {}
+    for node_id in G.nodes():
+        if node_id == "b_focal":
+            labels[node_id] = "B"
+        elif "b_" in node_id:
+            b_num = node_id.split("_")[1]
+            b_num = int(b_num)
+            if b_num >= 5: 
+                labels[node_id] = "C"
+            else: 
+                labels[node_id] = "P"
+        elif "s_" in node_id:
+            labels[node_id] = "S"
+    return labels 
 
-with open(f'data/gpt_clean/metadict_{participant_id}.json', 'r') as f:
+# combined position
+def combined_position(pos, G, G_combined, social_edges):
+
+    pos_combined = {}
+    for node_id, attr in G.nodes(data=True):
+        pos_combined[node_id] = pos[node_id]
+
+    r = 0.25  # small radius for the social nodes
+    quick_maths = {
+        '0': 0.25,
+        '1': 0.20,
+        '2': 0.15
+    }
+
+    for node_id, attr in G_combined.nodes(data=True):
+        if attr.get("type") == "social_belief":
+            # find personal neighbor
+            personal_neighbor = social_edges[social_edges['source']==node_id]['target'].values[0]
+            px, py = pos_combined[personal_neighbor]
+
+            # social_num
+            num_social = node_id.split("_")[1]
+            
+            # Just place the social node at some offset angle
+            # For example, we could just do a random angle or 
+            # place them all at the same offset if you only have 1 neighbor
+            angle = 2 * math.pi * quick_maths[num_social]  # 90 degrees, or do random, etc.
+            offset_x = r * math.cos(angle)
+            offset_y = r * math.sin(angle)
+
+            pos_combined[node_id] = (px + offset_x, py + offset_y)
+    
+    return pos_combined
+    
+def aggregate_edges(metadict):
+
+    # extract edges 
+    personal_edges = metadict['personal_edges']
+    personal_edges = pd.DataFrame(personal_edges)
+
+    # first drop neutral edges
+    personal_edges = personal_edges[personal_edges['direction'] != 'neut']
+
+    # remove self-loops
+    p_edges = personal_edges[personal_edges['source'] != personal_edges['target']]
+
+    # make it undirected 
+    p_edges_agg = (
+        p_edges
+        .groupby(['source', 'target'], as_index=False)
+        .agg({'coupling_scaled': 'mean'})
+    )
+    
+    return p_edges_agg
+
+participant_id = 17
+type = 'human'
+with open(f"data/human_clean/metadict_{participant_id}.json", "r") as f:
     metadict = json.load(f)
 
-### fix edges ###
-personal_edges = metadict['personal_edges']
-personal_edges = pd.DataFrame(personal_edges)
+def get_params(metadict, pos=None):
 
-# first drop neutral edges
-personal_edges = personal_edges[personal_edges['direction'] != 'neut']
+    p_edges_agg = aggregate_edges(metadict)
 
-# remove self-loops
-p_edges = personal_edges[personal_edges['source'] != personal_edges['target']]
+    # initialize graph from edgeslist
+    G = nx.from_pandas_edgelist(
+        p_edges_agg, 
+        'source', 
+        'target', 
+        edge_attr=True,
+        create_using=nx.Graph()
+    )
 
-# make it undirected 
-p_edges_agg = (
-    p_edges
-    .groupby(['source', 'target'], as_index=False)
-    .agg({'coupling_scaled': 'mean'})
-)
+    # add node information 
+    personal_nodes = metadict['personal_nodes']
+    for node_id, data in personal_nodes.items():
+        G.add_node(node_id, **data)
 
-# initialize graph from edgeslist
-G = nx.from_pandas_edgelist(
-    p_edges_agg, 
-    'source', 
-    'target', 
-    edge_attr=True,
-    create_using=nx.Graph()
-)
+    # get position
+    if pos is None: 
+        pos = nx.spring_layout(G, seed=4, weight='coupling_scaled', k=1)
 
-# add node information 
-personal_nodes = metadict['personal_nodes']
-for node_id, data in personal_nodes.items():
-    G.add_node(node_id, **data)
+    #### plot social network ####
+    social_nodes = metadict['social_nodes']
+    social_edges = metadict['social_edges']
+    social_edges = pd.DataFrame(social_edges)
+    p_edges_agg['type'] = 'personal'
+    p_edges_agg = p_edges_agg[['source', 'target', 'coupling_scaled', 'type']]
+    s_edges = social_edges[['source', 'target', 'coupling_scaled', 'type']]
 
-# collect node information
-node_size = nx.get_node_attributes(G, 'importance')
-node_color = nx.get_node_attributes(G, 'value_num')
-pos = nx.spring_layout(G, seed=4, weight='coupling_scaled', k=1)
+    # collect combined edges 
+    all_edges = pd.concat([p_edges_agg, s_edges])
 
-#### plot social network ####
-social_nodes = metadict['social_nodes']
-social_edges = metadict['social_edges']
-social_edges = pd.DataFrame(social_edges)
-p_edges_agg['type'] = 'personal'
-p_edges_agg = p_edges_agg[['source', 'target', 'coupling_scaled', 'type']]
-s_edges = social_edges[['source', 'target', 'coupling_scaled', 'type']]
+    ### try to plot social ###
+    G_combined = nx.from_pandas_edgelist(
+        all_edges, 
+        'source', 
+        'target', 
+        edge_attr=True,
+        create_using=nx.Graph()
+    )
 
-# collect combined edges 
-all_edges = pd.concat([p_edges_agg, s_edges])
+    # add node data
+    for node_id, data in personal_nodes.items(): 
+        G_combined.add_node(node_id, **data)
+    for node_id, data in social_nodes.items(): 
+        G_combined.add_node(node_id, **data)
 
-### try to plot social ###
-G_combined = nx.from_pandas_edgelist(
-    all_edges, 
-    'source', 
-    'target', 
-    edge_attr=True,
-    create_using=nx.Graph()
-)
+    pos_combined = combined_position(
+        pos, 
+        G, 
+        G_combined, 
+        social_edges
+    )
 
-# add node data
-for node_id, data in personal_nodes.items(): 
-    G_combined.add_node(node_id, **data)
-for node_id, data in social_nodes.items(): 
-    G_combined.add_node(node_id, **data)
+    # get node attributes
+    node_size = nx.get_node_attributes(G_combined, 'importance')
 
-# 1) Copy personal node positions
-pos_combined = {}
-for node_id, attr in G.nodes(data=True):
-    pos_combined[node_id] = pos[node_id]
+    # modify node size by factor 3 for social
+    node_size = {
+        x: (y * 0.33 if "s_" in x else y)
+        for x, y in node_size.items()
+    }
 
-r = 0.25  # small radius for the social nodes
-quick_maths = {
-    '0': 0.25,
-    '1': 0.20,
-    '2': 0.15
-}
+    node_color = nx.get_node_attributes(G_combined, 'value_num')
 
-for node_id, attr in G_combined.nodes(data=True):
-    if attr.get("type") == "social_belief":
-        print(node_id)
-        # find personal neighbor
-        personal_neighbor = social_edges[social_edges['source']==node_id]['target'].values[0]
-        px, py = pos_combined[personal_neighbor]
+    # get edge attributes
+    # ahh here it goes wrong I think
+    edge_color = nx.get_edge_attributes(G_combined, 'coupling_scaled')
+    edge_coupling = nx.get_edge_attributes(G_combined, 'coupling_scaled')
 
-        # social_num
-        num_social = node_id.split("_")[1]
+    # labels
+    labels = get_labels(G_combined)
+
+    return G_combined, pos_combined, node_size, node_color, edge_color, edge_coupling, labels
+
+def draw_network(
+    G, 
+    pos, 
+    node_size,
+    node_color,
+    edge_color,
+    edge_coupling,
+    labels,
+    ax_num,
+    subplot_text=None):
+
+    nx.draw_networkx_nodes(
+        G, 
+        pos, 
+        node_size=[x*6 for x in node_size.values()],
+        vmin=-1,
+        vmax=1,
+        cmap=plt.cm.coolwarm,
+        node_color=node_color.values(),
+        edgecolors='black',
+        ax=ax[ax_num]
+    )
+    nx.draw_networkx_labels(
+        G, 
+        pos, 
+        labels=labels,
+        font_size=8,
+        ax=ax[ax_num])
+    nx.draw_networkx_edges(
+        G,
+        pos,
+        edge_color=edge_color.values(),
+        edge_cmap=plt.cm.coolwarm,
+        edge_vmin=-1,
+        edge_vmax=1,
+        width=[abs(x)*3 for x in edge_coupling.values()],
+        ax=ax[ax_num]
+    )
+    if subplot_text:
+        ax[ax_num].text(
+            0.05, 
+            0.95, 
+            subplot_text,
+            transform=ax[ax_num].transAxes, 
+            fontsize=15, 
+            va='top', 
+            ha='left'
+        )
+
+participant_ids = [16, 18, 26]
+participant_type = ['human', 'gpt']
+
+param_dict = {}
+for participant_id in participant_ids: 
+    for type in participant_type: 
+        if type == 'human': 
+            print('human', participant_id)
+            with open(f"data/human_clean/metadict_{participant_id}.json", "r") as f:
+                metadict = json.load(f)
+            G, pos, node_size, node_color, edge_color, edge_coupling, labels = get_params(metadict)
+            param_dict[f"{participant_id}_{type}"] = {
+                "G": G,
+                "pos": pos,
+                "node_size": node_size,
+                "node_color": node_color,
+                "edge_color": edge_color,
+                "edge_coupling": edge_coupling,
+                "labels": labels
+            }
+        else: 
+            print('gpt', participant_id)
+            with open(f"data/gpt_clean/metadict_{participant_id}.json", "r") as f:
+                metadict = json.load(f)
+            pos = param_dict[f"{participant_id}_human"]['pos']
+            G, pos, node_size, node_color, edge_color, edge_coupling, labels = get_params(metadict, pos=pos)
+            param_dict[f"{participant_id}_{type}"] = {
+                "G": G,
+                "pos": pos,
+                "node_size": node_size,
+                "node_color": node_color,
+                "edge_color": edge_color,
+                "edge_coupling": edge_coupling,
+                "labels": labels
+            }
+
+fig, ax = plt.subplots(3, 2, figsize=(8, 12))
+ax = ax.flatten()
+num = 0
+for participant_id in participant_ids: 
+    for type in participant_type: 
+        # extract params
+        key = f"{participant_id}_{type}"
+        G_combined = param_dict[key]['G']
+        pos_combined = param_dict[key]['pos']
+        node_size = param_dict[key]['node_size']
+        node_color = param_dict[key]['node_color']
+        edge_color = param_dict[key]['edge_color']
+        edge_coupling = param_dict[key]['edge_coupling']
+        labels = param_dict[key]['labels']
         
-        # Just place the social node at some offset angle
-        # For example, we could just do a random angle or 
-        # place them all at the same offset if you only have 1 neighbor
-        angle = 2 * math.pi * quick_maths[num_social]  # 90 degrees, or do random, etc.
-        offset_x = r * math.cos(angle)
-        offset_y = r * math.sin(angle)
+        # extract text 
+        if type=='human': 
+            text_type = 'Human'
+        else:
+            text_type = '+ LLM'
+        
+        draw_network(
+            G_combined,
+            pos_combined,
+            node_size,
+            node_color,
+            edge_color,
+            edge_coupling,
+            labels,
+            num,
+            subplot_text=f"{text_type} (ID: {participant_id})"
+        )
+        num += 1
 
-        pos_combined[node_id] = (px + offset_x, py + offset_y)
-
-# get node attributes
-node_size = nx.get_node_attributes(G_combined, 'importance')
-
-# modify node size by factor 3 for social
-node_size = {
-    x: (y * 0.33 if "s_" in x else y)
-    for x, y in node_size.items()
-}
-
-node_color = nx.get_node_attributes(G_combined, 'value_num')
-
-# get edge attributes
-# ahh here it goes wrong I think
-edge_color = nx.get_edge_attributes(G_combined, 'coupling_scaled')
-edge_coupling = nx.get_edge_attributes(G_combined, 'coupling_scaled')
-
-fig, ax = plt.subplots(figsize=(5, 4))
-
-nx.draw_networkx_nodes(
-    G_combined, 
-    pos_combined, 
-    node_size=[x*6 for x in node_size.values()],
-    vmin=-1,
-    vmax=1,
-    cmap=plt.cm.coolwarm,
-    node_color=node_color.values(),
-    edgecolors='black',
-)
-nx.draw_networkx_labels(G_combined, pos_combined, font_size=8)
-nx.draw_networkx_edges(
-    G_combined,
-    pos_combined,
-    edge_color=edge_color.values(),
-    edge_cmap=plt.cm.coolwarm,
-    edge_vmin=-1,
-    edge_vmax=1,
-    width=[abs(x)*3 for x in edge_coupling.values()],
-)
-
-legend_elems = [
-    #Patch(facecolor="tab:gray", label="Focal Belief"),
-    Patch(facecolor="tab:red", label="For meat consumption"),
-    Patch(facecolor="tab:blue", label="Against meat consumption"),
-]
-plt.legend(
-    handles=legend_elems, 
-    bbox_to_anchor=(0.5, 1.1)  # Move legend just outside the axes
-)
-plt.axis("off")
 plt.tight_layout()
-plt.savefig(f'fig/net_sym_{type}_{participant_id}.png')
-
-# function down here to actually plot them # 
+plt.savefig("fig/paper/network_plot.pdf", bbox_inches='tight')

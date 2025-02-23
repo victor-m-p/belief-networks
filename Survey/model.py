@@ -290,7 +290,6 @@ plot_simple(
 )
 
 # okay calculation for focal
-# something is going wrong here. 
 def calculate_focal(participant_ids, data_type):
         results_focal = []
         for p_id in participant_ids:
@@ -432,7 +431,7 @@ sns.scatterplot(
 handles, labels = ax.get_legend_handles_labels()
 plt.close()
 
-fig, ax = plt.subplots(2, 3, figsize=(8, 5))
+fig, ax = plt.subplots(2, 3, figsize=(6.5, 4.5))
 ax = ax.flatten()
 sub_plot(
         results_focal_human, 
@@ -454,28 +453,28 @@ sub_plot(
         'value_num', 
         'D_total_abs', 
         2,
-        title=r"$D_{total}$ (Human)")
+        title=r"$H_{tot}$ (Human)")
 sub_plot(
         results_focal_gpt, 
         results_focal_gpt_true, 
         'value_num',
         'H_pers', 
         3,
-        title=r"$H_{pers}$ (Human + GPT)")
+        title=r"$H_{pers}$ (Human + LLM)")
 sub_plot(
         results_focal_gpt,
         results_focal_gpt_true, 
         'value_num', 
         'H_soc_abs', 
         4,
-        title=r"$H_{soc}$ (Human + GPT)")
+        title=r"$H_{soc}$ (Human + LLM)")
 sub_plot(
         results_focal_gpt, 
         results_focal_gpt_true, 
         'value_num',
         'D_total_abs', 
         5,
-        title=r"$D_{total}$ (Human + GPT)")
+        title=r"$H_{tot}$ (Human + LLM)")
 
 fig.legend(
     handles,
@@ -487,8 +486,87 @@ fig.legend(
 )
 plt.tight_layout(rect=[0, 0, 1, 1]) 
 
-plt.savefig(f'fig/paper/focal_social_dissonance_legend.pdf')
+plt.savefig(f'fig/paper/focal_social_dissonance_legend.pdf',
+            bbox_inches='tight')
 
+### also do the nice plot for total ###
+# hacky way to get legend #
+results_human['participant_id'] = results_human['participant_id'].astype('category')
+results_human_true['participant_id'] = results_human_true['participant_id'].astype('category')
+
+results_gpt['participant_id'] = results_gpt['participant_id'].astype('category')
+results_gpt_true['participant_id'] = results_gpt_true['participant_id'].astype('category')
+
+fig, ax = plt.subplots()
+sns.scatterplot(
+        data=results_human,
+        x='value_num',
+        y='H_pers',
+        hue='participant_id',
+        legend=True
+)
+handles, labels = ax.get_legend_handles_labels()
+plt.close()
+
+fig, ax = plt.subplots(2, 3, figsize=(6.5, 4.5))
+ax = ax.flatten()
+sub_plot(
+        results_human, 
+        results_human_true, 
+        'value_num', 
+        'H_pers', 
+        0,
+        title=r"$H_{pers}$ (Human)")
+sub_plot(
+        results_human, 
+        results_human_true, 
+        'value_num', 
+        'H_soc_abs', 
+        1,
+        title=r"$H_{soc}$ (Human)")
+sub_plot(
+        results_human, 
+        results_human_true, 
+        'value_num', 
+        'D_total_abs', 
+        2,
+        title=r"$H_{tot}$ (Human)")
+sub_plot(
+        results_gpt, 
+        results_gpt_true, 
+        'value_num',
+        'H_pers', 
+        3,
+        title=r"$H_{pers}$ (Human + LLM)")
+sub_plot(
+        results_gpt,
+        results_gpt_true, 
+        'value_num', 
+        'H_soc_abs', 
+        4,
+        title=r"$H_{soc}$ (Human + LLM)")
+sub_plot(
+        results_gpt, 
+        results_gpt_true, 
+        'value_num',
+        'D_total_abs', 
+        5,
+        title=r"$H_{tot}$ (Human + LLM)")
+
+fig.legend(
+    handles,
+    labels,
+    loc='center left',
+    bbox_to_anchor=(1, 0.5),  # move legend to the right
+    ncol=1,                   # single column
+    frameon=False             # no border
+)
+plt.tight_layout(rect=[0, 0, 1, 1]) 
+
+plt.savefig(f'fig/paper/total_dissonance_legend.pdf',
+            bbox_inches='tight')
+        
+        
 
 ### things it might correspond with ###
 
