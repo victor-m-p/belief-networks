@@ -69,9 +69,9 @@ def create_background(participant_id):
     # collect all of the background # 
     prompt_background = prompt_background + b_focal + b_pro + b_con + b_cmv + b_soc
 
-    with open (f'text/prompt_{participant_id}.txt', 'w') as f:
+    with open (f'data/text/prompt_{participant_id}.txt', 'w') as f:
         f.write(prompt_background)
-        
+
 participant_ids = [16, 17, 18, 19, 22, 26, 27]
 for p_id in participant_ids: 
     create_background(p_id) 
