@@ -565,8 +565,6 @@ plt.tight_layout(rect=[0, 0, 1, 1])
 
 plt.savefig(f'fig/paper/total_dissonance_legend.pdf',
             bbox_inches='tight')
-        
-        
 
 ### things it might correspond with ###
 
