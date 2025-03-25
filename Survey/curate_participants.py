@@ -43,6 +43,7 @@ participant_id = 27
 
 d = pd.read_csv('data/data_project_1046442_2025_02_21.csv', sep=';')
 d = d[d['lfdn'] == participant_id].reset_index()
+d
 
 # Initialize personal node/edge containers
 personal_nodes = {}

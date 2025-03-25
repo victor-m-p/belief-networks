@@ -1,0 +1,78 @@
+
+
+        ### Overview ###
+
+        The following is an interview transcript: 
+
+        ### Interview Transcript ###
+        - Question: "What are some things that come to mind when thinking about your meat consumption?"
+        
+        - Answer: meat consumptions can be not environmentally friendly. I usually consume meat
+because of practicality, nutritional value, and affordability. Besides that, I
+think it's easier to make dishes with meat tastier rather than being all vegan
+        
+        - Question: "Please elaborate on why you have (or have not) changed your meat eating habits"
+        
+        - Answer: I have not changed it because I don't feel the need to. I understand about the
+environmental concern surrounding the meat production, but I don't feel
+obligated to reduce my meat consumption. Maybe compared to an average person in
+the US or other meat-eating countries, I am consuming below the average. If the
+default option of meat is readily accessible and tastes good, I won't mind
+changing my habit. But for now, I think I'll stay with my default.
+        
+        - Question: "Think about the people you interact with on a regular basis and whose opinions are important to you.
+        What are their behaviors and beliefs around meat eating?'
+        
+        - Answer: People around me mostly still eat meat. They seem to be doing so because of
+various reasons. However, not many of them have a strong opinion about meat.
+Only a few expressed environmental concern regarding eating too much meat.
+
+        ### The following targets were classified ### 
+        
+        - Environmental Concern (HIGH PERSONAL importance)
+
+- Practicality (MEDIUM PERSONAL importance)
+
+- Nutritional Value (MEDIUM PERSONAL importance)
+
+- Affordability (MEDIUM PERSONAL importance)
+
+- Taste Preference (MEDIUM PERSONAL importance)
+
+- Meat Consumption (HIGH PERSONAL importance)
+
+- Environmental Concern (MEDIUM SOCIAL importance)
+        
+        ### Task Description ###
+        
+        1. For each target evaluate whether it is related to any other targets.
+                - For each pair that is connected provide an answer. 
+                - Indicate the type (PERSONAL, SOCIAL) of the connected targets.
+        
+        2. Determine the direction of the relation:
+                - If the relation is positive, write "POSITIVE"
+                - If the relation is negative, write "NEGATIVE"
+        
+        3. Determine the type of the relation: 
+                - If the relation is directly stated the text, write "EXPLICIT"
+                - If the relation is not directly stated in the text, write "IMPLICIT"
+
+        ### Output Format: ###
+
+        You must output only JSON format:
+        {
+        "results": [
+                {
+                "concept_1": "<a concern from the list>", 
+                "concept_2": "<a cocnern from the list, >",
+                "concept_1_type": "<one of [PERSONAL, SOCIAL]>",
+                "concept_2_type": "<one of [PERSONAL, SOCIAL]>",
+                "direction": "<one among [POSITIVE, NEGATIVE]>",
+                "type": "<one among [EXPLICIT, IMPLICIT]>",
+                },
+                // Repeat for each relation expressed in the interview
+        ]
+        }
+
+        ONLY return the JSON object itself.
+        

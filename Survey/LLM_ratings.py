@@ -54,9 +54,9 @@ def coupling_text(motivation_keys, motivation_vals):
         Please provide the answer in the following format:
         - source_code: ["b_0", "b_0", ...]
         - target_code: ["b_1", "b_2", ...]
-        - source_: [string, string, ...]
+        - source: [string, string, ...]
         - target: [string, string, ...]
-        - coupling: [int, int, etc.]
+        - coupling: [int, int, ...]
         """
         p_edge_list.append((key_from, p_edge_text))
     return p_edge_list
