@@ -26,28 +26,10 @@ class EdgeModel(BaseModel):
     target_1_type: str
     target_2_type: str
     direction: str
-    type: str
+    relation_type: str
 
 class EdgeModelList(BaseModel): 
     results: List[EdgeModel]
-
-class EdgeModel2(BaseModel): 
-        focal_target: str
-        other_target: str 
-        focal_target_type: str 
-        other_target_type: str 
-        direction: str 
-        type: str 
-        explanation: str 
-        
-        @field_validator("*")
-        def no_empty_strings(cls, v, field):
-                if isinstance(v, str) and v.strip() == "":
-                        raise ValueError(f"{field.name} must not be empty.")
-                return v
-                
-class EdgeModel2List(BaseModel):
-        results: List[EdgeModel2]
 
 ### first create the text just for overview ### 
 participant_ids = [16, 17, 18, 19, 22, 26, 27]
@@ -74,32 +56,27 @@ for participant_id in participant_ids:
                 f.write(wrapped_text)
 
 ### LLM pipeline ### 
-model = 'llama3-70b-8192'
-
 custom_retry = retry(
         stop=stop_after_attempt(5),      # Number of retries (change as needed)
         wait=wait_fixed(2),              # Wait 2 seconds between retries
         reraise=True                     # Raise the exception if all retries fail
         )
 
-@custom_retry 
-def call_groq(response_model, content_prompt: str, model_name: str = 'deepseek-r1-distill-llama-70b', temp: float = 0.75):
-
-    # Initialize Groq client with API key from environment variable
-    client = Groq(api_key=os.getenv('GROQ_API_KEY'))
-
-    # Patch client with instructor for structured output support
+@custom_retry
+def call_groq(response_model, content_prompt, model_name='deepseek-r1-distill-llama-70b', temp=0.75):
+    client = Groq(api_key=os.getenv('GROQ_API_KEY2'))
     client = instructor.from_groq(client, mode=instructor.Mode.TOOLS)
-
-    # Generate structured output based on provided schema (FullStances)
-    response = client.chat.completions.create(
-        model=model_name,
-        messages=[{"role": "user", "content": content_prompt}],
-        response_model=response_model,
-        temperature=temp,
-    )
-
-    return response
+    try:
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=[{"role": "user", "content": content_prompt}],
+            response_model=response_model,
+            temperature=temp,
+        )
+        return response
+    except Exception as exc:
+        print(f"Exception: {exc}")
+        raise
 
 # now try to extract beliefs # 
 def make_node_prompt(metadict):
@@ -229,6 +206,60 @@ def make_node_prompt2(metadict):
         """
         return prompt
 
+
+def make_node_prompt3(metadict):
+        b_focal = textwrap.fill(metadict['free_text']['b_focal'], width=80)
+        cmv_focal = textwrap.fill(metadict['free_text']['cmv_focal'], width=80)
+        b_social = textwrap.fill(metadict['free_text']['social'], width=80)
+
+        prompt = f"""
+### Task Overview ###
+
+Analyze the interview transcript provided and clearly extract beliefs, opinions, or concerns ("nodes") relevant to meat eating.
+
+### Interview Transcript ###
+- Question: "What are some things that come to mind when thinking about your meat consumption?"
+- Answer: {b_focal}
+
+- Question: "Please elaborate on why you have (or have not) changed your meat eating habits"
+- Answer: {cmv_focal}
+
+- Question: "Think about people important to you. What are their behaviors and beliefs around meat eating?"
+- Answer: {b_social}
+
+### Extraction Instructions ###
+
+1. Identify PERSONAL nodes:
+- Concerns or beliefs personally expressed by the interviewee about meat consumption/production.
+- Nodes must be concise: MAXIMUM 4 words.
+
+2. Identify SOCIAL nodes:
+- Concerns or beliefs attributed by the interviewee to their social circle regarding meat consumption/production.
+- If possible, use exactly the same wording for SOCIAL nodes as PERSONAL nodes (if they overlap or are similar).
+
+3. Mandatory node:
+- Always include "Meat Consumption and Production" (PERSONAL node).
+
+4. Rate importance for each node:
+- Use exactly one of these values: LOW, MEDIUM, HIGH.
+
+### Output Format (JSON ONLY) ###
+{{
+"results": [
+{{
+        "concept": "<concise node name>",
+        "importance": "LOW or MEDIUM or HIGH",
+        "type": "PERSONAL or SOCIAL"
+}},
+// Repeat for each node found
+]
+}}
+
+Return ONLY the JSON object, nothing else.
+                """
+        return prompt
+
+
 def make_edge_prompt(metadict, belief_nodes):
         b_focal = metadict['free_text']['b_focal']
         b_focal = textwrap.fill(b_focal, width=80)
@@ -342,7 +373,7 @@ def make_edge_prompt2(metadict, beliefs_res, idx):
         ### Targets (beliefs, concepts, concerns) ### 
         
         A number of targets were labeled from the interview above. 
-        A target is a concept, concern, belief, or stance that is relevant to meat eating for the interviewee.        
+        A target is a concept, concern, belief, or stance that is relevant to meat eating for the interviewee. 
         There are two types of targets: PERSONAL (concerns that the interviewee has) and SOCIAL (concerns that social contacts have)
         
         The focal "target" that you will focus on is: 
@@ -380,7 +411,7 @@ def make_edge_prompt2(metadict, beliefs_res, idx):
                 "focal_target_type": "<one of [PERSONAL, SOCIAL]>",
                 "other_target_type": "<one of [PERSONAL, SOCIAL]>",
                 "direction": "<one among [POSITIVE, NEGATIVE]>",
-                "type": "<one among [EXPLICIT, IMPLICIT]>",
+                "relation_type": "<one among [EXPLICIT, IMPLICIT]>",
                 "explanation": "<brief explanation>"
                 }},
                 // Repeat for each concern that is related to the focal target.
@@ -391,15 +422,120 @@ def make_edge_prompt2(metadict, beliefs_res, idx):
         """
         return prompt
 
+def make_edge_prompt3(metadict, beliefs_res, idx): 
+        
+        # extract the text from interview
+        b_focal = metadict['free_text']['b_focal']
+        b_focal = textwrap.fill(b_focal, width=80)
+
+        cmv_focal = metadict['free_text']['cmv_focal']
+        cmv_focal = textwrap.fill(cmv_focal, width=80)
+
+        b_social = metadict['free_text']['social']
+        b_social = textwrap.fill(b_social, width=80)
+        
+        # extract the belief nodes        
+        concept_tuples = [f"target: {x['concept']} (type: {x['type']})" for x in beliefs_res]
+        focal_target = concept_tuples[idx]
+        other_targets = concept_tuples[:idx] + concept_tuples[idx + 1:]
+        other_targets = "\n".join([f"- {x}" for x in other_targets])
+        
+        prompt = f"""
+You will analyze an interview transcript related to meat eating.
+You will be given:
+
+1. A focal "target" (belief, concept, or concern) relevant to meat eating for the interviewee.
+2. Several other targets extracted from the same interview.
+
+Your task is to judge clearly whether the focal target is related to each of the other targets.
+
+### Definitions ###
+- "Related" means there is a clear logical, conceptual, argumentative, or social connection.
+- A "POSITIVE" relation means that one target supports, helps, or reinforces the other.
+- A "NEGATIVE" relation means that one target conflicts with, opposes, reduces, or is problematic for the other.
+
+### Interview Excerpt ###
+- Question: "What are some things that come to mind when thinking about your meat consumption?"
+- Answer: {b_focal}
+
+- Question: "Please elaborate on why you have (or have not) changed your meat eating habits"
+- Answer: {cmv_focal}
+
+- Question: "Think about people important to you. What are their behaviors and beliefs around meat eating?"
+- Answer: {b_social}
+
+### Focal Target ###
+- {focal_target}
+
+### Other Targets ###
+{other_targets}
+
+### Task ###
+For EACH of the other targets, evaluate the following explicitly:
+
+1. Is the focal target related to this other target? (YES/NO)
+2. If YES:
+- Direction: POSITIVE or NEGATIVE
+- POSITIVE = supporting, reinforcing, beneficial
+- NEGATIVE = conflicting, opposing, problematic
+- Relation type: EXPLICIT (clearly stated) or IMPLICIT (conceptual connection but not directly stated)
+- Explanation: Short and precise (max. 10 words)
+
+### Important ###
+- If targets clearly oppose each other (e.g., concerns about meat consumption and concerns about climate change), you MUST classify this as NEGATIVE.
+- DO NOT classify relations as POSITIVE just because the topics are conceptually related. ONLY classify POSITIVE if one helps or supports the other.
+
+### Output Format (JSON ONLY) ###
+{{
+"results": [
+{{
+        "focal_target": "<focal target>",
+        "other_target": "<other target>",
+        "focal_target_type": "PERSONAL or SOCIAL",
+        "other_target_type": "PERSONAL or SOCIAL",
+        "direction": "POSITIVE or NEGATIVE",
+        "relation_type": "EXPLICIT or IMPLICIT",
+        "explanation": "brief explanation"
+}}
+// Repeat for each related target
+]
+}}
+
+Return ONLY the JSON object, nothing else.
+        """
+        return prompt 
+
+import re 
+class EdgeModel2(BaseModel): 
+        focal_target: str
+        other_target: str 
+        focal_target_type: str 
+        other_target_type: str 
+        direction: str 
+        relation_type: str 
+        explanation: str 
+        
+        @field_validator("*")
+        def no_empty_or_unusual_strings(cls, v, field):
+                if isinstance(v, str):
+                        cleaned = re.sub(r'\s+', ' ', v).strip()
+                        if cleaned == "":
+                                raise ValueError(f"{field.name} must not be empty or whitespace.")
+                        return cleaned
+                return v
+                
+class EdgeModel2List(BaseModel):
+        results: List[EdgeModel2]
+
 # edges 
-def gather_edges(metadict, llm_nodes, idx): 
+def gather_edges(metadict, llm_nodes, idx, filename, model = 'llama-3.3-70b-versatile'): 
         # make the prompt
-        edge_prompt = make_edge_prompt2(metadict, llm_nodes, idx)
+        edge_prompt = make_edge_prompt3(metadict, llm_nodes, idx)
 
         # save one example 
         print(idx)
         if idx==0:
-                with open(f'data/gpt_codings_new/couplings2_{participant_id}.txt', 'w') as f: 
+                with open(filename, 'w') as f: 
                         f.write(edge_prompt)
 
         llm_edges = call_groq(
@@ -413,15 +549,20 @@ def gather_edges(metadict, llm_nodes, idx):
         llm_edges_df = pd.DataFrame(llm_edges)         
         return llm_edges_df 
 
-def run_participant2(participant_id):
+def run_participant2(participant_id, model = 'llama-3.3-70b-versatile'):
 
         # load participant data 
         with open(f'data/human_clean/metadict_{participant_id}.json') as f:
                 metadict = json.loads(f.read())
 
+        directory = f'data/{model}'
+        if not os.path.exists(directory):
+                os.makedirs(directory)
+
         # nodes 
-        node_prompt = make_node_prompt2(metadict)
-        with open(f"data/gpt_codings_new/nodes_{participant_id}.txt", "w") as f:
+        node_prompt = make_node_prompt3(metadict)
+        node_file = f"nodes3_{participant_id}.txt"
+        with open(os.path.join(directory, node_file), "w") as f:
                 f.write(node_prompt) 
 
         llm_nodes = call_groq(
@@ -434,79 +575,23 @@ def run_participant2(participant_id):
         llm_nodes = llm_nodes['results']
 
         beliefs_df = pd.DataFrame(llm_nodes)
-        beliefs_df.to_csv(f'data/gpt_codings_new/nodes2_{participant_id}.csv', index=False)
+        node_file = f"nodes3_{participant_id}.csv"
+        beliefs_df.to_csv(os.path.join(directory, node_file), index=False)
 
         # edges 
         idx_list = [num for num, ele in enumerate(llm_nodes)]
 
         edge_list = []
+        
+        edge_file = f"couplings3_{participant_id}.txt"
         for idx in idx_list: 
-                llm_edges = gather_edges(metadict, llm_nodes, idx)
+                llm_edges = gather_edges(metadict, llm_nodes, idx, os.path.join(directory, edge_file))
                 edge_list.append(llm_edges)
 
         llm_edges_df = pd.concat(edge_list)
-        llm_edges_df.to_csv(f'data/gpt_codings_new/couplings2_{participant_id}.csv', index=False)
+        edge_file = f"couplings3_{participant_id}.csv"
+        llm_edges_df.to_csv(os.path.join(directory, edge_file), index=False)
 
-participant_id = 16
-
-run_participant2(participant_id)
-
-### maybe implement extra check on this to ensure consistent format ###
-# - edges must use nodes that exist 
-# - everything must be answered (and have correct values when this applies.)
-# ...
-
-'''
-InstructorRetryException: Error code: 400 - {'error': {'message': "Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.", 'type': 'invalid_request_error', 'code': 'tool_use_failed', 'failed_generation': '<tool-use>{ "results": [ { "focal_target": "Meat Consumption and Production", "other_target": "Animal rights", "focal_target_type": "PERSONAL", "other_target_type": "PERSONAL", "direction": "POSITIVE", "type": "EXPLICIT", "explanation": "Meat consumption raises animal rights concerns" }, { "focal_target": "Meat Consumption and Production", "other_target": "Ethical reasons", "focal_target_type": "PERSONAL", "other_target_type": "PERSONAL", "direction": "POSITIVE", "type": "EXPLICIT", "explanation": "Meat consumption raises ethical concerns" }, { "focal_target": "Meat Consumption and Production", "other_target": "Climate change", "focal_target_type": "PERSONAL", "other_target_type": "PERSONAL", "direction": "POSITIVE", "type": "EXPLICIT", "explanation": "Meat consumption contributes to climate change" }, { "focal_target": "Meat Consumption and Production", "other_target": "Health reasons", "focal_target_type": "PERSONAL", "other_target_type": "PERSONAL", "direction": "POSITIVE", "type": "IMPLICIT", "explanation": "Meat consumption affects health" }, { "focal_target": "Meat Consumption and Production", "other_target": "Climate change", "focal_target_type": "PERSONAL", "other_target_type": "SOCIAL", "direction": "POSITIVE", "type": "IMPLICIT", "explanation": "Social contacts concerned about climate change" }, { "focal_target": "Meat Consumption and Production", "other_target": "Ethical reasons", "focal_target_type": "PERSONAL", "other_target_type": "SOCIAL", "direction": "POSITIVE", "type": "IMPLICIT", "explanation": "Social contacts concerned about ethical reasons" }, { "focal_target": "Meat Consumption and Production", "other_target": "Environmental reasons", "focal_target_type": "PERSONAL", "other_target_type": "SOCIAL", "direction": "POSITIVE", "type": "IMPLICIT", "explanation": "Social contacts concerned about environmental reasons" } ] }</tool-use>'}}
-'''
-
-######## ......................... ##########
-def run_participant(participant_id, model='llama3-70b-8192'): 
-
-        with open(f'data/human_clean/metadict_{participant_id}.json') as f:
-                metadict = json.loads(f.read())
-
-        ## nodes 
-        node_prompt = make_node_prompt(metadict)
-
-        # save
-        with open(f"data/gpt_codings_new/nodes_{participant_id}.txt", "w") as f:
-                f.write(node_prompt) 
-
-        llm_output = call_groq(
-                NodeModelList, 
-                node_prompt,
-                model
-                )
-
-        beliefs = json.loads(llm_output.model_dump_json(indent=2))
-        beliefs_res = beliefs['results']
-        beliefs_df = pd.DataFrame(beliefs_res)
-
-        # save this # 
-        beliefs_df.to_csv(f'data/gpt_codings_new/nodes_{participant_id}.csv', index=False)
-
-        ## edges ##
-        belief_nodes_format = "\n\n".join([f"- {x['concept']} ({x['importance']} {x['type']} importance)" for x in beliefs_res])
-        edge_prompt = make_edge_prompt(metadict, belief_nodes_format)
-
-        # save 
-        with open(f'data/gpt_codings_new/couplings_{participant_id}.txt', 'w') as f: 
-                f.write(edge_prompt)
-
-        llm_edges = call_groq(
-                EdgeModelList, 
-                edge_prompt,
-                model
-                )
-
-        llm_edges = json.loads(llm_edges.model_dump_json(indent=2))
-        llm_edges = llm_edges['results']
-        llm_edges_df = pd.DataFrame(llm_edges) # ahhh.. social one of them.
-        llm_edges_df.to_csv(f'data/gpt_codings_new/couplings_{participant_id}.csv', index=False)
-        print(f"finished running participant ID: {participant_id}")
-
-# run for all participants
-participant_ids = [16, 17, 18, 19, 22, 26, 27]
-p_id = 16
-run_participant(p_id)
+participant_ids = [19, 22, 26, 27] #[16, 17, 18, 19, 22, 26, 27]
+for participant_id in participant_ids: 
+        run_participant2(participant_id)
