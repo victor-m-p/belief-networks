@@ -1,0 +1,48 @@
+{
+    "results": [
+        {
+            "stance": "I agree with the following: I eat too much meat",
+            "importance": "MEDIUM"
+        },
+        {
+            "stance": "I agree with the following: it is easier to eat meat when in a hurry",
+            "importance": "MEDIUM"
+        },
+        {
+            "stance": "I agree with the following: I like meat in certain dishes",
+            "importance": "LOW"
+        },
+        {
+            "stance": "I agree with the following: I feel guilty about how animals are treated",
+            "importance": "HIGH"
+        },
+        {
+            "stance": "I agree with the following: I try to buy eggs and meat from happy and open-air raised animals",
+            "importance": "HIGH"
+        },
+        {
+            "stance": "I agree with the following: I am conflicted about eating meat from unknown sources",
+            "importance": "MEDIUM"
+        },
+        {
+            "stance": "I agree with the following: I wish I invested more time in buying and preparing vegetables",
+            "importance": "MEDIUM"
+        },
+        {
+            "stance": "I agree with the following: eating more vegetables would be healthier",
+            "importance": "MEDIUM"
+        },
+        {
+            "stance": "I agree with the following: I don't like contributing to global warming",
+            "importance": "HIGH"
+        },
+        {
+            "stance": "I agree with the following: I am unsure how much changing my meat consumption habits would help the environment",
+            "importance": "MEDIUM"
+        },
+        {
+            "stance": "I agree with the following: there may be other more impactful changes I could make",
+            "importance": "MEDIUM"
+        }
+    ]
+}

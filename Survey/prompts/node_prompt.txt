@@ -1,0 +1,69 @@
+
+
+### Task Overview ###
+
+Your task is to analyze an interview transcript and identify the central beliefs, attitudes and considerations expressed by the interviewee.
+By "beliefs" we mean statements with a truth value, such as "production animals are treated badly" or "meat consumption does not contribute to climate change". 
+By "attitudes" and "considerations" we mean evaluative statements without a truth value such as "I don't like meat" or "eating meat seems natural to me". 
+We will refer to all of the beliefs, attitudes, and considerations collectively as "stances". 
+
+### Interview Transcript ###
+
+- Interviewer: "What are some things that come to mind when thinking about your meat consumption?"
+- Interviewee: I think I eat too much meat, but it is so much easier to eat meat when one is in
+a hurry. In sandwiches, or some wurstchen for dinner, or a piece of grilled
+chicken. I do like a peace of smoked bacon in things like bean soup or
+sauerkraut. I also often eat eggs and various milk products. I love an egg for
+breakfast. But I feel guilty, because I know how these animals are often
+treated. I try to buy eggs from happy chicken and meat from animals raised in
+open air. But sometimes I can't control that, for example when I buy sausages.
+Do I love a nice wiener wurst! But who knows where that meat comes from. I
+shudder to think. Or, when I order a nice wiener schnitzel in a restaurant - who
+knows where the meat comes from. So I try to not think about that when I can't
+do anything about it, but it doesn't stop me from ordering such food, and this
+makes me conflicted. Also, I wish I would invest more time in buying fresh
+vegetables and preparing vegetable dishes. But I always end up doing something
+else instead of investing time in that. That also frustrates me, both because I
+eat meat from potentially abused animals, and because it would be healthier to
+eat more vegetables. And of course there is the environment. I don't like the
+idea that I am contributing to global warming. That said, I am double conflicted
+here because I don't have a good idea how much would changing my meat
+consumption habits actually contribute to resolving this problem. Maybe there
+are other things I could change that would have much more impact. Maybe I should
+recycle more. Or buy more second-hand clothes. Or heat the apartment less.
+
+- Interviewer: "Please elaborate on why you have (or have not) changed your meat eating habits"
+- Interviewee: Convenience, we have several recipes that we know how to do and about half
+involves meat. Before we had difficulty to buy good fresh vegetables in the US,
+now we often miss the farmer's markets because we procrastinate in the mornings
+when we'd have time to go.
+
+- Interviewer: "Think about people important to you. What are their behaviors and beliefs around meat eating?"
+- Interviewee: My husband is very similar to me. It seems that most of my colleagues eat less
+meat than me, certainly not more. Of my friends, there are some that eat much
+more meat than me, but most eat about the same amount or less. I think many
+people I know try to buy some kind of humanely raised animal products but I am
+not sure.
+
+### Instructions ###
+
+1. Identify stances (beliefs, attitudes, considerations):
+- Formulate each stance as a short statemtent starting exactly with: "I agree with the following: <...>".
+- Avoid empty statements such as "some people avoid eating meat because of important reasons".
+
+2. Rate importance for each stance:
+- Classify how important each stance (belief, attitude, consideration) is to the interviewee in the context of meat consumption.
+- Return your answer as one of [LOW, MEDIUM, HIGH] where LOW are not very important and HIGH are extremely important. 
+
+### Output Format (JSON ONLY) ###
+{
+"results": [
+{
+        "stance": "I agree with the following: <stance>",
+        "importance": "<one of [LOW or MEDIUM or HIGH]>",
+},
+// Repeat for each stance expressed by the interviewee
+]
+}
+
+Return ONLY the JSON object, nothing else.

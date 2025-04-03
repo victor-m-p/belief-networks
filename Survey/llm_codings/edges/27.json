@@ -1,0 +1,60 @@
+{
+    "results": [
+        {
+            "stance_1": "I agree with the following: eating too much meat is bad",
+            "stance_2": "I agree with the following: I feel guilty about eating meat",
+            "direction": "POSITIVE",
+            "relation_type": "EXPLICIT",
+            "explanation": "The interviewee feels guilty about eating meat because they believe eating too much meat is bad, showing a direct and explicit connection between the two stances."
+        },
+        {
+            "stance_1": "I agree with the following: meat is convenient",
+            "stance_2": "I agree with the following: I love eating meat",
+            "direction": "POSITIVE",
+            "relation_type": "EXPLICIT",
+            "explanation": "The convenience of meat and the interviewee's love for eating meat are directly related, as they mention enjoying meat in various forms and finding it easy to consume."
+        },
+        {
+            "stance_1": "I agree with the following: animals are often treated badly in the meat industry",
+            "stance_2": "I agree with the following: I feel guilty about eating meat",
+            "direction": "POSITIVE",
+            "relation_type": "EXPLICIT",
+            "explanation": "The interviewee's guilt about eating meat is partly due to their awareness of the poor treatment of animals in the meat industry, establishing a clear and direct relationship between these stances."
+        },
+        {
+            "stance_1": "I agree with the following: buying eggs from happy chickens and meat from animals raised in open air is important",
+            "stance_2": "I agree with the following: I feel guilty about eating meat",
+            "direction": "POSITIVE",
+            "relation_type": "EXPLICIT",
+            "explanation": "The interviewee's desire to buy ethically sourced meat products is linked to their feelings of guilt about eating meat, indicating an attempt to mitigate their guilt through responsible purchasing decisions."
+        },
+        {
+            "stance_1": "I agree with the following: eating meat contributes to global warming",
+            "stance_2": "I agree with the following: changing my meat consumption habits may not significantly contribute to resolving global warming",
+            "direction": "NEGATIVE",
+            "relation_type": "EXPLICIT",
+            "explanation": "The interviewee is conflicted about the impact of changing their meat consumption on global warming, showing a negative relationship between these two stances as they question the effectiveness of their actions."
+        },
+        {
+            "stance_1": "I agree with the following: I wish I would invest more time in buying fresh vegetables and preparing vegetable dishes",
+            "stance_2": "I agree with the following: it would be healthier to eat more vegetables",
+            "direction": "POSITIVE",
+            "relation_type": "EXPLICIT",
+            "explanation": "The interviewee's desire to spend more time on vegetable-based meals is directly related to their belief in the health benefits of such a diet, highlighting a positive and explicit connection between these stances."
+        },
+        {
+            "stance_1": "I agree with the following: I love eating meat",
+            "stance_2": "I agree with the following: it would be healthier to eat more vegetables",
+            "direction": "NEGATIVE",
+            "relation_type": "IMPLICIT",
+            "explanation": "The interviewee's love for meat and their acknowledgment of the health benefits of vegetables imply a conflict, as their preference for meat may hinder their ability to adopt a healthier, more vegetable-oriented diet."
+        },
+        {
+            "stance_1": "I agree with the following: eating too much meat is bad",
+            "stance_2": "I agree with the following: I love eating meat",
+            "direction": "NEGATIVE",
+            "relation_type": "IMPLICIT",
+            "explanation": "The interviewee's belief that eating too much meat is bad and their love for eating meat suggest an implicit conflict, as their enjoyment of meat contradicts their awareness of its potential negative consequences."
+        }
+    ]
+}

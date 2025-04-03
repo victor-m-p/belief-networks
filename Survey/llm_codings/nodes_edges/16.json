@@ -1,0 +1,54 @@
+{
+    "results": [
+        {
+            "stance": "I agree with the following: animal rights are an issue in industrial-scale production of meat",
+            "importance": "HIGH",
+            "direction": "AGAINST"
+        },
+        {
+            "stance": "I agree with the following: meat consumption may not be ethical",
+            "importance": "HIGH",
+            "direction": "AGAINST"
+        },
+        {
+            "stance": "I agree with the following: eating baby animals is problematic",
+            "importance": "MEDIUM",
+            "direction": "AGAINST"
+        },
+        {
+            "stance": "I agree with the following: animals are entitled to a happy life",
+            "importance": "MEDIUM",
+            "direction": "AGAINST"
+        },
+        {
+            "stance": "I agree with the following: the meat industry contributes to climate change",
+            "importance": "HIGH",
+            "direction": "AGAINST"
+        },
+        {
+            "stance": "I agree with the following: there are great vegetarian alternatives",
+            "importance": "MEDIUM",
+            "direction": "AGAINST"
+        },
+        {
+            "stance": "I agree with the following: I eat meat for social reasons",
+            "importance": "LOW",
+            "direction": "FAVOR"
+        },
+        {
+            "stance": "I agree with the following: I would change my meat habits for health reasons",
+            "importance": "MEDIUM",
+            "direction": "AGAINST"
+        },
+        {
+            "stance": "I agree with the following: my friends rarely eat a lot of meat",
+            "importance": "LOW",
+            "direction": "AGAINST"
+        },
+        {
+            "stance": "I agree with the following: many people are motivated to reduce meat consumption for environmental and ethical reasons",
+            "importance": "MEDIUM",
+            "direction": "AGAINST"
+        }
+    ]
+}

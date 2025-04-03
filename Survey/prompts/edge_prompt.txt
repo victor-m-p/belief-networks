@@ -1,0 +1,91 @@
+
+        
+### Task Overview ### 
+You will analyze a transcript of an interview about meat eating.
+From this transcript a number of stances (beliefs, attitudes, concerns) related to meat eating were extracted.
+Your job is to analyze the interview and find all stances that are related for the interviewee.
+
+### Definitions ###
+- "Related" means there is a clear logical, conceptual, argumentative, or social connection.
+- A "POSITIVE" relation means that the two targets reinforce, support, or align with each other (they tend to go together).
+- A "NEGATIVE" relation means that the two targets conflict, oppose, contradict, or are mutually incompatible (they tend not to go together).
+- Do not use POSITIVE/NEGATIVE as a normative judgment (good/bad) but think in terms of reinforcement (POSITIVE) or conflict (NEGATIVE)
+
+### Examples ###
+- Two negative outcomes can have a POSITIVE relationship if one reinforces or leads to the other (e.g., meat consumption reinforces climate change concerns).
+- Two positive outcomes can have a NEGATIVE relationship if they conflict or oppose each other (e.g., health benefits from meat reduction conflicting with personal enjoyment of meat).
+
+### Interview Excerpt ###
+- Question: "What are some things that come to mind when thinking about your meat consumption?"
+- Answer: I think I eat too much meat, but it is so much easier to eat meat when one is in
+a hurry. In sandwiches, or some wurstchen for dinner, or a piece of grilled
+chicken. I do like a peace of smoked bacon in things like bean soup or
+sauerkraut. I also often eat eggs and various milk products. I love an egg for
+breakfast. But I feel guilty, because I know how these animals are often
+treated. I try to buy eggs from happy chicken and meat from animals raised in
+open air. But sometimes I can't control that, for example when I buy sausages.
+Do I love a nice wiener wurst! But who knows where that meat comes from. I
+shudder to think. Or, when I order a nice wiener schnitzel in a restaurant - who
+knows where the meat comes from. So I try to not think about that when I can't
+do anything about it, but it doesn't stop me from ordering such food, and this
+makes me conflicted. Also, I wish I would invest more time in buying fresh
+vegetables and preparing vegetable dishes. But I always end up doing something
+else instead of investing time in that. That also frustrates me, both because I
+eat meat from potentially abused animals, and because it would be healthier to
+eat more vegetables. And of course there is the environment. I don't like the
+idea that I am contributing to global warming. That said, I am double conflicted
+here because I don't have a good idea how much would changing my meat
+consumption habits actually contribute to resolving this problem. Maybe there
+are other things I could change that would have much more impact. Maybe I should
+recycle more. Or buy more second-hand clothes. Or heat the apartment less.
+
+- Question: "Please elaborate on why you have (or have not) changed your meat eating habits"
+- Answer: Convenience, we have several recipes that we know how to do and about half
+involves meat. Before we had difficulty to buy good fresh vegetables in the US,
+now we often miss the farmer's markets because we procrastinate in the mornings
+when we'd have time to go.
+
+- Question: "Think about people important to you. What are their behaviors and beliefs around meat eating?"
+- Answer: My husband is very similar to me. It seems that most of my colleagues eat less
+meat than me, certainly not more. Of my friends, there are some that eat much
+more meat than me, but most eat about the same amount or less. I think many
+people I know try to buy some kind of humanely raised animal products but I am
+not sure.
+
+### Targets ###
+The following stances (opinions, attitudes, concerns) were identified as held by the interviewee:
+
+- I agree with the following: eating too much meat is bad
+- I agree with the following: meat is convenient
+- I agree with the following: animals are often treated badly in the meat industry
+- I agree with the following: I love eating meat
+- I agree with the following: buying eggs from happy chickens and meat from animals raised in open air is important
+- I agree with the following: I feel guilty about eating meat
+- I agree with the following: eating meat contributes to global warming
+- I agree with the following: changing my meat consumption habits may not significantly contribute to resolving global warming
+- I agree with the following: I wish I would invest more time in buying fresh vegetables and preparing vegetable dishes
+- I agree with the following: it would be healthier to eat more vegetables
+
+### Task ###
+
+1. Find stances that POSITIVELY reinforce each other or NEGATIVELY conflict with each other. 
+2. Classify whether the direction is POSTIVE or NEGATIVE 
+3. Classify whether the relation is EXPLICIT (directly stated) or IMPLICIT (implied but not stated).
+4. Provide a brief explanation of why the two stances are related for the interviewee.
+
+### Output Format (JSON ONLY) ###
+{
+"results": [
+{
+        "stance_1": "<full stance>",
+        "stance_2": "<full stance>",
+        "direction": "<one among [POSITIVE, NEGATIVE]>",
+        "relation_type": "<one among [EXPLICIT, IMPLICIT]>",
+        "explanation": "the two stances are related because: <explanation>"
+}
+// Repeat for each relation between stances that is discovered
+]
+}
+
+Return ONLY the JSON object, nothing else.
+        

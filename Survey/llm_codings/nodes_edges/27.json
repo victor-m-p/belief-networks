@@ -1,0 +1,54 @@
+{
+    "results": [
+        {
+            "stance": "I agree with the following: eating too much meat is bad",
+            "importance": "HIGH",
+            "direction": "AGAINST"
+        },
+        {
+            "stance": "I agree with the following: meat is convenient",
+            "importance": "MEDIUM",
+            "direction": "FAVOR"
+        },
+        {
+            "stance": "I agree with the following: animals are often treated badly in the meat industry",
+            "importance": "HIGH",
+            "direction": "AGAINST"
+        },
+        {
+            "stance": "I agree with the following: I love eating meat",
+            "importance": "MEDIUM",
+            "direction": "FAVOR"
+        },
+        {
+            "stance": "I agree with the following: buying eggs from happy chickens and meat from animals raised in open air is important",
+            "importance": "HIGH",
+            "direction": "AGAINST"
+        },
+        {
+            "stance": "I agree with the following: I feel guilty about eating meat",
+            "importance": "HIGH",
+            "direction": "AGAINST"
+        },
+        {
+            "stance": "I agree with the following: eating meat contributes to global warming",
+            "importance": "MEDIUM",
+            "direction": "AGAINST"
+        },
+        {
+            "stance": "I agree with the following: changing my meat consumption habits may not significantly contribute to resolving global warming",
+            "importance": "LOW",
+            "direction": "FAVOR"
+        },
+        {
+            "stance": "I agree with the following: I wish I would invest more time in buying fresh vegetables and preparing vegetable dishes",
+            "importance": "MEDIUM",
+            "direction": "AGAINST"
+        },
+        {
+            "stance": "I agree with the following: it would be healthier to eat more vegetables",
+            "importance": "MEDIUM",
+            "direction": "AGAINST"
+        }
+    ]
+}

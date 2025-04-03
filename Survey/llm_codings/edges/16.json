@@ -1,0 +1,39 @@
+{
+    "results": [
+        {
+            "stance_1": "I agree with the following: animal rights are an issue in industrial-scale production of meat",
+            "stance_2": "I agree with the following: meat consumption may not be ethical",
+            "direction": "POSITIVE",
+            "relation_type": "EXPLICIT",
+            "explanation": "The two stances are related because they both express concerns about the treatment of animals in the meat industry, with animal rights being a key factor in determining the ethics of meat consumption."
+        },
+        {
+            "stance_1": "I agree with the following: eating baby animals is problematic",
+            "stance_2": "I agree with the following: animals are entitled to a happy life",
+            "direction": "POSITIVE",
+            "relation_type": "EXPLICIT",
+            "explanation": "The two stances are related because they both express concerns about the welfare of animals, with eating baby animals being a specific issue that relates to the broader principle of animals being entitled to a happy life."
+        },
+        {
+            "stance_1": "I agree with the following: the meat industry contributes to climate change",
+            "stance_2": "I agree with the following: there are great vegetarian alternatives",
+            "direction": "POSITIVE",
+            "relation_type": "EXPLICIT",
+            "explanation": "The two stances are related because they both suggest that reducing meat consumption can have positive effects, with the meat industry contributing to climate change and vegetarian alternatives offering a more sustainable option."
+        },
+        {
+            "stance_1": "I agree with the following: I eat meat for social reasons",
+            "stance_2": "I agree with the following: I would change my meat habits for health reasons",
+            "direction": "NEGATIVE",
+            "relation_type": "IMPLICIT",
+            "explanation": "The two stances are related because they represent conflicting motivations, with eating meat for social reasons potentially conflicting with the desire to change meat habits for health reasons."
+        },
+        {
+            "stance_1": "I agree with the following: my friends rarely eat a lot of meat",
+            "stance_2": "I agree with the following: many people are motivated to reduce meat consumption for environmental and ethical reasons",
+            "direction": "POSITIVE",
+            "relation_type": "EXPLICIT",
+            "explanation": "The two stances are related because they both suggest that the interviewee is part of a social network that shares similar values and motivations regarding meat consumption, with friends rarely eating a lot of meat and many people being motivated to reduce meat consumption for environmental and ethical reasons."
+        }
+    ]
+}
