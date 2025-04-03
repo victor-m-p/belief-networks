@@ -24,7 +24,7 @@ def filter_bidirectional_same_type(edges_df):
 
 def create_network(dir, participant_id):
     node_file = f"nodes3_{participant_id}.csv"
-    edge_file = f"couplings3_{participant_id}.csv"
+    edge_file = f"couplings4_{participant_id}.csv"
     df_nodes = pd.read_csv(os.path.join(dir, node_file))
     df_edges = pd.read_csv(os.path.join(dir, edge_file))
 
@@ -36,8 +36,8 @@ def create_network(dir, participant_id):
     # Quick fix; but actually fix
     df_edges['direction'] = df_edges['direction'].where(df_edges['direction'].isin(['POSITIVE', 'NEGATIVE']), 'OTHER')
     #df_edges = df_edges[df_edges['relation_type']=='EXPLICIT']
-    df_edges = filter_bidirectional_same_type(df_edges)
-    df_edges = df_edges[df_edges['relation_type']=='EXPLICIT']
+    #df_edges = filter_bidirectional_same_type(df_edges)
+    #df_edges = df_edges[df_edges['relation_type']=='EXPLICIT']
 
     # Map importance to numerical sizes
     size_mapping = {'HIGH': 1500, 'MEDIUM': 800, 'LOW': 400}
@@ -107,11 +107,11 @@ def draw_belief_network(G, participant_id):
     plt.tight_layout(pad=1.5)
 
     # Save figure without cutting off
-    plt.savefig(f"fig/participant_networks/{participant_id}.png", bbox_inches='tight', dpi=300)
+    plt.savefig(f"fig/participant_networks/{participant_id}_all.png", bbox_inches='tight', dpi=300)
     plt.close();
     
 # load  
-dir = f'data/llama-3.3-70b-versatile'
+dir = f'data/llama-3.3-70b-versatile-network'
 participant_id = [16, 17, 18, 19, 22, 26, 27]
 for p_id in participant_id: 
     G = create_network(dir, p_id)

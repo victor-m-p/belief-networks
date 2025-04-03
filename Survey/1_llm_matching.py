@@ -259,7 +259,6 @@ Return ONLY the JSON object, nothing else.
                 """
         return prompt
 
-
 def make_edge_prompt(metadict, belief_nodes):
         b_focal = metadict['free_text']['b_focal']
         b_focal = textwrap.fill(b_focal, width=80)
@@ -505,6 +504,92 @@ Return ONLY the JSON object, nothing else.
         """
         return prompt 
 
+def make_edge_prompt4(metadict, beliefs_res, idx): 
+        
+        # extract the text from interview
+        b_focal = metadict['free_text']['b_focal']
+        b_focal = textwrap.fill(b_focal, width=80)
+
+        cmv_focal = metadict['free_text']['cmv_focal']
+        cmv_focal = textwrap.fill(cmv_focal, width=80)
+
+        b_social = metadict['free_text']['social']
+        b_social = textwrap.fill(b_social, width=80)
+        
+        # extract the belief nodes        
+        concept_tuples = [f"target: {x['concept']} (type: {x['type']})" for x in beliefs_res]
+        focal_target = concept_tuples[idx]
+        other_targets = concept_tuples[:idx] + concept_tuples[idx + 1:]
+        other_targets = "\n".join([f"- {x}" for x in other_targets])
+        
+        prompt = f"""
+You will analyze an interview transcript related to meat eating.
+You will be given:
+
+1. A focal "target" (belief, concept, or concern) relevant to meat eating for the interviewee.
+2. Several other targets extracted from the same interview.
+
+Your task is to clearly judge whether the focal target is related to each of the other targets, and determine the nature of that relation.
+
+### Definitions ###
+- "Related" means there is a clear logical, conceptual, argumentative, or social connection.
+- A "POSITIVE" relation means that the two targets reinforce, support, or align with each other (they tend to go together).
+- A "NEGATIVE" relation means that the two targets conflict, oppose, contradict, or are mutually incompatible (they tend not to go together).
+
+### Examples ###
+- Two negative outcomes can have a POSITIVE relationship if one reinforces or leads to the other (e.g., meat consumption reinforces climate change concerns).
+- Two positive outcomes can have a NEGATIVE relationship if they conflict or oppose each other (e.g., health benefits from meat reduction conflicting with personal enjoyment of meat).
+
+### Interview Excerpt ###
+- Question: "What are some things that come to mind when thinking about your meat consumption?"
+- Answer: {b_focal}
+
+- Question: "Please elaborate on why you have (or have not) changed your meat eating habits"
+- Answer: {cmv_focal}
+
+- Question: "Think about people important to you. What are their behaviors and beliefs around meat eating?"
+- Answer: {b_social}
+
+### Focal Target ###
+- {focal_target}
+
+### Other Targets ###
+{other_targets}
+
+### Task ###
+For EACH of the other targets, explicitly evaluate:
+
+1. Is the focal target related to this other target? (YES/NO)
+2. If YES:
+   - Direction: POSITIVE or NEGATIVE
+     - POSITIVE = reinforce, support, or align
+     - NEGATIVE = conflict, oppose, or contradict
+   - Relation type: EXPLICIT (clearly stated in interview) or IMPLICIT (conceptual connection but not directly stated)
+   - Explanation: Short and precise (max. 10 words)
+
+### Important ###
+- Do NOT use POSITIVE/NEGATIVE as a normative judgment (good vs. bad). Instead, think purely in terms of reinforcement (POSITIVE) or conflict (NEGATIVE).
+
+### Output Format (JSON ONLY) ###
+{{
+"results": [
+{{
+        "focal_target": "<focal target>",
+        "other_target": "<other target>",
+        "focal_target_type": "PERSONAL or SOCIAL",
+        "other_target_type": "PERSONAL or SOCIAL",
+        "direction": "POSITIVE or NEGATIVE",
+        "relation_type": "EXPLICIT or IMPLICIT",
+        "explanation": "brief explanation"
+}}
+// Repeat for each related target
+]
+}}
+
+Return ONLY the JSON object, nothing else.
+        """
+        return prompt
+
 import re 
 class EdgeModel2(BaseModel): 
         focal_target: str
@@ -530,7 +615,7 @@ class EdgeModel2List(BaseModel):
 # edges 
 def gather_edges(metadict, llm_nodes, idx, filename, model = 'llama-3.3-70b-versatile'): 
         # make the prompt
-        edge_prompt = make_edge_prompt3(metadict, llm_nodes, idx)
+        edge_prompt = make_edge_prompt4(metadict, llm_nodes, idx)
 
         # save one example 
         print(idx)
@@ -555,7 +640,7 @@ def run_participant2(participant_id, model = 'llama-3.3-70b-versatile'):
         with open(f'data/human_clean/metadict_{participant_id}.json') as f:
                 metadict = json.loads(f.read())
 
-        directory = f'data/{model}'
+        directory = f'data/{model}-network'
         if not os.path.exists(directory):
                 os.makedirs(directory)
 
@@ -583,15 +668,15 @@ def run_participant2(participant_id, model = 'llama-3.3-70b-versatile'):
 
         edge_list = []
         
-        edge_file = f"couplings3_{participant_id}.txt"
+        edge_file = f"couplings4_{participant_id}.txt"
         for idx in idx_list: 
                 llm_edges = gather_edges(metadict, llm_nodes, idx, os.path.join(directory, edge_file))
                 edge_list.append(llm_edges)
 
         llm_edges_df = pd.concat(edge_list)
-        edge_file = f"couplings3_{participant_id}.csv"
+        edge_file = f"couplings4_{participant_id}.csv"
         llm_edges_df.to_csv(os.path.join(directory, edge_file), index=False)
 
-participant_ids = [19, 22, 26, 27] #[16, 17, 18, 19, 22, 26, 27]
+participant_ids = [16, 17, 18, 19, 22, 26, 27] #[16, 17, 18, 19, 22, 26, 27]
 for participant_id in participant_ids: 
         run_participant2(participant_id)
