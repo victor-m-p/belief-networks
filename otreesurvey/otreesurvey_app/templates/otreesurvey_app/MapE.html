@@ -1,0 +1,174 @@
+{{ block title }}
+Political Mapping</strong>
+{{ endblock }}
+
+{% block content %}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const canvas = document.getElementById("dragCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const points = [
+        {% for point in belief_points %}
+            { label: "{{ point.label }}", x: {{ point.x }}, y: {{ point.y }} },
+        {% endfor %}
+    ];
+    
+
+        let draggingPoint = null;
+        let wasDragging = false;
+        let selectedPoint = null;
+        const edges = [];
+
+        function drawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw visible square boundary (e.g., 600x600 inside a wider canvas)
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, 0, 600, 600);  // This draws the boundary square
+
+            // Draw edges
+            edges.forEach(edge => {
+                ctx.beginPath();
+                ctx.moveTo(edge.from.x, edge.from.y);
+                ctx.lineTo(edge.to.x, edge.to.y);
+                ctx.strokeStyle = "gray";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+
+            // Draw points
+            points.forEach(point => {
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 10, 0, 2 * Math.PI);
+                ctx.fillStyle = point === selectedPoint ? "yellow" : "orange";
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = "black";
+                ctx.font = "16px sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "bottom"; // Align text above the circle
+                ctx.fillText(point.label, point.x, point.y - 12);
+            });
+        }
+
+        function getMousePos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: evt.clientX - rect.left,
+                y: evt.clientY - rect.top
+            };
+        }
+
+        function findPoint(mousePos) {
+            return points.find(p => Math.hypot(p.x - mousePos.x, p.y - mousePos.y) < 10);
+        }
+
+        canvas.addEventListener("mousedown", function (evt) {
+            const mousePos = getMousePos(evt);
+            const clickedPoint = findPoint(mousePos);
+
+            if (clickedPoint) {
+                draggingPoint = clickedPoint;
+                wasDragging = false;
+            }
+        });
+
+        canvas.addEventListener("mousemove", function (evt) {
+            if (draggingPoint) {
+                const mousePos = getMousePos(evt);
+                draggingPoint.x = mousePos.x;
+                draggingPoint.y = mousePos.y;
+                wasDragging = true;
+                drawCanvas();
+            }
+        });
+
+        canvas.addEventListener("mouseup", function (evt) {
+            if (draggingPoint) {
+                const mousePos = getMousePos(evt);
+                const releasedPoint = findPoint(mousePos);
+
+                if (!wasDragging && releasedPoint === draggingPoint) {
+                    // Treat as a click (no drag)
+                    if (selectedPoint === null) {
+                        selectedPoint = releasedPoint;
+                    } else if (selectedPoint !== releasedPoint) {
+                        // Check if edge exists
+                        const existingIndex = edges.findIndex(edge =>
+                            (edge.from === selectedPoint && edge.to === releasedPoint) ||
+                            (edge.from === releasedPoint && edge.to === selectedPoint)
+                        );
+
+                        if (existingIndex > -1) {
+                            // Remove edge
+                            edges.splice(existingIndex, 1);
+                        } else {
+                            // Add edge
+                            edges.push({ from: selectedPoint, to: releasedPoint });
+                        }
+
+                        selectedPoint = null;
+                    } else {
+                        // Clicked same point again → deselect
+                        selectedPoint = null;
+                    }
+
+                    drawCanvas();
+                }
+
+                draggingPoint = null;
+            }
+        });
+
+        drawCanvas();
+
+        function savePositions() {
+            document.getElementById("positions").value = JSON.stringify(points);
+            document.getElementById("edges").value = JSON.stringify(edges.map(edge => ({
+                from: edge.from.label,
+                to: edge.to.label
+            })));
+        }
+
+        function areAllPointsInsideBox() {
+            return points.every(p => 
+                p.x >= 0 && p.x <= 600 &&
+                p.y >= 0 && p.y <= 600
+            );
+        }        
+
+        const form = document.querySelector("form");
+        const nextButton = document.querySelector("button[type=submit], .otree-btn-next");
+        
+        nextButton.addEventListener("click", function (e) {
+            if (!areAllPointsInsideBox()) {
+                e.preventDefault(); // Prevent the "freeze"
+                alert("Please drag all labels into the square before continuing.");
+                return;
+            }
+        
+            savePositions();      // Save positions and edges
+            form.submit();        // Submit manually
+        });
+        
+    });
+</script>
+
+Some text here.
+
+<br></br>
+
+Some text here.
+
+<br></br>
+
+<canvas id="dragCanvas" width="900" height="600" style="border:1px solid black;"></canvas>
+<input type="hidden" id="positions" name="positions">
+<input type="hidden" id="edges" name="edges">
+
+{{ next_button }}
+
+{% endblock %}

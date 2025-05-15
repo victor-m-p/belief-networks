@@ -1,0 +1,49 @@
+{{ block title }}
+Plausibility check
+{{ endblock }}
+{{ block content }}
+
+Arranging people on a political map is a difficult task and often involves balancing some trade-offs. We want to
+understand how well the mapping you provided reflects your distances.
+
+You assigned a greater opinion distance <strong>between you and {{ distantFriend }}</strong> than
+<strong>between you and {{ similarFriend }}</strong>.
+
+{{ formfield "check_self_f1f2" }}
+
+{{ formfield "reason_f1f2" }}
+
+You also assigned a greater opinion distance <strong>between you and {{ distantP }}</strong> than
+<strong>between you and {{ similarP }}</strong>.
+
+{{ formfield "check_self_P1P2" }}
+
+{{ formfield "reason_P1P2" }}
+
+
+{{next_button}}
+
+
+For reference, here are the opinions of P1 and P2 again:
+<table class="table">
+    <thead>
+        <tr>
+            <th style="width: 50%;"></th>
+            <th style="width: 50%;"></th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+
+            <td><img src="{% static 'P1_ops.png' %}" alt="P1 opinion" style="width:400px;height:280px;">
+                <!-- We risk our entire economic prosperity if we put everything to the test now because of climate change. -->
+            </td>
+            <td><img src="{% static 'P2_ops.png' %}" alt="P2 opinion" style="width:400px;height:280px;">
+                <!-- People who have changed their gender should be recognised as normal. -->
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+{{endblock}}

@@ -1,0 +1,95 @@
+{{ block title }}
+Political Mapping</strong>
+{{ endblock }}
+
+{% block content %}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const canvas = document.getElementById("dragCanvas");
+        const ctx = canvas.getContext("2d");
+        const points = [
+            { label: "self", x: 100, y: 100 },
+            { label: "{{ player.friend1 }}", x: 200, y: 110 },
+            { label: "{{ player.friend2 }}", x: 250, y: 120 },
+            { label: "{{ player.friend3 }}", x: 300, y: 130 },
+            { label: "GreenVoter", x: 400, y: 200 },
+            { label: "AfDVoter", x: 450, y: 220 },
+            { label: "P1", x: 1200, y: 1200 },
+            { label: "P2", x: 1300, y: 1200 },
+            { label: "P3", x: 1200, y: 1300 },
+            { label: "P4", x: 1300, y: 1300 },
+        ];
+        let draggingPoint = null;
+
+        function drawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            points.forEach(point => {
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 10, 0, 2 * Math.PI);
+                ctx.fillStyle = point.label === "self" ? "black" : (point.label.startsWith("P") && ["1", "2", "3", "4"].includes(point.label[1]) ? "red" : (point.label === "GreenVoter" ? "green" : (point.label === "AfDVoter" ? "blue" : "orange")));
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = "black";
+                ctx.fillText(point.label, point.x + 12, point.y);
+            });
+        }
+
+        function getMousePos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: evt.clientX - rect.left,
+                y: evt.clientY - rect.top
+            };
+        }
+
+        function findPoint(mousePos) {
+            return points.find(p => Math.hypot(p.x - mousePos.x, p.y - mousePos.y) < 10);
+        }
+
+        canvas.addEventListener("mousedown", function (evt) {
+            const mousePos = getMousePos(evt);
+            draggingPoint = findPoint(mousePos);
+        });
+
+        canvas.addEventListener("mousemove", function (evt) {
+            if (draggingPoint) {
+                const mousePos = getMousePos(evt);
+                draggingPoint.x = mousePos.x;
+                draggingPoint.y = mousePos.y;
+                drawCanvas();
+            }
+        });
+
+        canvas.addEventListener("mouseup", function () {
+            draggingPoint = null;
+        });
+
+        drawCanvas();
+
+        function savePositions() {
+            document.getElementById("positions").value = JSON.stringify(points);
+        }
+
+        // Ensure saving positions before form submission
+        document.querySelector("form").addEventListener("submit", savePositions);
+    });
+</script>
+
+We now continue to the actual task:
+
+<br></br>
+
+Imagine you, your social contacts, a typical Green voter, and a typical AfD voter are standing in a room.
+Arrange yourselves so that <strong>individuals who share similar political views</strong> on questions regarding
+economic inequality, migration, diversity, and climate change <strong>are positioned close together</strong>, while
+those with differing views are farther apart.
+
+<br></br>
+
+<canvas id="dragCanvas" width="500" height="500" style="border:1px solid black;"></canvas>
+<input type="hidden" id="positions" name="positions">
+
+{{ next_button }}
+
+{% endblock %}

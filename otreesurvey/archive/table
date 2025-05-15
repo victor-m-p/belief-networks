@@ -1,0 +1,39 @@
+
+{% comment %}
+Read the statements P1 to P4 below and position them in the same way in the room.
+
+<table class="table">
+    <thead>
+        <tr>
+            <th style="width: 10%;">Name</th>
+            <th style="width: 90%;">Statement</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>P1</td>
+            <td><img src="{% static 'P1.png' %}" alt="P1 opinion" style="width:128px;height:128px;">
+                <!-- We risk our entire economic prosperity if we put everything to the test now because of climate change. -->
+            </td>
+        </tr>
+        <tr>
+            <td>P2</td>
+            <td><img src="{% static 'P2.png' %}" alt="P1 opinion" style="width:128px;height:128px;">
+                <!-- People who have changed their gender should be recognised as normal. -->
+            </td>
+        </tr>
+        <tr>
+            <td>P3</td>
+            <td><img src="{% static 'P3.png' %}" alt="P1 opinion" style="width:128px;height:128px;">
+                <!-- Support for the unemployed in the form of social benefits should be significantly increased.</td> -->
+        </tr>
+        <tr>
+            <td>P4</td>
+            <td>
+                <img src="{% static 'P4.png' %}" alt="P1 opinion" style="width:128px;height:128px;">
+                <!-- Only migrants who make an effort and integrate should be given the same rights as natives. -->
+            </td>
+        </tr>
+    </tbody>
+</table>
+{% endcomment %}

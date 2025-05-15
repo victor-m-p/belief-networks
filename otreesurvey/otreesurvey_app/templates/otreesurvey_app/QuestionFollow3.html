@@ -1,0 +1,11 @@
+{% block styles %}
+    <link rel="stylesheet" href="{{ static 'global.css' }}">
+{% endblock %}
+
+{% block title %} CO2 Tax {% endblock %}
+
+{% block content %}
+<p>{{ prompt }}</p>
+{{ formfield 'q1_followup3' }}
+{{ next_button }}
+{% endblock %}

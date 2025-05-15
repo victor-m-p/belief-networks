@@ -1,0 +1,50 @@
+{{ block title }}
+Political Beliefs of <strong>a typical AfD voter</strong>
+{{ endblock }}
+{{ block content }}
+
+We now ask you the same political questions as before. Imagine a <strong>AfD voter</strong>. Please click on the
+response option that you think this AfD voter mioght select.
+
+<table class="table">
+    <thead>
+        <tr>
+            <th style="width: 65%;">Statement</th>
+            <th style="width: 45%;">What you think the AfD voter would respond.</th>
+        </tr>
+        <!--  <tr>
+             <th></th>
+             <th> &nbsp;&nbsp;&nbsp;&nbsp;1 = Strongly Agree; 5 = Strongly Disagree </th>
+         </tr>
+         <tr>
+             <th></th>
+             <th> &nbsp;&nbsp;&nbsp;&nbsp;(-999 = I don't know/refuse) </th>
+         </tr> -->
+    </thead>
+    <tbody>
+        <tr>
+            <td>{{ question_climate_concern }}</td>
+            <td>{{ form.AfDVoter_climate_concern }}</td>
+        </tr>
+        <tr>
+            <td>{{ question_gay_adoption }}</td>
+            <td>{{ form.AfDVoter_gay_adoption }}</td>
+        </tr>
+        <tr>
+            <td>{{ question_migration_enriches_culture }}</td>
+            <td>{{ form.AfDVoter_migration_enriches_culture }}</td>
+        </tr>
+        <tr>
+            <td>{{ question_govt_reduce_inequ }}</td>
+            <td>{{ form.AfDVoter_govt_reduce_inequ }}</td>
+        </tr>
+
+    </tbody>
+</table>
+
+
+
+{{next_button}}
+
+
+{{ endblock }}

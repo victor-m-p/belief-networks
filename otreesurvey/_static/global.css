@@ -1,0 +1,14 @@
+textarea {
+    height: 200px !important;
+    resize: vertical;
+    width: 100%;
+    font-size: 18px !important;
+    font-family: sans-serif;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+body {
+    font-size: 22px;
+    line-height: 1.6;
+}
