@@ -1,0 +1,13 @@
+{% block content %}
+<h2>Suggested Beliefs Based on Your Responses</h2>
+
+<p>We used an AI assistant to identify potential belief statements from your previous answers. Please review them below.</p>
+
+<ul>
+    {% for belief in generated_nodes %}
+        <li>{{ belief }}</li>
+    {% endfor %}
+</ul>
+
+{{ next_button }}
+{% endblock %}

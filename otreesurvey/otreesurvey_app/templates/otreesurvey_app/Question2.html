@@ -2,13 +2,10 @@
     <link rel="stylesheet" href="{{ static 'global.css' }}">
 {% endblock %}
 
-{{ block title }} CO2 Tax {{ endblock }}
+{% block title %} CO2 Tax {% endblock %}
 
-{{ block content }}
-
+{% block content %}
 <p>{{ prompt }}</p>
-{{ formfield 'main_q1_response'}}
+{{ formfield 'question2' }}
 {{ next_button }}
-
-
-{{ endblock }}
+{% endblock %}

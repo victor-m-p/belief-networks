@@ -1,5 +1,7 @@
 from otree.api import *
 import json
+from .llm_utils import extract_beliefs_from_answers
+import json
 
 doc = """
 Your app description
@@ -97,6 +99,7 @@ def define_friend(label):
 
 
 class Player(BasePlayer):
+    # demography page 
     age = models.IntegerField(label='How old are you?', min=18, max=100)
     feel_closest = models.StringField(label='Do you feel yourself closer to one of the political parties than the others?',
                                      choices=["yes", "no", "refuse to say"],
@@ -112,25 +115,23 @@ class Player(BasePlayer):
     #################################
     #####  OWN POLITICAL OPINIONS   #####
     #################################
-    own_climate_concern= make_field(C.QUESTIONS[0])
-    own_gay_adoption= make_field(C.QUESTIONS[1])
-    own_govt_reduce_inequ=  make_field(C.QUESTIONS[2])
-    own_migration_enriches_culture=  make_field(C.QUESTIONS[3])
+    #own_climate_concern= make_field(C.QUESTIONS[0])
+    #own_gay_adoption= make_field(C.QUESTIONS[1])
+    #own_govt_reduce_inequ=  make_field(C.QUESTIONS[2])
+    #own_migration_enriches_culture=  make_field(C.QUESTIONS[3])
 
-    #################################
-    #####  MAP POSITIONS   #####
-    #################################
-    positionsTest = models.LongStringField()  # Stores JSON data of positions
+    # map positions
+    # positionsTest = models.LongStringField()  # Stores JSON data of positions
     positions = models.LongStringField()  # Stores JSON data of positions
     edges = models.LongStringField()  # Added for edges
 
     #################################
     #####  CHecks   #####
     #################################
-    for toCheck in ["f1f2", "P1P2"]:
-        exec(f"check_self_{toCheck} = models.StringField(        choices=['not at all','somewhat','very much'],label=C.CHECKTEXT('your friends'),widget=widgets.RadioSelectHorizontal,blank=True)")
-        exec(f"reason_{toCheck} =  models.LongStringField(label=C.REASONTEXT)")
-    del toCheck
+    #for toCheck in ["f1f2", "P1P2"]:
+    #    exec(f"check_self_{toCheck} = models.StringField(        choices=['not at all','somewhat','very much'],label=C.CHECKTEXT('your friends'),widget=widgets.RadioSelectHorizontal,blank=True)")
+    #    exec(f"reason_{toCheck} =  models.LongStringField(label=C.REASONTEXT)")
+    #del toCheck
 
     isTrainingPassed = models.BooleanField(initial=False)#
     isTrainingCondFvC = models.BooleanField(initial=False)#
@@ -142,11 +143,11 @@ class Player(BasePlayer):
     ps_placed = models.IntegerField(initial=0)  
     
     # for questions
-    main_q1_response = models.LongStringField(label="", blank=False)  # Will use dynamic label
-    q1_followup1 = models.LongStringField(label="", blank=False)
-    q1_followup2 = models.LongStringField(label="", blank=False)
-    q1_followup3 = models.LongStringField(label="", blank=False)
-    q1_followup4 = models.LongStringField(label="", blank=False)
+    question1 = models.LongStringField(label="", blank=False)  # Will use dynamic label
+    question2 = models.LongStringField(label="", blank=False)
+    question3 = models.LongStringField(label="", blank=False)
+    question4 = models.LongStringField(label="", blank=False)
+    question5 = models.LongStringField(label="", blank=False)
 
     # labels
     label_1 = models.StringField(
@@ -169,6 +170,9 @@ class Player(BasePlayer):
         label="", 
         blank=True,
         max_length=max_length)
+    
+    # llm nodes
+    llm_nodes = models.LongStringField(blank=True)
 
 #################################
 #####  FRIENDS' POLITICAL OPINIONS   #####
@@ -394,9 +398,9 @@ class Results(Page):
     pass
 
 ### classes for question pages ###
-class QuestionMain1(Page):
+class Question1(Page):
     form_model = 'player'
-    form_fields = ['main_q1_response']
+    form_fields = ['question1']
 
     @staticmethod
     def vars_for_template(player: Player):
@@ -404,39 +408,39 @@ class QuestionMain1(Page):
 
     @staticmethod
     def before_next_page(player: Player, timeout_happened):
-        print("Main response:", player.main_q1_response)
+        print("Main response:", player.question1)
 
 
-class QuestionFollow1(Page):
+class Question2(Page):
     form_model = 'player'
-    form_fields = ['q1_followup1']
+    form_fields = ['question2']
 
     @staticmethod
     def vars_for_template(player: Player):
         return dict(prompt=C.FOLLOWUP_QUESTIONS[0])
 
 
-class QuestionFollow2(Page):
+class Question3(Page):
     form_model = 'player'
-    form_fields = ['q1_followup2']
+    form_fields = ['question3']
 
     @staticmethod
     def vars_for_template(player: Player):
         return dict(prompt=C.FOLLOWUP_QUESTIONS[1])
 
 
-class QuestionFollow3(Page):
+class Question4(Page):
     form_model = 'player'
-    form_fields = ['q1_followup3']
+    form_fields = ['question4']
 
     @staticmethod
     def vars_for_template(player: Player):
         return dict(prompt=C.FOLLOWUP_QUESTIONS[2])
 
 
-class QuestionFollow4(Page):
+class Question5(Page):
     form_model = 'player'
-    form_fields = ['q1_followup4']
+    form_fields = ['question5']
 
     @staticmethod
     def vars_for_template(player: Player):
@@ -450,27 +454,46 @@ class LabelingPage(Page):
     def vars_for_template(player: Player):
         return dict(
             main_question=C.MAIN_QUESTION_1,
-            main_answer=player.main_q1_response,
+            main_answer=player.question1,
             followups=list(zip(C.FOLLOWUP_QUESTIONS, [
-                player.q1_followup1,
-                player.q1_followup2,
-                player.q1_followup3,
-                player.q1_followup4
+                player.question2,
+                player.question3,
+                player.question4,
+                player.question5
             ]))
         )
-        
-        
+
+class LLMNodes(Page):
+
+    @staticmethod
+    def before_next_page(player: Player, timeout_happened):
+        if not player.field_maybe_none('generated_nodes'):
+            answers = [
+                player.answer_1,
+                player.answer_2,
+                player.answer_3,
+                player.answer_4,
+                player.answer_5
+            ]
+            beliefs = extract_beliefs_from_answers(answers)
+            player.generated_nodes = json.dumps(beliefs)
+
+    @staticmethod
+    def vars_for_template(player: Player):
+        return dict(generated_nodes=json.loads(player.generated_nodes))
+
 # ah wow that is pretty wild.
 # MapTest + MapTestResult is the test phase (kind of actually makes sense.)
 #  +[MapTest, MapTestResult] * 5
 page_sequence = [
     Introduction, 
-    QuestionMain1, 
-    QuestionFollow1,
-    QuestionFollow2,
-    QuestionFollow3,
-    QuestionFollow4,
+    Question1, 
+    Question2,
+    Question3,
+    Question4,
+    Question5,
     LabelingPage,
+    LLMNodes,
     MapE,
     Demographics,
     Results]
