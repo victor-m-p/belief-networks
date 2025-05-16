@@ -1,6 +1,6 @@
 from otree.api import *
 import json
-from .llm_utils import extract_beliefs_from_answers
+from .llm_utils import *
 import json
 
 doc = """
@@ -8,6 +8,7 @@ Your app description
 """
 
 max_length=30
+MAX_NODES=20
 
 def distance(a,b):
     return ((a[0]-b[0])**2 + (a[1]-b[1])**2)**0.5
@@ -63,9 +64,8 @@ class C(BaseConstants):
                     }
 
     # NEW: QUESTIONS
-    MAIN_QUESTION_1 = "Some countries are implementing a tax on CO₂ to combat climate change. Do you have any thoughts on such a proposal?"
-
-    FOLLOWUP_QUESTIONS = [
+    QUESTIONS = [
+        "Some countries are implementing a tax on CO₂ to combat climate change. Do you have any thoughts on such a proposal?",
         "Tell me more about why you think so.",
         "What do you think that some of your social contacts think about this?",
         "What do you think the party that you feel closest to thinks about such a proposal?",
@@ -143,11 +143,11 @@ class Player(BasePlayer):
     ps_placed = models.IntegerField(initial=0)  
     
     # for questions
-    question1 = models.LongStringField(label="", blank=False)  # Will use dynamic label
-    question2 = models.LongStringField(label="", blank=False)
-    question3 = models.LongStringField(label="", blank=False)
-    question4 = models.LongStringField(label="", blank=False)
-    question5 = models.LongStringField(label="", blank=False)
+    answer1 = models.LongStringField(label="", blank=False)  # Will use dynamic label
+    answer2 = models.LongStringField(label="", blank=False)
+    answer3 = models.LongStringField(label="", blank=False)
+    answer4 = models.LongStringField(label="", blank=False)
+    answer5 = models.LongStringField(label="", blank=False)
 
     # labels
     label_1 = models.StringField(
@@ -171,8 +171,15 @@ class Player(BasePlayer):
         blank=True,
         max_length=max_length)
     
-    # llm nodes
-    llm_nodes = models.LongStringField(blank=True)
+    # LLM stuff
+    prompt_used = models.LongStringField(blank=True)
+    llm_result = models.LongStringField(blank=True)
+    generated_nodes = models.LongStringField(blank=True)
+    accepted_nodes = models.LongStringField(blank=True)
+
+# Maximum number of generated nodes
+for i in range(MAX_NODES):  
+    setattr(Player, f"node_{i}", models.BooleanField(label="", blank=True))
 
 #################################
 #####  FRIENDS' POLITICAL OPINIONS   #####
@@ -193,108 +200,6 @@ class Introduction(Page):
 class Demographics(Page):
     form_model = 'player'
     form_fields = ['age', 'feel_closest', 'feel_closest_party', "how_polarised"]
-
-class Friends(Page):
-    form_model = 'player'
-    form_fields = [f"friend{n}" for n in range(1, C.NFRIENDS+1)]
-
-    @staticmethod
-    def vars_for_template(player:Player):
-        return {"nfriends":C.NFRIENDS}
-
-class FriendOpinions(Page):
-    form_model = "player"
-    @staticmethod
-    def get_form_fields(player):
-        return [f"f{player.current_friend}_{q}" for q in C.QUESTIONS_SC]
-        
-    @staticmethod
-    def before_next_page(player: Player, timeout_happened):
-        player.current_friend +=1
-
-    @staticmethod
-    def vars_for_template(player):
-        # d = {f'question_{q_sc}': q for q_sc, q in zip(C.QUESTIONS_SC, C.QUESTIONS)}
-        d = {"friend_name": getattr(player, f"friend{player.current_friend}")}
-        d["fields"] = [f"f{player.current_friend}_{q}" for q in C.QUESTIONS_SC]
-        d["questions"] = C.questiontext
-        d["field_question_pairs"] = list(zip(d["fields"], d["questions"]))
-        return d
-
-    @staticmethod
-    def is_displayed(player):
-        return player.current_friend <= C.NFRIENDS  
-
-class Green_Opinions(Page):
-    form_model = 'player'
-    form_fields =  [f"GreenVoter_{q}" for q in C.QUESTIONS_SC]
-    @staticmethod
-    def vars_for_template(player: Player): 
-        return {f'question_{q_sc}': q for q_sc, q in zip(C.QUESTIONS_SC, C.QUESTIONS)}
-   
-class AfD_Opinions(Page):
-    form_model = 'player'
-    form_fields = [f"AfDVoter_{q}" for q in C.QUESTIONS_SC]
-    @staticmethod
-    def vars_for_template(player: Player): 
-        return {f'question_{q_sc}': q for q_sc, q in zip(C.QUESTIONS_SC, C.QUESTIONS)}
-   
-
-class Opinions(Page):
-    form_model = 'player'
-    form_fields = [f"own_{q}" for q in C.QUESTIONS_SC]
-    @staticmethod
-    def vars_for_template(player: Player): 
-        return {f'question_{q_sc}': q for q_sc, q in zip(C.QUESTIONS_SC, C.QUESTIONS)}
-
-
-class MapTest(Page):
-    form_model = 'player'
-    form_fields = ['positionsTest']  # Store the final positions
-   
-    @staticmethod
-    def before_next_page(player: Player, timeout_happened):
-        player.positionsTest = player.positionsTest
-        pos = json.loads(player.positionsTest)
-        pos = {p["label"]: [p["x"], p["y"]] for p in pos}
-        #calculate distances
-        dF = distance(pos["self"], pos["F"])
-        dC = distance(pos["self"], pos["C"])
-        dS = distance(pos["self"], pos["S"])
-        dFS = distance(pos["F"], pos["S"])
-        dFC = distance(pos["F"], pos["C"])
-        dCS = distance(pos["C"], pos["S"])
-        # check conditions
-        player.isTrainingCondFvC = bool(dF<dC)  # Rule 2/3
-        player.isTrainingCondSelfvFC = bool(dFC>dC)  # Rule 4
-        player.isTrainingCondSvF = bool(dS>dF) # Rule 5
-        player.isTrainingCondSvFC = bool((dFS<dS) and (dCS<dS)) # Rule 6.
-        isTrainingPassed = player.isTrainingCondFvC & player.isTrainingCondSelfvFC & player.isTrainingCondSvFC & player.isTrainingCondSvF
-        player.isTrainingPassed = isTrainingPassed
-    
-    @staticmethod
-    def is_displayed(player):
-        return not player.isTrainingPassed 
-    
-
-class MapTestResult(Page):
-    @staticmethod
-    def vars_for_template(player: Player):
-        passedMsg = "Well done! Your arrangement fulfills all the criteria. Below we show another possible example of an arrangement that accurately describes the scenario."
-        errors = ""
-        errors += r"The distance between self and C should be larger than the distance between self and F (bullet points 2/3). <br>" if player.isTrainingCondFvC==0 else ""
-        errors += r"The distance between F and C should be larger than the distance between self and C (bullet point 4). <br>" if player.isTrainingCondSelfvFC==0 else ""
-        errors += r"The distance between self and S should be larger than the distance between self and F (bullet point 5). <br>" if player.isTrainingCondSvF==0 else ""
-        errors += r"The distances between F and S and between C and S should be smaller than the distance between self and S (bullet point 6). <br>" if player.isTrainingCondSvFC==0 else ""
-        
-        failedMsg=fr"Your arrangement does not meet all parts of the description: <br>  <br> {errors} <br>"+\
-        "Please repeat the training and try to arrange the dots so that all criteria are fulfilled. You can see one possible arrangement that fulfills all the criteria below."
-        if player.isTrainingPassed:
-            player.trainingMessageConfirmed = True
-        return {"isTrainingPassedMsg": passedMsg if player.isTrainingPassed else failedMsg} 
-    @staticmethod
-    def is_displayed(player: Player):
-        return not player.trainingMessageConfirmed or not player.isTrainingPassed
 
 class MapE(Page):
     form_model = 'player'
@@ -321,76 +226,7 @@ class MapE(Page):
     def before_next_page(player: Player, timeout_happened):
         player.positions = player.positions
         player.edges = player.edges
-
-
-class Map(Page):
-    form_model = 'player'
-    form_fields = ['positions']  # Store the final positions
-    
-    @staticmethod
-    def vars_for_template(player: Player):
-        return {f"friend{f}": getattr(player, f"friend{f}") for f in range(1, C.NFRIENDS+1)}
-    @staticmethod
-    def before_next_page(player: Player, timeout_happened):
-        player.positions = player.positions
-
-class MapP(Page):
-    form_model = 'player'
-    form_fields = ['positions']  # Store the final positions
-    
-    @staticmethod
-    def vars_for_template(player: Player):
-        d = {f"friend{f}": getattr(player, f"friend{f}") for f in range(1, C.NFRIENDS+1)}
-        d["currentP"] = player.ps_placed+1
-        d["img_source"] = f"P{d['currentP']}_ops.png"
-        P = f"P{d['currentP']}"
-        P_op = C.P_OPS[P]
-        P_op_text= f"{P} "+f" {P} ".join([C.P_OP_RESPONSE[q][P_op[n]] for n, q in enumerate(C.QUESTIONS_SC)])
-        d["P_op_text"] =P_op_text
         
-        pos = json.loads(player.positions)
-        pos = {p["label"]: [p["x"], p["y"]] for p in pos}
-        for f in ["self"]+[f"friend{f}" for f in range(1, C.NFRIENDS+1)]+["GreenVoter", "AfDVoter"]+[f"P{p}" for p in range(1,5)]:
-            p = pos[f] if not "friend" in f else pos[getattr(player, f"friend{f[-1]}")]
-            d[f"pos_{f}_x"] = p[0]
-            d[f"pos_{f}_y"] = p[1]
-
-            if f==f"P{d['currentP']}":
-                d[f"pos_{f}_x"] = 0 + 10*int(f[-1])
-                d[f"pos_{f}_y"] = 0+ 10*int(f[-1])
-        return d
-    
-    @staticmethod
-    def before_next_page(player: Player, timeout_happened):
-        player.positions = player.positions
-        player.ps_placed += 1
-
-    @staticmethod
-    def is_displayed(player):
-        return player.ps_placed <= C.NFRIENDS  
-
-class CheckDistance(Page):
-    form_model = 'player'
-    form_fields = ['check_self_f1f2', "reason_f1f2", "check_self_P1P2", "reason_P1P2"]
-    
-    @staticmethod
-    def vars_for_template(player: Player):
-        pos = json.loads(getattr(player, f"positions"))
-        pos = {p["label"]: [p["x"], p["y"]] for p in pos}
-        isDistF1LargerDistF2 = distance(pos["self"], pos[player.friend1]) > distance(pos["self"], pos[player.friend2])
-        isDistP1LargerDistP2 = distance(pos["self"], pos["P1"]) > distance(pos["self"], pos["P2"])
-        distantFriend = player.friend1 if isDistF1LargerDistF2 else player.friend2
-        similarFriend = player.friend2 if isDistF1LargerDistF2 else player.friend1
-        distantP = "P1" if isDistP1LargerDistP2 else "P2"
-        similarP = "P2" if isDistP1LargerDistP2 else "P1"
-        return {
-            'distantFriend': distantFriend,
-            'similarFriend': similarFriend,
-            'distantP': distantP,
-            'similarP': similarP,
-        }
-    
-
 class ResultsWaitPage(WaitPage):
     pass
 
@@ -400,91 +236,147 @@ class Results(Page):
 ### classes for question pages ###
 class Question1(Page):
     form_model = 'player'
-    form_fields = ['question1']
+    form_fields = ['answer1']
 
     @staticmethod
     def vars_for_template(player: Player):
-        return dict(prompt=C.MAIN_QUESTION_1)
+        return dict(prompt=C.QUESTIONS[0])
 
     @staticmethod
     def before_next_page(player: Player, timeout_happened):
-        print("Main response:", player.question1)
+        print("Main response:", player.answer1)
 
 
 class Question2(Page):
     form_model = 'player'
-    form_fields = ['question2']
+    form_fields = ['answer2']
 
     @staticmethod
     def vars_for_template(player: Player):
-        return dict(prompt=C.FOLLOWUP_QUESTIONS[0])
+        return dict(prompt=C.QUESTIONS[1])
 
 
 class Question3(Page):
     form_model = 'player'
-    form_fields = ['question3']
+    form_fields = ['answer3']
 
     @staticmethod
     def vars_for_template(player: Player):
-        return dict(prompt=C.FOLLOWUP_QUESTIONS[1])
+        return dict(prompt=C.QUESTIONS[2])
 
 
 class Question4(Page):
     form_model = 'player'
-    form_fields = ['question4']
+    form_fields = ['answer4']
 
     @staticmethod
     def vars_for_template(player: Player):
-        return dict(prompt=C.FOLLOWUP_QUESTIONS[2])
+        return dict(prompt=C.QUESTIONS[3])
 
 
 class Question5(Page):
     form_model = 'player'
-    form_fields = ['question5']
+    form_fields = ['answer5']
 
     @staticmethod
     def vars_for_template(player: Player):
-        return dict(prompt=C.FOLLOWUP_QUESTIONS[3])
+        return dict(prompt=C.QUESTIONS[4])
 
 class LabelingPage(Page):
     form_model = 'player'
-    form_fields = ['label_1', 'label_2', 'label_3', 'label_4', 'label_5']
+
+    @staticmethod
+    def get_form_fields(player):
+        return [f"label_{i+1}" for i in range(len(C.QUESTIONS))]
 
     @staticmethod
     def vars_for_template(player: Player):
-        return dict(
-            main_question=C.MAIN_QUESTION_1,
-            main_answer=player.question1,
-            followups=list(zip(C.FOLLOWUP_QUESTIONS, [
-                player.question2,
-                player.question3,
-                player.question4,
-                player.question5
-            ]))
-        )
+        qa_pairs = list(zip(C.QUESTIONS, [getattr(player, f"answer{i+1}") for i in range(len(C.QUESTIONS))]))
+        formfields = [f"label_{i+1}" for i in range(len(C.QUESTIONS))]
+        return dict(qa_pairs=qa_pairs, formfields=formfields)
 
-class LLMNodes(Page):
+
+class LLMGenerate(Page):
+    timeout_seconds = 300
+    auto_submit = True
 
     @staticmethod
     def before_next_page(player: Player, timeout_happened):
         if not player.field_maybe_none('generated_nodes'):
-            answers = [
-                player.answer_1,
-                player.answer_2,
-                player.answer_3,
-                player.answer_4,
-                player.answer_5
-            ]
-            beliefs = extract_beliefs_from_answers(answers)
-            player.generated_nodes = json.dumps(beliefs)
+            questions_answers = {
+                C.QUESTIONS[i]: getattr(player, f"answer{i+1}")
+                for i in range(len(C.QUESTIONS))
+            }
+
+            prompt = make_node_prompt(questions_answers)
+            player.prompt_used = prompt
+
+            print("📜 Prompt:\n", prompt)
+            print("🔑 API KEY:", os.getenv("OPENAI_API_KEY"))
+
+            try:
+                llm_nodes = call_openai(
+                    NodeModelList,
+                    prompt)
+            except Exception as e:
+                print("❌ LLM call failed:", e)
+                llm_nodes = []
+
+            llm_nodes = json.loads(llm_nodes.model_dump_json(indent=2))
+            llm_nodes = llm_nodes['results']
+            
+            # save this here 
+            player.llm_result = json.dumps(llm_nodes)
+
+            # here only the nodes
+            generated_nodes = [x['stance'] for x in llm_nodes]
+            generated_nodes = [s.replace("I agree with the following: ", "", 1).strip() for s in generated_nodes]
+            player.generated_nodes = json.dumps(generated_nodes)
+
+
+class LLMReview(Page):
+    form_model = 'player'
+    form_fields = [f'node_{i}' for i in range(MAX_NODES)]
 
     @staticmethod
     def vars_for_template(player: Player):
-        return dict(generated_nodes=json.loads(player.generated_nodes))
+        beliefs = json.loads(player.generated_nodes)
+        zipped_beliefs = list(zip(beliefs, [f'node_{i}' for i in range(len(beliefs))]))
+        return dict(zipped_beliefs=zipped_beliefs)
 
+    @staticmethod
+    def before_next_page(player: Player, timeout_happened):
+        beliefs = json.loads(player.generated_nodes)
+        accepted = []
+        for i, belief in enumerate(beliefs):
+            if i >= MAX_NODES:
+                break
+            if getattr(player, f'node_{i}'):  # if True (Accepted)
+                accepted.append(belief)
+        player.accepted_nodes = json.dumps(accepted)
+        
+
+class MapLLM(Page):
+    form_model = 'player'
+    form_fields = ['positions', 'edges']
+
+    @staticmethod
+    def vars_for_template(player: Player):
+        accepted_nodes = json.loads(player.accepted_nodes)
+        # Filter and assign x/y positions
+        belief_points = [
+        {"label": label, "x": 750, "y": 100 + i * 80}  # 750 is just beyond 700px canvas
+        for i, label in enumerate(accepted_nodes) if label
+        ]
+
+        return dict(belief_points=belief_points)
+
+    @staticmethod
+    def before_next_page(player: Player, timeout_happened):
+        player.positions = player.positions
+        player.edges = player.edges
+        
 # ah wow that is pretty wild.
-# MapTest + MapTestResult is the test phase (kind of actually makes sense.)
-#  +[MapTest, MapTestResult] * 5
 page_sequence = [
     Introduction, 
     Question1, 
@@ -492,12 +384,10 @@ page_sequence = [
     Question3,
     Question4,
     Question5,
-    LabelingPage,
-    LLMNodes,
-    MapE,
+    LLMGenerate, # LabelingPage
+    LLMReview, # LabelingPage
+    MapLLM, #MapE,
     Demographics,
     Results]
-#page_sequence = [Introduction, Opinions, Friends]+[FriendOpinions]*C.NFRIENDS+[Green_Opinions, AfD_Opinions] +[MapE] +[Map]+[MapP]*C.NPS+[CheckDistance, Demographics, Results]
 
-# pages we need: 
-# 1. Introduction
+# page_sequence = [Introduction, Question1, Question2, Question3, Question4, Question5, LabelingPage, MapE, ...]

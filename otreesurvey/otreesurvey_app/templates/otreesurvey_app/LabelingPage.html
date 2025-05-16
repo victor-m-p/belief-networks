@@ -1,67 +1,3 @@
-{% block styles %}
-<style>
-    .page-title {
-        text-align: center;
-        font-size: 1.8rem;
-        font-weight: bold;
-        margin-bottom: 0.5rem;
-    }
-
-    .instructions {
-        text-align: center;
-        margin-bottom: 2rem;
-        font-size: 1rem;
-        color: #333;
-    }
-
-    .container {
-        display: flex;
-        gap: 2rem;
-    }
-
-    .qa, .labels {
-        flex: 1;
-    }
-
-    .column-title {
-        font-weight: bold;
-        font-size: 1.1rem;
-        margin-bottom: 1rem;
-    }
-
-    .qa-block {
-        margin-bottom: 1rem;
-    }
-
-    .qa-block p.question {
-        font-style: italic;
-        font-weight: normal;
-        margin: 0.3rem 0;
-    }
-
-    .qa-block p.answer {
-        margin: 0.2rem 0 0.8rem 0;
-    }
-
-    .labels {
-        display: flex;
-        flex-direction: column;
-        gap: 0.7rem; /* tighter spacing */
-    }
-
-    textarea {
-        width: 100%;
-        height: 60px;
-        resize: none;
-    }
-
-    /* Hide debug info */
-    .otree-debug-info, .otree-debug-panel, .otree-debug {
-        display: none !important;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <h2 class="page-title">Review and Label</h2>
 <div class="instructions">
@@ -71,12 +7,7 @@
 <div class="container">
     <div class="qa">
         <div class="column-title">Dialogue History</div>
-
-        <div class="qa-block">
-            <p class="question">{{ main_question }}</p>
-            <p class="answer">{{ main_answer }}</p>
-        </div>
-        {% for q, a in followups %}
+        {% for q, a in qa_pairs %}
             <div class="qa-block">
                 <p class="question">{{ q }}</p>
                 <p class="answer">{{ a }}</p>
@@ -86,12 +17,9 @@
 
     <div class="labels">
         <div class="column-title">Belief Labels</div>
-
-        {{ formfield 'label_1' }}
-        {{ formfield 'label_2' }}
-        {{ formfield 'label_3' }}
-        {{ formfield 'label_4' }}
-        {{ formfield 'label_5' }}
+            {% for formfield_name in formfields %}
+                {{ formfield formfield_name }}
+            {% endfor %}
     </div>
 </div>
 
@@ -99,11 +27,9 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        // Apply maxlength=40 to all textareas or inputs inside the labels column
         document.querySelectorAll(".labels textarea, .labels input").forEach(function (el) {
             el.setAttribute("maxlength", "30");
         });
     });
 </script>
-
 {% endblock %}

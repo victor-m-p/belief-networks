@@ -92,6 +92,21 @@ with open('prompts/node_prompt.txt', 'w') as f:
         f.write(node_prompt)
 
 # okay sure we get some nodes here
+llm_nodes = call_openai(
+        NodeModelList,
+        node_prompt,
+)
+
+# tmp 
+json_nodes = json.loads(llm_nodes.model_dump_json(indent=2))
+json_res = json_nodes['results']
+stances = [x['stance'] for x in json_res]
+cleaned = [s.replace("I agree with the following: ", "", 1).strip() for s in stances]
+cleaned
+
+y = x['results']
+y = [x['stance'] for x in ]
+
 llm_nodes = call_groq(
     NodeModelList,
     node_prompt,

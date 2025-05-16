@@ -1,0 +1,13 @@
+{% block content %}
+<h3>Generating your belief map...</h3>
+<p>Please wait while we prepare your personalized content.</p>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const form = document.querySelector("form");
+        if (form) {
+            form.submit();  // ✅ submit immediately
+        }
+    });
+</script>
+{% endblock %}

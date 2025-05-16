@@ -1,5 +1,6 @@
 AUTNES
 otreesurvey/otreesurvey_app/templates/.env
+otreesurvey/otreesurvey_app/.env
 otreesurvey/otree-env
 EMBEDDINGS/raw
 Survey/.env
