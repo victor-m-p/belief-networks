@@ -1,8 +1,8 @@
+
 import numpy as np 
 import pandas as pd 
 
-d = pd.read_csv('data/all_apps_wide-2025-05-15.csv')
-d.columns[39:49]
+d = pd.read_csv('data/all_apps_wide-2025-05-16.csv')
 
 # base path 
 base_str = 'otreesurvey_app.1.player'
@@ -23,7 +23,14 @@ json_str = d[f"{base_str}.edges"].iloc[0]
 edge_list = json.loads(json_str)
 
 # all of the writing
-q1 = d[f"{base_str}.main_q1_response"].iloc[0] # etc.
+n_answers = 5 
+answer_list = [d[f'{base_str}.answer{i+1}'].iloc[0] for i in range(n_answers)]
 
-# all of the nodes
-n1 = d[f"{base_str}.label_1"].iloc[0] # etc.
+# all of the LLM 
+prompt_used = d[f'{base_str}.prompt_used'].iloc[0]
+llm_result = json.loads(d[f'{base_str}.llm_result'].iloc[0])
+generated_nodes = json.loads(d[f'{base_str}.generated_nodes'].iloc[0])
+accepted_nodes = json.loads(d[f'{base_str}.accepted_nodes'].iloc[0])
+
+### things to calculate / test ###
+# save prompt ... 
