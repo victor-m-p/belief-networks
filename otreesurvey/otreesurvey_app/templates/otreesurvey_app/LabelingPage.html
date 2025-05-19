@@ -1,25 +1,99 @@
+{% block styles %}
+<style>
+    .page-title {
+        text-align: center;
+        font-size: 1.8rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+    }
+
+    .instructions {
+        background-color: #f0f8ff;
+        padding: 1rem;
+        border-left: 4px solid #007BFF;
+        margin-bottom: 2rem;
+        font-size: 1rem;
+        color: #333;
+    }
+
+    .qa {
+        margin-bottom: 2rem;
+    }
+
+    .column-title {
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+    }
+
+    .qa-block {
+        margin-bottom: 1.5rem;
+    }
+
+    .qa-block p.question {
+        font-style: italic;
+        margin: 0.3rem 0;
+    }
+
+    .qa-block p.answer {
+        margin: 0.2rem 0 0.8rem 1rem;
+    }
+
+    .labels-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: space-between;
+    }
+
+    .label-box {
+        flex: 0 0 48%;
+        margin-bottom: 0.2rem;
+    }
+
+    .label-box label {
+        margin-bottom: 0.1rem;
+        font-weight: 500;
+        display: block;
+    }
+
+    textarea {
+        width: 100%;
+        height: 60px;
+        resize: none;
+    }
+
+    .otree-debug-info, .otree-debug-panel, .otree-debug {
+        display: none !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <h2 class="page-title">Review and Label</h2>
 <div class="instructions">
-    Please review the dialogue on the left and provide one or more belief-related labels on the right.
+    Please review the dialogue and provide one or more belief-related labels below. You may enter up to 10 labels.
 </div>
 
-<div class="container">
-    <div class="qa">
-        <div class="column-title">Dialogue History</div>
-        {% for q, a in qa_pairs %}
-            <div class="qa-block">
-                <p class="question">{{ q }}</p>
-                <p class="answer">{{ a }}</p>
+<div class="qa">
+    <div class="column-title">Dialogue History</div>
+    {% for q, a in qa_pairs %}
+        <div class="qa-block">
+            <p class="question">{{ q }}</p>
+            <p class="answer">{{ a }}</p>
+        </div>
+    {% endfor %}
+</div>
+
+<div class="labels">
+    <div class="column-title">Belief Labels</div>
+    <div class="labels-container">
+        {% for formfield_name in formfields %}
+            <div class="label-box">
+                <label>Label {{ forloop.counter }}:</label>
+                {{ formfield formfield_name }}
             </div>
         {% endfor %}
-    </div>
-
-    <div class="labels">
-        <div class="column-title">Belief Labels</div>
-            {% for formfield_name in formfields %}
-                {{ formfield formfield_name }}
-            {% endfor %}
     </div>
 </div>
 

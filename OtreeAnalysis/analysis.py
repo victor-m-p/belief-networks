@@ -33,4 +33,3 @@ generated_nodes = json.loads(d[f'{base_str}.generated_nodes'].iloc[0])
 accepted_nodes = json.loads(d[f'{base_str}.accepted_nodes'].iloc[0])
 
 ### things to calculate / test ###
-# save prompt ... 

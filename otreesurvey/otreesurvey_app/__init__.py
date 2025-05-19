@@ -7,9 +7,6 @@ doc = """
 Your app description
 """
 
-max_length=30
-MAX_NODES=20
-
 def distance(a,b):
     return ((a[0]-b[0])**2 + (a[1]-b[1])**2)**0.5
 
@@ -29,47 +26,26 @@ class C(BaseConstants):
     ]
     LIKERT5 = [1,2,3,4,5] + [-999]
     SLIDER = list(range(0,101)) +  [-999]
-    QUESTIONS_SC =["climate_concern", 
-                   "gay_adoption", 
-                    "migration_enriches_culture",
-                   "govt_reduce_inequ"]
-    questiontext = [
-        'I am very concerned about climate change.', 
-        'Gay and lesbian couples should have the same rights to adopt children as couples consisting of a man and a woman.', 
-        'It is enriching for cultural life in Germany when migrants come here.', 
-        'The state should take measures to reduce income differences more than before.'
-        ]
-    QUESTIONS =questiontext# [f"{q} (1 agree strongly - 7 disagree strongly)" for q in  questions]
-    CHECKTEXT = lambda which: f"To what extent does this actually reflect your perception of political similarity?"
-    REASONTEXT ="Please briefly describe why (in two to three sentences)" 
-    NFRIENDS = 3
-    NPS = 4
-    P_OPS =  {
-    "P1": [0,0, 0,-1],  # LIB
-    "P2": [0, -1, 0, -1], # climate-hoax RIGHT 
-    "P3": [1, 1, 1, 1], # LEFT
-    "P4": [0,  0, -1, 0], # RIGHT
-    }
-    c = "worried about climate change."
-    g = "equal rights to adopt children for gay/lesbian couples."
-    m = "migration enriches cultural life in Germany."
-    i = "more state measures to reduce income differences."
-    P_OP_RESPONSE = {"climate_concern": 
-                     {-1: "is not at all "+c, 0:"is somewhat "+c, 1:"is extremely "+c},"gay_adoption": 
-                     {-1: "strongly disapproves "+g, 0:"is neutral about "+g, 1:"strongly approves "+g}, 
-                     "migration_enriches_culture":
-                     {-1: "strongly disagrees that "+m, 0:"has a neutral position on whether "+m, 1:"strongly agrees that "+m}, 
-                     "govt_reduce_inequ": 
-                     {-1: "strongly opposes "+i, 0:"is neutral about "+i, 1:"strongly supports "+i}
-                    }
 
     # NEW: QUESTIONS
+    #QUESTIONS = [
+    #    "Some countries are implementing a tax on CO₂ to combat climate change. Do you have any thoughts on such a proposal?",
+    #    "Tell me more about why you think so.",
+    #    "What do you think that some of your social contacts think about this?",
+    #    "What do you think the party that you feel closest to thinks about such a proposal?",
+    #    "Is there anything that would change your mind about this issue?",
+    #]
+    MAX_NODES=20
+    MAX_CHAR=40
+    MAX_LABELS=10
+    
     QUESTIONS = [
-        "Some countries are implementing a tax on CO₂ to combat climate change. Do you have any thoughts on such a proposal?",
-        "Tell me more about why you think so.",
-        "What do you think that some of your social contacts think about this?",
-        "What do you think the party that you feel closest to thinks about such a proposal?",
-        "Is there anything that would change your mind about this issue?",
+        "How do you place yourself politically? Would you call yourself a conservative or a liberal or something else? What does this mean to you?",
+        "Which party did you vote for at the last national election, and why did you vote for that party? If you did not vote in the last national election, why?", 
+        "What are some things that concern you in the political domain? Feel free to mention things that are important to you personally, or more long-term concerns or challenges for your country",
+        "Are there things about your country that make you feel proud or ashamed? Feel free to write about any features or events that come to mind",
+        "Are there any more things that are important to you politically that we have not yet discussed? Feel free to write about anything that comes to mind",
+        #"Are there any political questions where you feel dissonance or conflict? Either because you are not quite sure yourself, or because you disagree with some of your social contacts?"
     ]
 
 class Subsession(BaseSubsession):
@@ -149,27 +125,29 @@ class Player(BasePlayer):
     answer4 = models.LongStringField(label="", blank=False)
     answer5 = models.LongStringField(label="", blank=False)
 
-    # labels
+    # labels (nodes, answers)
+    '''
     label_1 = models.StringField(
         label="", 
         blank=False,
-        max_length=max_length)
+        max_length=C.MAX_CHAR)
     label_2 = models.StringField(
         label="", 
         blank=True,
-        max_length=max_length)
+        max_length=C.MAX_CHAR)
     label_3 = models.StringField(
         label="", 
         blank=True,
-        max_length=max_length)
+        max_length=C.MAX_CHAR)
     label_4 = models.StringField(
         label="", 
         blank=True,
-        max_length=max_length)
+        max_length=C.MAX_CHAR)
     label_5 = models.StringField(
         label="", 
         blank=True,
-        max_length=max_length)
+        max_length=C.MAX_CHAR)
+    '''
     
     # LLM stuff
     prompt_used = models.LongStringField(blank=True)
@@ -177,21 +155,34 @@ class Player(BasePlayer):
     generated_nodes = models.LongStringField(blank=True)
     accepted_nodes = models.LongStringField(blank=True)
 
-# Maximum number of generated nodes
-for i in range(MAX_NODES):  
-    setattr(Player, f"node_{i}", models.BooleanField(label="", blank=True))
+    #for i in range(C.MAX_CHAR):
+    #    setattr(Player, f"label_{i+1}", models.StringField(blank=True, max_length=30))
+
+# for the LLM
+# no actually what is this?
+for i in range(C.MAX_NODES):  
+    setattr(Player, f"node_{i}", 
+            models.BooleanField(
+                label="", 
+                blank=True, 
+                #max_length=C.MAX_CHAR # CONSIDER THIS. 
+                ))
+
+# for the human
+for i in range(C.MAX_LABELS):
+    setattr(
+        Player,
+        f"label_{i}",
+        models.StringField(
+            label="",
+            blank=(i != 0),  # label_1 required, rest optional
+            max_length=C.MAX_CHAR
+        )
+    )
 
 #################################
 #####  FRIENDS' POLITICAL OPINIONS   #####
 #################################
-for f in range(1,C.NFRIENDS+1):
-    setattr(Player, f"friend{f}", define_friend(f"Contact {f}"))
-    for q in C.QUESTIONS_SC:
-        setattr(Player, f"f{f}_{q}", make_field(''))
-
-for f in ["GreenVoter", "AfDVoter"]:
-    for q in C.QUESTIONS_SC:
-        setattr(Player, f"{f}_{q}", make_field(''))
 
 # PAGES
 class Introduction(Page):
@@ -287,12 +278,14 @@ class LabelingPage(Page):
 
     @staticmethod
     def get_form_fields(player):
-        return [f"label_{i+1}" for i in range(len(C.QUESTIONS))]
+        from . import C
+        return [f"label_{i}" for i in range(C.MAX_LABELS)]
 
     @staticmethod
     def vars_for_template(player: Player):
+        from . import C
         qa_pairs = list(zip(C.QUESTIONS, [getattr(player, f"answer{i+1}") for i in range(len(C.QUESTIONS))]))
-        formfields = [f"label_{i+1}" for i in range(len(C.QUESTIONS))]
+        formfields = [f"label_{i}" for i in range(C.MAX_LABELS)]
         return dict(qa_pairs=qa_pairs, formfields=formfields)
 
 
@@ -336,7 +329,7 @@ class LLMGenerate(Page):
 
 class LLMReview(Page):
     form_model = 'player'
-    form_fields = [f'node_{i}' for i in range(MAX_NODES)]
+    form_fields = [f'node_{i}' for i in range(C.MAX_NODES)]
 
     @staticmethod
     def vars_for_template(player: Player):
@@ -349,7 +342,7 @@ class LLMReview(Page):
         beliefs = json.loads(player.generated_nodes)
         accepted = []
         for i, belief in enumerate(beliefs):
-            if i >= MAX_NODES:
+            if i >= C.MAX_NODES:
                 break
             if getattr(player, f'node_{i}'):  # if True (Accepted)
                 accepted.append(belief)
@@ -376,18 +369,33 @@ class MapLLM(Page):
         player.positions = player.positions
         player.edges = player.edges
         
-# ah wow that is pretty wild.
-page_sequence = [
-    Introduction, 
-    Question1, 
-    Question2,
-    Question3,
-    Question4,
-    Question5,
-    LLMGenerate, # LabelingPage
-    LLMReview, # LabelingPage
-    MapLLM, #MapE,
-    Demographics,
-    Results]
+# page sequence 
+ps = 'human_only' # 'LLM_only', 'human_only'
 
-# page_sequence = [Introduction, Question1, Question2, Question3, Question4, Question5, LabelingPage, MapE, ...]
+if ps == "LLM_only": 
+    page_sequence = [
+        Introduction, 
+        Question1, 
+        Question2, 
+        Question3, 
+        Question4, 
+        Question5, 
+        LLMGenerate,
+        LLMReview,
+        MapLLM, 
+        Demographics, 
+        Results
+    ]
+    
+elif ps == "human_only":
+    page_sequence = [
+        Introduction, 
+        Question1, 
+        Question2,
+        Question3,
+        Question4,
+        Question5,
+        LabelingPage, 
+        MapE, # should just be one shared "map"
+        Demographics,
+        Results]
