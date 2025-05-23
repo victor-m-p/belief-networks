@@ -26,6 +26,7 @@ class C(BaseConstants):
     ]
     LIKERT5 = [1,2,3,4,5] + [-999]
     SLIDER = list(range(0,101)) +  [-999]
+    NEW_LABELS_PER_PAGE = 1 # minimum number of new labels per page.
 
     # NEW: QUESTIONS
     #QUESTIONS = [
@@ -38,6 +39,7 @@ class C(BaseConstants):
     MAX_NODES=20
     MAX_CHAR=40
     MAX_LABELS=10
+    LABELS_PER_PAGE = 4 
     
     QUESTIONS = [
         "How do you place yourself politically? Would you call yourself a conservative or a liberal or something else? What does this mean to you?",
@@ -47,6 +49,8 @@ class C(BaseConstants):
         "Are there any more things that are important to you politically that we have not yet discussed? Feel free to write about anything that comes to mind",
         #"Are there any political questions where you feel dissonance or conflict? Either because you are not quite sure yourself, or because you disagree with some of your social contacts?"
     ]
+    
+    N_QUESTIONS = len(QUESTIONS)
 
 class Subsession(BaseSubsession):
     pass
@@ -124,30 +128,6 @@ class Player(BasePlayer):
     answer3 = models.LongStringField(label="", blank=False)
     answer4 = models.LongStringField(label="", blank=False)
     answer5 = models.LongStringField(label="", blank=False)
-
-    # labels (nodes, answers)
-    '''
-    label_1 = models.StringField(
-        label="", 
-        blank=False,
-        max_length=C.MAX_CHAR)
-    label_2 = models.StringField(
-        label="", 
-        blank=True,
-        max_length=C.MAX_CHAR)
-    label_3 = models.StringField(
-        label="", 
-        blank=True,
-        max_length=C.MAX_CHAR)
-    label_4 = models.StringField(
-        label="", 
-        blank=True,
-        max_length=C.MAX_CHAR)
-    label_5 = models.StringField(
-        label="", 
-        blank=True,
-        max_length=C.MAX_CHAR)
-    '''
     
     # LLM stuff
     prompt_used = models.LongStringField(blank=True)
@@ -155,8 +135,16 @@ class Player(BasePlayer):
     generated_nodes = models.LongStringField(blank=True)
     accepted_nodes = models.LongStringField(blank=True)
 
-    #for i in range(C.MAX_CHAR):
-    #    setattr(Player, f"label_{i+1}", models.StringField(blank=True, max_length=30))
+    # For new way of doing belief codings (humans)
+    #all_labels_json = models.LongStringField(initial=json.dumps([""] * C.MAX_LABELS))
+    #label_snapshots = models.LongStringField(initial='[]') # store each snapshot 
+    label_input_0 = models.StringField(blank=True)
+    label_input_1 = models.StringField(blank=True)
+    label_input_2 = models.StringField(blank=True)
+    label_input_3 = models.StringField(blank=True)
+
+    all_labels_json = models.LongStringField(initial='[]')  # final flat list
+    label_snapshots = models.LongStringField(initial='[]')  # list of lists
 
 # for the LLM
 # no actually what is this?
@@ -288,6 +276,45 @@ class LabelingPage(Page):
         formfields = [f"label_{i}" for i in range(C.MAX_LABELS)]
         return dict(qa_pairs=qa_pairs, formfields=formfields)
 
+class LabelingPageDynamic(Page):
+    form_model = 'player'
+
+    @staticmethod
+    def get_form_fields(player):
+        return [f'label_input_{i}' for i in range(C.LABELS_PER_PAGE)]
+
+    @staticmethod
+    def vars_for_template(player):
+        from . import C
+        q_index = player.round_number - 1
+        return dict(
+            qa_pairs=[(C.QUESTIONS[q_index], getattr(player, f"answer{q_index + 1}"))]
+        )
+
+    @staticmethod
+    def error_message(player, values):
+        non_empty = [v for v in values.values() if v.strip()]
+        if len(non_empty) < 1:
+            return "Please enter at least one belief label."
+
+    @staticmethod
+    def before_next_page(player, timeout_happened):
+        import json
+
+        page_labels = []
+        for i in range(C.LABELS_PER_PAGE):
+            label = getattr(player, f'label_input_{i}')
+            if label.strip():
+                page_labels.append(label)
+
+        # Append snapshot for this round
+        snapshots = json.loads(player.label_snapshots)
+        snapshots.append(page_labels)
+        player.label_snapshots = json.dumps(snapshots)
+
+        # Flatten everything into a single list and store
+        all_flat = [lbl for group in snapshots for lbl in group]
+        player.all_labels_json = json.dumps(all_flat)
 
 class LLMGenerate(Page):
     timeout_seconds = 300
@@ -347,7 +374,6 @@ class LLMReview(Page):
             if getattr(player, f'node_{i}'):  # if True (Accepted)
                 accepted.append(belief)
         player.accepted_nodes = json.dumps(accepted)
-        
 
 class MapLLM(Page):
     form_model = 'player'
@@ -370,7 +396,7 @@ class MapLLM(Page):
         player.edges = player.edges
         
 # page sequence 
-ps = 'human_only' # 'LLM_only', 'human_only'
+ps = 'LLM_only' # 'LLM_only', 'human_only'
 
 if ps == "LLM_only": 
     page_sequence = [
@@ -395,7 +421,8 @@ elif ps == "human_only":
         Question3,
         Question4,
         Question5,
-        LabelingPage, 
+        *([LabelingPageDynamic] * C.N_QUESTIONS),  # <- unpack the repeated page class
+        #LabelingPage, 
         MapE, # should just be one shared "map"
         Demographics,
         Results]
