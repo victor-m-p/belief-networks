@@ -114,6 +114,9 @@ class Player(BasePlayer):
     importance_pairs_data = models.LongStringField()
 
 for i in range(C.MAX_NODES):
+    setattr(Player, f"node_choice_{i}", models.StringField(blank=True))
+    setattr(Player, f"node_modify_text_{i}", models.StringField(blank=True))
+    setattr(Player, f"node_reject_reason_{i}", models.StringField(blank=True))
     #setattr(Player, f"LLM_proposed_{i}", models.StringField(blank=True))
     setattr(Player, f"LLM_codings_{i}", models.StringField(blank=True))
     setattr(Player, f"LLM_accepted_{i}", models.StringField(blank=True))
@@ -222,6 +225,30 @@ class LLMGenerate(Page):
 
 # new version of above.
 class LLMReviewRevise(Page):
+    form_model = 'player'
+
+    def get_form_fields(self):
+        beliefs = json.loads(self.generated_nodes)
+        fields = []
+        for i in range(len(beliefs)):
+            fields.append(f'node_choice_{i}')
+            fields.append(f'node_modify_text_{i}')
+            fields.append(f'node_reject_reason_{i}')
+        return fields
+
+    def error_message(self, values):
+        beliefs = json.loads(self.generated_nodes)
+
+        for i in range(len(beliefs)):
+            choice = values.get(f'node_choice_{i}')
+            if not choice:
+                return "Please evaluate all beliefs before continuing."
+
+            if choice == 'MODIFY':
+                mod_text = values.get(f'node_modify_text_{i}', '').strip()
+                if not mod_text:
+                    return "Please provide modified text for all items marked as MODIFY."
+            
     def vars_for_template(self):
         beliefs = json.loads(self.generated_nodes)
         zipped_beliefs = list(zip(beliefs, range(len(beliefs))))
@@ -231,12 +258,9 @@ class LLMReviewRevise(Page):
         beliefs = json.loads(self.generated_nodes)
 
         for i, belief in enumerate(beliefs):
-            if i >= C.MAX_NODES:
-                break
-
-            choice = self.request.POST.get(f'LLM_coding_choice_{i}')
-            modify_text = self.request.POST.get(f'LLM_modify_text_{i}', '').strip()
-            reject_reason = self.request.POST.get(f'LLM_reject_reason_{i}', '').strip()
+            choice = getattr(self, f'node_choice_{i}', '')
+            modify_text = getattr(self, f'node_modify_text_{i}', '').strip()
+            reject_reason = getattr(self, f'node_reject_reason_{i}', '').strip()
 
             if choice == "ACCEPT":
                 setattr(self, f"LLM_codings_{i}", "ACCEPT")
@@ -246,10 +270,9 @@ class LLMReviewRevise(Page):
                 reason = f"REJECT: {reject_reason}" if reject_reason else "REJECT"
                 setattr(self, f"LLM_codings_{i}", reason)
 
-            elif choice == "MODIFY":
-                if modify_text:
-                    setattr(self, f"LLM_codings_{i}", f"MODIFY: {modify_text}")
-                    setattr(self, f"LLM_accepted_{i}", modify_text)
+            elif choice == "MODIFY" and modify_text:
+                setattr(self, f"LLM_codings_{i}", f"MODIFY: {modify_text}")
+                setattr(self, f"LLM_accepted_{i}", modify_text)
         
 class MapLLM(Page):
     form_model = 'player'

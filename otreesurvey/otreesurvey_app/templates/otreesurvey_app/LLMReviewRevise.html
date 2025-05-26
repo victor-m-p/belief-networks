@@ -78,36 +78,36 @@
 <p>If the statement is correct but not accurate then choose MODIFY and provide your own formulation</p>
 
 <form method="post" id="belief-form" novalidate>
-    {% for belief, fieldname in zipped_beliefs %}
-        <div class="belief-row" data-fieldname="{{ fieldname }}">
+    {% for belief, i in zipped_beliefs %}
+        <div class="belief-row" data-fieldname="belief_{{ i }}">
             <div class="belief-text"><strong>{{ belief }}</strong></div>
             <div class="choice-buttons">
-                <input type="radio" id="{{ fieldname }}_accept" name="{{ fieldname }}" value="1">
-                <label for="{{ fieldname }}_accept" class="accept">ACCEPT</label>
-
-                <input type="radio" id="{{ fieldname }}_reject" name="{{ fieldname }}" value="0">
-                <label for="{{ fieldname }}_reject" class="reject">REJECT</label>
-
-                <input type="radio" id="{{ fieldname }}_modify" name="{{ fieldname }}" value="2">
-                <label for="{{ fieldname }}_modify" class="modify">MODIFY</label>
+                <input type="radio" name="node_choice_{{ i }}" id="node_choice_{{ i }}_accept" value="ACCEPT">
+                <label for="node_choice_{{ i }}_accept" class="accept">ACCEPT</label>
+                
+                <input type="radio" name="node_choice_{{ i }}" id="node_choice_{{ i }}_reject" value="REJECT">
+                <label for="node_choice_{{ i }}_reject" class="reject">REJECT</label>
+                
+                <input type="radio" name="node_choice_{{ i }}" id="node_choice_{{ i }}_modify" value="MODIFY">
+                <label for="node_choice_{{ i }}_modify" class="modify">MODIFY</label>
             </div>
         </div>
 
-        <div class="expansion-area" id="{{ fieldname }}_expansion" style="display: none;">
+        <div class="expansion-area" id="belief_{{ i }}_expansion" style="display: none;">
             <div class="reject-box" style="display: none;">
-                <label for="{{ fieldname }}_reject_text">Why did you reject this item?</label>
+                <label for="belief_{{ i }}_reject_text">Why did you reject this item?</label>
                 <input type="text"
-                       name="{{ fieldname }}_reject_text"
-                       id="{{ fieldname }}_reject_text"
-                       maxlength="200">
+                    name="LLM_reject_reason_{{ i }}"
+                    id="belief_{{ i }}_reject_text"
+                    maxlength="200">
             </div>
             <div class="modify-box" style="display: none;">
-                <label for="{{ fieldname }}_modify_text">Please provide your modified version:</label>
+                <label for="belief_{{ i }}_modify_text">Please provide your modified version:</label>
                 <input type="text"
-                       name="{{ fieldname }}_modify_text"
-                       id="{{ fieldname }}_modify_text"
-                       maxlength="{{ C.MAX_CHAR }}"
-                       size="{{ C.MAX_CHAR }}">
+                    name="LLM_modify_text_{{ i }}"
+                    id="belief_{{ i }}_modify_text"
+                    maxlength="{{ C.MAX_CHAR }}"
+                    size="{{ C.MAX_CHAR }}">
             </div>
         </div>
     {% endfor %}
@@ -120,73 +120,74 @@
 </form>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const rows = document.querySelectorAll('.belief-row');
-
-    rows.forEach(row => {
-        const fieldname = row.dataset.fieldname;
-        const radios = row.querySelectorAll(`input[name="${fieldname}"]`);
-        const expansion = document.getElementById(`${fieldname}_expansion`);
-        const rejectBox = expansion.querySelector('.reject-box');
-        const modifyBox = expansion.querySelector('.modify-box');
-        const rejectInput = document.getElementById(`${fieldname}_reject_text`);
-        const modifyInput = document.getElementById(`${fieldname}_modify_text`);
-
-        radios.forEach(radio => {
-            radio.addEventListener('change', () => {
-                if (radio.value === "0") {
-                    expansion.style.display = "block";
-                    rejectBox.style.display = "block";
-                    modifyBox.style.display = "none";
-                    modifyInput.removeAttribute("required");
-                } else if (radio.value === "2") {
-                    expansion.style.display = "block";
-                    rejectBox.style.display = "none";
-                    modifyBox.style.display = "block";
-                    modifyInput.setAttribute("required", "required");
-                } else {
-                    expansion.style.display = "none";
-                    rejectBox.style.display = "none";
-                    modifyBox.style.display = "none";
-                    modifyInput.removeAttribute("required");
-                    rejectInput.value = "";
-                    modifyInput.value = "";
-                }
+    document.addEventListener('DOMContentLoaded', function () {
+        const rows = document.querySelectorAll('.belief-row');
+    
+        rows.forEach(row => {
+            const index = row.dataset.fieldname.replace('belief_', '');
+            const radios = document.querySelectorAll(`input[name="node_choice_${index}"]`);
+            const expansion = document.getElementById(`belief_${index}_expansion`);
+            const rejectBox = expansion.querySelector('.reject-box');
+            const modifyBox = expansion.querySelector('.modify-box');
+            const rejectInput = document.getElementById(`belief_${index}_reject_text`);
+            const modifyInput = document.getElementById(`belief_${index}_modify_text`);
+    
+            radios.forEach(radio => {
+                radio.addEventListener('change', () => {
+                    if (radio.value === "REJECT") {
+                        expansion.style.display = "block";
+                        rejectBox.style.display = "block";
+                        modifyBox.style.display = "none";
+                        modifyInput.removeAttribute("required");
+                    } else if (radio.value === "MODIFY") {
+                        expansion.style.display = "block";
+                        rejectBox.style.display = "none";
+                        modifyBox.style.display = "block";
+                        modifyInput.setAttribute("required", "required");
+                    } else {
+                        expansion.style.display = "none";
+                        rejectBox.style.display = "none";
+                        modifyBox.style.display = "none";
+                        modifyInput.removeAttribute("required");
+                        rejectInput.value = "";
+                        modifyInput.value = "";
+                    }
+                });
             });
         });
-    });
-
-    const form = document.getElementById('belief-form');
-    const errorMessage = document.getElementById('error-message');
-
-    form.addEventListener('submit', function (e) {
-        let allComplete = true;
-
-        document.querySelectorAll('.belief-row').forEach(row => {
-            const fieldname = row.dataset.fieldname;
-            const selected = document.querySelector(`input[name="${fieldname}"]:checked`);
-
-            if (!selected) {
-                allComplete = false;
-                return;
-            }
-
-            if (selected.value === "2") {
-                const modInput = document.getElementById(`${fieldname}_modify_text`);
-                if (!modInput || modInput.value.trim() === "") {
+    
+        // Error display
+        const form = document.getElementById('belief-form');
+        const errorMessage = document.getElementById('error-message');
+    
+        form.addEventListener('submit', function (e) {
+            let allComplete = true;
+    
+            document.querySelectorAll('.belief-row').forEach(row => {
+                const index = row.dataset.fieldname.replace('belief_', '');
+                const selected = document.querySelector(`input[name="node_choice_${index}"]:checked`);
+    
+                if (!selected) {
                     allComplete = false;
+                    return;
                 }
+    
+                if (selected.value === "MODIFY") {
+                    const modInput = document.getElementById(`belief_${index}_modify_text`);
+                    if (!modInput || modInput.value.trim() === "") {
+                        allComplete = false;
+                    }
+                }
+            });
+    
+            if (!allComplete) {
+                e.preventDefault();
+                errorMessage.style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                errorMessage.style.display = 'none';
             }
         });
-
-        if (!allComplete) {
-            e.preventDefault();
-            errorMessage.style.display = 'block';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        } else {
-            errorMessage.style.display = 'none';
-        }
     });
-});
-</script>
+    </script>
 {% endblock %}
