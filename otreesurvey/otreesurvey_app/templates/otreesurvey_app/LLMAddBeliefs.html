@@ -1,0 +1,76 @@
+{% block styles %}
+<style>
+    .user-belief-input {
+        width: 100%;
+        max-width: 800px;
+        padding: 0.5rem;
+    }
+    </style>
+{% endblock %}
+
+{% block content %}
+
+<h2>Your Beliefs So Far</h2>
+<p>The following beliefs were accepted or modified. Please review them. If you wish, you may add up to {{ C.MAX_USER_NODES }} additional beliefs below.</p>
+
+<ul>
+    {% for belief in accepted_beliefs %}
+        <li><strong>{{ belief.text }}</strong> <em>({{ belief.source }})</em></li>
+    {% endfor %}
+</ul>
+
+<hr>
+
+<h3>Add Additional Beliefs (Optional)</h3>
+<div id="user-belief-inputs"></div>
+
+<input type="hidden" name="user_nodes" id="user_nodes_field">
+
+<p id="error-message" style="color: red; display: none;">Each belief must be {{ C.MAX_CHAR }} characters or fewer.</p>
+
+{{ next_button }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const MAX_NODES = {{ C.MAX_USER_NODES }};
+    const MAX_CHAR = {{ C.MAX_CHAR }};
+    const container = document.getElementById('user-belief-inputs');
+
+    for (let i = 0; i < MAX_NODES; i++) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'form-control mb-2';
+        input.placeholder = `Belief ${i + 1}`;
+        input.maxLength = MAX_CHAR;
+        input.dataset.index = i;
+        container.appendChild(input);
+    }
+
+    const form = document.querySelector('form');
+    const userNodesField = document.getElementById('user_nodes_field');
+    const errorMsg = document.getElementById('error-message');
+
+    form.addEventListener('submit', function (e) {
+        const beliefs = [];
+        let valid = true;
+
+        container.querySelectorAll('input').forEach(input => {
+            const value = input.value.trim();
+            if (value.length > MAX_CHAR) {
+                valid = false;
+            }
+            beliefs.push(value);
+        });
+
+        if (!valid) {
+            e.preventDefault();
+            errorMsg.style.display = 'block';
+            return;
+        }
+
+        userNodesField.value = JSON.stringify(beliefs);
+    });
+});
+</script>
+
+{% endblock %}

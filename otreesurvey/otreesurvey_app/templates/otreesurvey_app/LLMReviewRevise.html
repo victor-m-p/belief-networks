@@ -78,43 +78,71 @@
 <p>If the statement is correct but not accurate then choose MODIFY and provide your own formulation</p>
 
 <form method="post" id="belief-form" novalidate>
-    {% for belief, i in zipped_beliefs %}
-        <div class="belief-row" data-fieldname="belief_{{ i }}">
-            <div class="belief-text"><strong>{{ belief }}</strong></div>
+    {% for item in belief_items %}
+        <div class="belief-row" data-fieldname="belief_{{ forloop.counter0 }}">
+            <div class="belief-text"><strong>{{ item.belief }}</strong></div>
             <div class="choice-buttons">
-                <input type="radio" name="node_choice_{{ i }}" id="node_choice_{{ i }}_accept" value="ACCEPT">
-                <label for="node_choice_{{ i }}_accept" class="accept">ACCEPT</label>
-                
-                <input type="radio" name="node_choice_{{ i }}" id="node_choice_{{ i }}_reject" value="REJECT">
-                <label for="node_choice_{{ i }}_reject" class="reject">REJECT</label>
-                
-                <input type="radio" name="node_choice_{{ i }}" id="node_choice_{{ i }}_modify" value="MODIFY">
-                <label for="node_choice_{{ i }}_modify" class="modify">MODIFY</label>
+                <input type="radio" name="node_choice_{{ forloop.counter0 }}" id="node_choice_{{ forloop.counter0 }}_accept" value="ACCEPT"
+                    {% if item.user_action == "ACCEPT" %}checked{% endif %}>
+                <label for="node_choice_{{ forloop.counter0 }}_accept" class="accept">ACCEPT</label>
+
+                <input type="radio" name="node_choice_{{ forloop.counter0 }}" id="node_choice_{{ forloop.counter0 }}_reject" value="REJECT"
+                    {% if item.user_action == "REJECT" %}checked{% endif %}>
+                <label for="node_choice_{{ forloop.counter0 }}_reject" class="reject">REJECT</label>
+
+                <input type="radio" name="node_choice_{{ forloop.counter0 }}" id="node_choice_{{ forloop.counter0 }}_modify" value="MODIFY"
+                    {% if item.user_action == "MODIFY" %}checked{% endif %}>
+                <label for="node_choice_{{ forloop.counter0 }}_modify" class="modify">MODIFY</label>
             </div>
         </div>
 
-        <div class="expansion-area" id="belief_{{ i }}_expansion" style="display: none;">
-            <div class="reject-box" style="display: none;">
-                <label for="belief_{{ i }}_reject_text">Why did you reject this item?</label>
+        <div class="expansion-area"
+            id="belief_{{ forloop.counter0 }}_expansion"
+            style="{% if item.user_action in ['REJECT','MODIFY'] %}display:block;{% else %}display:none;{% endif %};">
+            <div class="reject-box"
+                style="{% if item.user_action == 'REJECT' %}display:block;{% else %}display:none;{% endif %};">
+                <label for="belief_{{ forloop.counter0 }}_reject_text">Why did you reject this item?</label>
+                {% if item.user_action == 'REJECT' %}
                 <input type="text"
-                    name="LLM_reject_reason_{{ i }}"
-                    id="belief_{{ i }}_reject_text"
-                    maxlength="200">
+                       name="node_reject_reason_{{ forloop.counter0 }}"
+                       id="belief_{{ forloop.counter0 }}_reject_text"
+                       maxlength="200"
+                       value="{{ item.text_field }}">
+                {% else %}
+                    <input type="text"
+                        name="node_reject_reason_{{ forloop.counter0 }}"
+                        id="belief_{{ forloop.counter0 }}_reject_text"
+                        maxlength="200"
+                        value="">
+                {% endif %}
+            
             </div>
-            <div class="modify-box" style="display: none;">
-                <label for="belief_{{ i }}_modify_text">Please provide your modified version:</label>
+
+            <div class="modify-box"
+                style="{% if item.user_action == 'MODIFY' %}display:block;{% else %}display:none;{% endif %};">
+                <label for="belief_{{ forloop.counter0 }}_modify_text">Please provide your modified version:</label>
+                {% if item.user_action == 'MODIFY' %}
                 <input type="text"
-                    name="LLM_modify_text_{{ i }}"
-                    id="belief_{{ i }}_modify_text"
-                    maxlength="{{ C.MAX_CHAR }}"
-                    size="{{ C.MAX_CHAR }}">
+                       name="node_modify_text_{{ forloop.counter0 }}"
+                       id="belief_{{ forloop.counter0 }}_modify_text"
+                       maxlength="{{ C.MAX_CHAR }}"
+                       size="{{ C.MAX_CHAR }}"
+                       value="{{ item.text_field }}">
+                {% else %}
+                    <input type="text"
+                        name="node_modify_text_{{ forloop.counter0 }}"
+                        id="belief_{{ forloop.counter0 }}_modify_text"
+                        maxlength="{{ C.MAX_CHAR }}"
+                        size="{{ C.MAX_CHAR }}"
+                        value="">
+                {% endif %}
             </div>
         </div>
     {% endfor %}
 
     <p id="error-message" style="display: none; color: red; font-weight: bold;">
         Please evaluate all items before continuing.
-    </p>    
+    </p>
 
     {{ next_button }}
 </form>

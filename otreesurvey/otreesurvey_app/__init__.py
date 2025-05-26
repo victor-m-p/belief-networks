@@ -14,12 +14,9 @@ class C(BaseConstants):
     NAME_IN_URL = 'survey'
     PLAYERS_PER_GROUP = None
     NUM_ROUNDS = 1
-    
-    NEW_LABELS_PER_PAGE = 1 # minimum number of new labels per page.
-
-    # meta-variables
     MAX_NODES=20
     MAX_CHAR=60
+    MAX_USER_NODES=5
     
     QUESTIONS = [
         "How do you place yourself politically? Would you call yourself a conservative or a liberal or something else? What does this mean to you?",
@@ -88,7 +85,10 @@ class Player(BasePlayer):
     prompt_used = models.LongStringField(blank=True)
     llm_result = models.LongStringField(blank=True)
     generated_nodes = models.LongStringField(blank=True)
-    accepted_nodes = models.LongStringField(blank=True)
+    revised_beliefs = models.LongStringField(blank=True)
+    final_nodes = models.LongStringField(blank=True)
+    user_nodes = models.LongStringField(blank=True)
+    #accepted_nodes = models.LongStringField(blank=True)
 
     # For new way of doing belief codings (humans)
     # Currently we are not doing these human labels.
@@ -227,52 +227,97 @@ class LLMGenerate(Page):
 class LLMReviewRevise(Page):
     form_model = 'player'
 
-    def get_form_fields(self):
-        beliefs = json.loads(self.generated_nodes)
+    @staticmethod
+    def get_form_fields(player):
+        revised_raw = player.field_maybe_none('revised_beliefs') or '[]'
+        revised = json.loads(revised_raw)
         fields = []
-        for i in range(len(beliefs)):
-            fields.append(f'node_choice_{i}')
-            fields.append(f'node_modify_text_{i}')
-            fields.append(f'node_reject_reason_{i}')
+        for i in range(len(revised)):
+            fields.append(f"node_choice_{i}")
+            fields.append(f"node_reject_reason_{i}")
+            fields.append(f"node_modify_text_{i}")
         return fields
 
-    def error_message(self, values):
-        beliefs = json.loads(self.generated_nodes)
+    @staticmethod
+    def vars_for_template(player):
+        beliefs = json.loads(player.generated_nodes)
+        try:
+            revised = json.loads(player.revised_beliefs)
+        except (TypeError, json.JSONDecodeError):
+            revised = [
+                {"belief": b, "user_action": "", "text_field": ""}
+                for b in beliefs
+            ]
+            player.revised_beliefs = json.dumps(revised)
 
-        for i in range(len(beliefs)):
-            choice = values.get(f'node_choice_{i}')
-            if not choice:
+        return dict(belief_items=revised, C=C)
+
+    @staticmethod
+    def error_message(player, values):
+        revised = json.loads(player.revised_beliefs)
+        for i, item in enumerate(revised):
+            choice = values.get(f"node_choice_{i}", "")
+            reason = values.get(f"node_reject_reason_{i}", "")
+            mod = values.get(f"node_modify_text_{i}", "")
+
+            item['user_action'] = choice
+            if choice == 'REJECT':
+                item['text_field'] = reason
+            elif choice == 'MODIFY':
+                item['text_field'] = mod
+            else:
+                item['text_field'] = ""
+
+        player.revised_beliefs = json.dumps(revised)
+
+        for item in revised:
+            if not item['user_action']:
                 return "Please evaluate all beliefs before continuing."
+            if item['user_action'] == 'MODIFY' and not item['text_field'].strip():
+                return "Please provide modified text for all items marked as MODIFY."
 
-            if choice == 'MODIFY':
-                mod_text = values.get(f'node_modify_text_{i}', '').strip()
-                if not mod_text:
-                    return "Please provide modified text for all items marked as MODIFY."
-            
-    def vars_for_template(self):
-        beliefs = json.loads(self.generated_nodes)
-        zipped_beliefs = list(zip(beliefs, range(len(beliefs))))
-        return dict(zipped_beliefs=zipped_beliefs)
+    @staticmethod
+    def before_next_page(player, timeout_happened):
+        pass
 
-    def before_next_page(self, timeout_happened):
-        beliefs = json.loads(self.generated_nodes)
+class LLMAddBeliefs(Page):
+    form_model = 'player'
+    form_fields = ['user_nodes']
 
-        for i, belief in enumerate(beliefs):
-            choice = getattr(self, f'node_choice_{i}', '')
-            modify_text = getattr(self, f'node_modify_text_{i}', '').strip()
-            reject_reason = getattr(self, f'node_reject_reason_{i}', '').strip()
+    @staticmethod
+    def vars_for_template(player):
+        revised = json.loads(player.revised_beliefs or '[]')
+        accepted = []
 
-            if choice == "ACCEPT":
-                setattr(self, f"LLM_codings_{i}", "ACCEPT")
-                setattr(self, f"LLM_accepted_{i}", belief)
+        for item in revised:
+            if item['user_action'] == 'ACCEPT':
+                accepted.append({"text": item['belief'], "source": "ACCEPTED"})
+            elif item['user_action'] == 'MODIFY':
+                accepted.append({"text": item['text_field'], "source": "MODIFIED"})
 
-            elif choice == "REJECT":
-                reason = f"REJECT: {reject_reason}" if reject_reason else "REJECT"
-                setattr(self, f"LLM_codings_{i}", reason)
+        return dict(accepted_beliefs=accepted, C=C)
 
-            elif choice == "MODIFY" and modify_text:
-                setattr(self, f"LLM_codings_{i}", f"MODIFY: {modify_text}")
-                setattr(self, f"LLM_accepted_{i}", modify_text)
+    @staticmethod
+    def before_next_page(player, timeout_happened):
+        revised = json.loads(player.revised_beliefs or '[]')
+        accepted = []
+
+        for item in revised:
+            if item['user_action'] == 'ACCEPT':
+                accepted.append({"text": item['belief'], "source": "ACCEPTED"})
+            elif item['user_action'] == 'MODIFY':
+                accepted.append({"text": item['text_field'], "source": "MODIFIED"})
+
+        try:
+            user_contributions = json.loads(player.user_nodes or '[]')
+        except json.JSONDecodeError:
+            user_contributions = []
+
+        for node in user_contributions:
+            if node.strip():
+                accepted.append({"text": node.strip(), "source": "USER"})
+
+        player.final_nodes = json.dumps(accepted)
         
 class MapLLM(Page):
     form_model = 'player'
@@ -280,23 +325,27 @@ class MapLLM(Page):
 
     @staticmethod
     def vars_for_template(player: Player):
-        accepted_nodes = json.loads(player.accepted_nodes)
-        mode = 'all'  # 'sequential', 'all'
-        label_display = 'always' # 'hover', 'always' --- hover + list of numbers. 
+        final_nodes = json.loads(player.final_nodes or '[]')
+        belief_texts = [item['text'] for item in final_nodes if item.get('text')]
+
+        mode = 'all'  # or 'sequential'
+        label_display = 'always'  # or 'hover'
 
         if mode == 'all':
             belief_points = [
-                {"label": label, "x": 750, "y": 100 + i * 80}
-                for i, label in enumerate(accepted_nodes) if label
+                {"label": text, "x": 750, "y": 100 + i * 80}
+                for i, text in enumerate(belief_texts)
             ]
         else:
-            belief_points = []  # empty, will render first node via JS
+            belief_points = []
+
         return dict(
             belief_points=belief_points,
             mode=mode,
             label_display=label_display,
-            all_labels_json=json.dumps(accepted_nodes)  # still safe
+            all_labels_json=json.dumps(belief_texts)
         )
+
 
 class PlausibilityCheck(Page):
     form_model = 'player'
@@ -330,6 +379,7 @@ page_sequence = [
     Question5, 
     LLMGenerate,
     LLMReviewRevise,
+    LLMAddBeliefs,
     MapLLM, 
     Demographics, 
     Results
