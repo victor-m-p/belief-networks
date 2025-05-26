@@ -3,6 +3,11 @@ Political Mapping</strong>
 {{ endblock }}
 
 {% block content %}
+{% if mode == "sequential" %} <!-- try sequential -->
+<script id="all-labels-data" type="application/json">
+    {{ all_labels_json|safe }}
+</script>
+{% endif %}
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -10,13 +15,39 @@ Political Mapping</strong>
         const ctx = canvas.getContext("2d");
         const resizeMargin = 4;
 
-        const points = [
-        {% for point in belief_points %}
-            { label: "{{ point.label }}", x: {{ point.x }}, y: {{ point.y }}, radius: 20 },
-        {% endfor %}
-    ];
-    
+        // sequential 
+        const mode = "{{ mode }}";
+        const labelDisplay = "{{ label_display }}"; // hover 
+        let points = [];
+        const allLabels = mode === "sequential"
+        ? JSON.parse(document.getElementById("all-labels-data").textContent)
+        : [];
 
+        // for sequential
+        let placedPoints = [];
+        let currentIndex = 0;
+        let hoveredPoint = null; // new 
+
+        if (mode === "sequential") {
+            // const allLabels = JSON.parse(document.getElementById("all-labels-data").textContent);
+            // var placedPoints = [];
+            // var currentIndex = 0;
+        
+            points.push({
+                label: allLabels[0],
+                x: 750,
+                y: 300,
+                radius: 20
+            });
+        } else {
+            points = [
+            {% for point in belief_points %}
+                { label: "{{ point.label }}", x: {{ point.x }}, y: {{ point.y }}, radius: 20 },
+            {% endfor %}
+            ];
+        }
+        
+        // general 
         let draggingPoint = null;
         let wasDragging = false;
         let selectedPoint = null;
@@ -52,11 +83,13 @@ Political Mapping</strong>
                 ctx.strokeStyle = "black";  // ✅ Reset stroke color before drawing node border
                 ctx.stroke();
             
-                ctx.fillStyle = "black";
-                ctx.font = "16px sans-serif";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "bottom";
-                ctx.fillText(point.label, point.x, point.y - 22);
+                if (labelDisplay === "always" || point === hoveredPoint) {
+                    ctx.fillStyle = "black";
+                    ctx.font = "16px sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "bottom";
+                    ctx.fillText(point.label, point.x, point.y - 22);
+                };
             });
 
         }
@@ -101,22 +134,24 @@ Political Mapping</strong>
             const mousePos = getMousePos(evt);
             const hover = findPoint(mousePos);
         
+            // Update hoveredPoint always
+            hoveredPoint = hover ? hover.point : null;
+        
             if (draggingPoint) {
                 draggingPoint.x = mousePos.x;
                 draggingPoint.y = mousePos.y;
                 wasDragging = true;
-                drawCanvas();
             }
         
             if (resizingPoint) {
                 const dx = mousePos.x - resizingPoint.x;
                 const dy = mousePos.y - resizingPoint.y;
-                const newRadius = Math.max(8, Math.min(80, Math.hypot(dx, dy))); // constrain size
+                const newRadius = Math.max(8, Math.min(80, Math.hypot(dx, dy)));
                 resizingPoint.radius = newRadius;
                 wasDragging = true;
-                drawCanvas();
             }
-
+        
+            // Set appropriate cursor
             if (hover) {
                 const { point, distance } = hover;
                 if (distance > point.radius - resizeMargin && distance <= point.radius + resizeMargin) {
@@ -127,56 +162,93 @@ Political Mapping</strong>
                     canvas.style.cursor = "default";
                 }
             } else {
-                // ✅ Mouse is not over any node
                 canvas.style.cursor = "default";
             }
-            
+        
+            drawCanvas();
         });
-
-            canvas.addEventListener("mouseup", function (evt) {
-                if (!wasDragging && resizingPoint) {
-                    // ✅ User clicked (no drag) while resizing → exit resizing mode
-                    resizingPoint = null;
+        
+        canvas.addEventListener("mouseup", function (evt) {
+            if (!wasDragging && resizingPoint) {
+                // ✅ User clicked (no drag) while resizing → exit resizing mode
+                resizingPoint = null;
+                drawCanvas();
+                return;
+            }
+        
+            if (!wasDragging && draggingPoint) {
+                // existing logic for edge creation (if applicable)
+                const mousePos = getMousePos(evt);
+                const releasedPoint = findPoint(mousePos)?.point;
+        
+                if (releasedPoint === draggingPoint) {
+                    if (selectedPoint === null) {
+                        selectedPoint = releasedPoint;
+                    } else if (selectedPoint !== releasedPoint) {
+                        const existingIndex = edges.findIndex(edge =>
+                            (edge.from === selectedPoint && edge.to === releasedPoint) ||
+                            (edge.from === releasedPoint && edge.to === selectedPoint)
+                        );
+        
+                        if (existingIndex > -1) {
+                            edges.splice(existingIndex, 1);
+                        } else {
+                            pendingEdge = { from: selectedPoint, to: releasedPoint };
+                            document.getElementById("edgeSelectionPanel").style.display = "block";
+                        }
+        
+                        selectedPoint = null;
+                    } else {
+                        selectedPoint = null;
+                    }
+        
                     drawCanvas();
+                }
+            }
+        
+            // ✅ Always reset both states at the end
+            draggingPoint = null;
+            resizingPoint = null;
+        });
+        
+        // new function for handling the checks for proceeding. 
+        function isInsideBox(p) {
+            return p.x >= 0 && p.x <= 600 && p.y >= 0 && p.y <= 600;
+        }
+
+        drawCanvas();
+
+        // testing sequential 
+        if (mode === "sequential") {
+            document.getElementById("placeNodeBtn").addEventListener("click", function () {
+                const current = points[points.length - 1]; // const current = points[0];
+
+                if (!points.every(isInsideBox)) {
+                    alert("Please place all beliefs inside the box before continuing.");
                     return;
                 }
-            
-                if (!wasDragging && draggingPoint) {
-                    // existing logic for edge creation (if applicable)
-                    const mousePos = getMousePos(evt);
-                    const releasedPoint = findPoint(mousePos)?.point;
-            
-                    if (releasedPoint === draggingPoint) {
-                        if (selectedPoint === null) {
-                            selectedPoint = releasedPoint;
-                        } else if (selectedPoint !== releasedPoint) {
-                            const existingIndex = edges.findIndex(edge =>
-                                (edge.from === selectedPoint && edge.to === releasedPoint) ||
-                                (edge.from === releasedPoint && edge.to === selectedPoint)
-                            );
-            
-                            if (existingIndex > -1) {
-                                edges.splice(existingIndex, 1);
-                            } else {
-                                pendingEdge = { from: selectedPoint, to: releasedPoint };
-                                document.getElementById("edgeSelectionPanel").style.display = "block";
-                            }
-            
-                            selectedPoint = null;
-                        } else {
-                            selectedPoint = null;
-                        }
-            
-                        drawCanvas();
-                    }
+
+                placedPoints.push({ ...current });
+        
+                currentIndex += 1;
+                if (currentIndex < allLabels.length) {
+                    const nextLabel = allLabels[currentIndex];
+                    console.log("Next label:", nextLabel);
+                    points.push({
+                        label: nextLabel,
+                        x: 750,
+                        y: 300,
+                        radius: 20
+                        // locked:false (if we want to lock new points)
+                    });                    
+                    drawCanvas();
+                } else {
+                    document.getElementById("positions").value = JSON.stringify(placedPoints);
+                    document.getElementById("edges").value = JSON.stringify([]);
+                    form.submit();
                 }
-            
-                // ✅ Always reset both states at the end
-                draggingPoint = null;
-                resizingPoint = null;
             });
-            
-        drawCanvas();
+        }
 
         function savePositions() {
             document.getElementById("positions").value = JSON.stringify(points.map(p => ({
@@ -256,6 +328,12 @@ Some text here.
 </div>
 <input type="hidden" id="positions" name="positions">
 <input type="hidden" id="edges" name="edges">
+
+{% if mode == "sequential" %} <!-- sequential -->
+    <button id="placeNodeBtn" type="button" style="margin-top: 20px;">
+        Place Belief
+    </button>
+{% endif %}
 
 {{ formfield_errors 'positions' }} 
 {{ formfield_errors 'edges' }}

@@ -1,0 +1,13 @@
+{{ block content }}
+<h3>Please evaluate the following pairs of beliefs in terms of importance.</h3>
+
+<p><strong>Pair 1:</strong></p>
+<p>{{ pair_1.0 }} <span style="padding: 0 20px;">vs</span> {{ pair_1.1 }}</p>
+{{ formfield 'importance_pair_1' }}
+
+<p><strong>Pair 2:</strong></p>
+<p>{{ pair_2.0 }} <span style="padding: 0 20px;">vs</span> {{ pair_2.1 }}</p>
+{{ formfield 'importance_pair_2' }}
+
+{{ next_button }}
+{{ endblock }}

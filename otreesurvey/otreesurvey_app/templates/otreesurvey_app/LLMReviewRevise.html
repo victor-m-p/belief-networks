@@ -1,0 +1,192 @@
+{% block styles %}
+<style>
+    .belief-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+        border-bottom: 1px solid #ccc;
+    }
+
+    .belief-text {
+        flex: 2;
+        font-size: 1rem;
+        margin-right: 1rem;
+    }
+
+    .choice-buttons {
+        flex: 2;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .choice-buttons label {
+        flex: 1;
+        text-align: center;
+        padding: 10px 0;
+        min-width: 60px;
+        border-radius: 6px;
+        cursor: pointer;
+        color: white;
+        font-weight: bold;
+        user-select: none;
+    }
+
+    .accept {
+        background-color: #4CAF50;
+    }
+
+    .reject {
+        background-color: #F44336;
+    }
+
+    .modify {
+        background-color: #FFC107;
+        color: black;
+    }
+
+    .choice-buttons input {
+        display: none;
+    }
+
+    .choice-buttons input:checked + label {
+        outline: 3px solid black;
+    }
+
+    .expansion-area {
+        margin-top: 0.5rem;
+        padding-left: 2rem;
+    }
+
+    .expansion-area input {
+        width: 100%;
+        padding: 0.5rem;
+        margin-top: 0.25rem;
+        margin-bottom: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>Based on your responses, the following statements might describe your views</h2>
+<p>Please ACCEPT, REJECT, or MODIFY each statement below</p>
+<p>If the statement is an accurate reflection of what you wrote and what you believe, choose ACCEPT</p>
+<p>If the statement is not an accurate reflection of what you wrote and what you believe, choose REJECT</p>
+<p>If the statement is correct but not accurate then choose MODIFY and provide your own formulation</p>
+
+<form method="post" id="belief-form" novalidate>
+    {% for belief, fieldname in zipped_beliefs %}
+        <div class="belief-row" data-fieldname="{{ fieldname }}">
+            <div class="belief-text"><strong>{{ belief }}</strong></div>
+            <div class="choice-buttons">
+                <input type="radio" id="{{ fieldname }}_accept" name="{{ fieldname }}" value="1">
+                <label for="{{ fieldname }}_accept" class="accept">ACCEPT</label>
+
+                <input type="radio" id="{{ fieldname }}_reject" name="{{ fieldname }}" value="0">
+                <label for="{{ fieldname }}_reject" class="reject">REJECT</label>
+
+                <input type="radio" id="{{ fieldname }}_modify" name="{{ fieldname }}" value="2">
+                <label for="{{ fieldname }}_modify" class="modify">MODIFY</label>
+            </div>
+        </div>
+
+        <div class="expansion-area" id="{{ fieldname }}_expansion" style="display: none;">
+            <div class="reject-box" style="display: none;">
+                <label for="{{ fieldname }}_reject_text">Why did you reject this item?</label>
+                <input type="text"
+                       name="{{ fieldname }}_reject_text"
+                       id="{{ fieldname }}_reject_text"
+                       maxlength="200">
+            </div>
+            <div class="modify-box" style="display: none;">
+                <label for="{{ fieldname }}_modify_text">Please provide your modified version:</label>
+                <input type="text"
+                       name="{{ fieldname }}_modify_text"
+                       id="{{ fieldname }}_modify_text"
+                       maxlength="{{ C.MAX_CHAR }}"
+                       size="{{ C.MAX_CHAR }}">
+            </div>
+        </div>
+    {% endfor %}
+
+    <p id="error-message" style="display: none; color: red; font-weight: bold;">
+        Please evaluate all items before continuing.
+    </p>    
+
+    {{ next_button }}
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const rows = document.querySelectorAll('.belief-row');
+
+    rows.forEach(row => {
+        const fieldname = row.dataset.fieldname;
+        const radios = row.querySelectorAll(`input[name="${fieldname}"]`);
+        const expansion = document.getElementById(`${fieldname}_expansion`);
+        const rejectBox = expansion.querySelector('.reject-box');
+        const modifyBox = expansion.querySelector('.modify-box');
+        const rejectInput = document.getElementById(`${fieldname}_reject_text`);
+        const modifyInput = document.getElementById(`${fieldname}_modify_text`);
+
+        radios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (radio.value === "0") {
+                    expansion.style.display = "block";
+                    rejectBox.style.display = "block";
+                    modifyBox.style.display = "none";
+                    modifyInput.removeAttribute("required");
+                } else if (radio.value === "2") {
+                    expansion.style.display = "block";
+                    rejectBox.style.display = "none";
+                    modifyBox.style.display = "block";
+                    modifyInput.setAttribute("required", "required");
+                } else {
+                    expansion.style.display = "none";
+                    rejectBox.style.display = "none";
+                    modifyBox.style.display = "none";
+                    modifyInput.removeAttribute("required");
+                    rejectInput.value = "";
+                    modifyInput.value = "";
+                }
+            });
+        });
+    });
+
+    const form = document.getElementById('belief-form');
+    const errorMessage = document.getElementById('error-message');
+
+    form.addEventListener('submit', function (e) {
+        let allComplete = true;
+
+        document.querySelectorAll('.belief-row').forEach(row => {
+            const fieldname = row.dataset.fieldname;
+            const selected = document.querySelector(`input[name="${fieldname}"]:checked`);
+
+            if (!selected) {
+                allComplete = false;
+                return;
+            }
+
+            if (selected.value === "2") {
+                const modInput = document.getElementById(`${fieldname}_modify_text`);
+                if (!modInput || modInput.value.trim() === "") {
+                    allComplete = false;
+                }
+            }
+        });
+
+        if (!allComplete) {
+            e.preventDefault();
+            errorMessage.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            errorMessage.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -2,44 +2,24 @@ from otree.api import *
 import json
 from .llm_utils import *
 import json
+import random
 
 doc = """
 Your app description
 """
 
-def distance(a,b):
-    return ((a[0]-b[0])**2 + (a[1]-b[1])**2)**0.5
-
 class C(BaseConstants): 
+    
+    # not sure we need this 
     NAME_IN_URL = 'survey'
     PLAYERS_PER_GROUP = None
     NUM_ROUNDS = 1
-    LIKERT11 = list(range(0,11)) + [-999]
-    LIKERT5_string = ["Strongly\nAgree","Agree","Neutral","Disagree","Strongly\nDisagree"] + ["Refuse/Don't know"]
-    LIKERT5_string = [
-        (1, 'Strongly agree'),
-        (2, 'Agree'),
-        (3, 'Neutral'),
-        (4, 'Disagree'),
-        (5, 'Strongly disagree'),
-        (-999, "----Refuse/Don't know----"),
-    ]
-    LIKERT5 = [1,2,3,4,5] + [-999]
-    SLIDER = list(range(0,101)) +  [-999]
+    
     NEW_LABELS_PER_PAGE = 1 # minimum number of new labels per page.
 
-    # NEW: QUESTIONS
-    #QUESTIONS = [
-    #    "Some countries are implementing a tax on CO₂ to combat climate change. Do you have any thoughts on such a proposal?",
-    #    "Tell me more about why you think so.",
-    #    "What do you think that some of your social contacts think about this?",
-    #    "What do you think the party that you feel closest to thinks about such a proposal?",
-    #    "Is there anything that would change your mind about this issue?",
-    #]
+    # meta-variables
     MAX_NODES=20
-    MAX_CHAR=40
-    MAX_LABELS=10
-    LABELS_PER_PAGE = 4 
+    MAX_CHAR=60
     
     QUESTIONS = [
         "How do you place yourself politically? Would you call yourself a conservative or a liberal or something else? What does this mean to you?",
@@ -91,38 +71,13 @@ class Player(BasePlayer):
     how_polarised = models.StringField(label='People sometimes say that the public polarises on political issues. Would you agree?',
                                      choices=["Strongly Agree", "Somewhat Agree", "Somewhat Disagree", "Strongly Disagree"],
                                      widget=widgets.RadioSelect)
-    
-    #################################
-    #####  OWN POLITICAL OPINIONS   #####
-    #################################
-    #own_climate_concern= make_field(C.QUESTIONS[0])
-    #own_gay_adoption= make_field(C.QUESTIONS[1])
-    #own_govt_reduce_inequ=  make_field(C.QUESTIONS[2])
-    #own_migration_enriches_culture=  make_field(C.QUESTIONS[3])
 
     # map positions
     # positionsTest = models.LongStringField()  # Stores JSON data of positions
     positions = models.LongStringField()  # Stores JSON data of positions
     edges = models.LongStringField()  # Added for edges
-
-    #################################
-    #####  CHecks   #####
-    #################################
-    #for toCheck in ["f1f2", "P1P2"]:
-    #    exec(f"check_self_{toCheck} = models.StringField(        choices=['not at all','somewhat','very much'],label=C.CHECKTEXT('your friends'),widget=widgets.RadioSelectHorizontal,blank=True)")
-    #    exec(f"reason_{toCheck} =  models.LongStringField(label=C.REASONTEXT)")
-    #del toCheck
-
-    isTrainingPassed = models.BooleanField(initial=False)#
-    isTrainingCondFvC = models.BooleanField(initial=False)#
-    isTrainingCondSelfvFC = models.BooleanField(initial=False)#
-    isTrainingCondSvFC = models.BooleanField(initial=False)#
-    trainingMessageConfirmed = models.BooleanField(initial=False)#
-    isTrainingCondSvF = models.BooleanField(initial=False)#
-    current_friend = models.IntegerField(initial=1)  
-    ps_placed = models.IntegerField(initial=0)  
     
-    # for questions
+    # for questions 
     answer1 = models.LongStringField(label="", blank=False)  # Will use dynamic label
     answer2 = models.LongStringField(label="", blank=False)
     answer3 = models.LongStringField(label="", blank=False)
@@ -136,8 +91,7 @@ class Player(BasePlayer):
     accepted_nodes = models.LongStringField(blank=True)
 
     # For new way of doing belief codings (humans)
-    #all_labels_json = models.LongStringField(initial=json.dumps([""] * C.MAX_LABELS))
-    #label_snapshots = models.LongStringField(initial='[]') # store each snapshot 
+    # Currently we are not doing these human labels.
     label_input_0 = models.StringField(blank=True)
     label_input_1 = models.StringField(blank=True)
     label_input_2 = models.StringField(blank=True)
@@ -146,31 +100,25 @@ class Player(BasePlayer):
     all_labels_json = models.LongStringField(initial='[]')  # final flat list
     label_snapshots = models.LongStringField(initial='[]')  # list of lists
 
-# for the LLM
-# no actually what is this?
-for i in range(C.MAX_NODES):  
-    setattr(Player, f"node_{i}", 
-            models.BooleanField(
-                label="", 
-                blank=True, 
-                #max_length=C.MAX_CHAR # CONSIDER THIS. 
-                ))
-
-# for the human
-for i in range(C.MAX_LABELS):
-    setattr(
-        Player,
-        f"label_{i}",
-        models.StringField(
-            label="",
-            blank=(i != 0),  # label_1 required, rest optional
-            max_length=C.MAX_CHAR
-        )
+    # Plausibility check (not implemented yet)
+    importance_pair_1 = models.IntegerField(
+    label="",
+    choices=[1, 2, 3, 4, 5, 6, 7],
+    widget=widgets.RadioSelectHorizontal
     )
+    importance_pair_2 = models.IntegerField(
+        label="",
+        choices=[1, 2, 3, 4, 5, 6, 7],
+        widget=widgets.RadioSelectHorizontal
+    )
+    importance_pairs_data = models.LongStringField()
 
-#################################
-#####  FRIENDS' POLITICAL OPINIONS   #####
-#################################
+for i in range(C.MAX_NODES):
+    #setattr(Player, f"LLM_proposed_{i}", models.StringField(blank=True))
+    setattr(Player, f"LLM_codings_{i}", models.StringField(blank=True))
+    setattr(Player, f"LLM_accepted_{i}", models.StringField(blank=True))
+    setattr(Player, f"Human_nodes_{i}", models.StringField(blank=True))
+    setattr(Player, f"Final_nodes_{i}", models.StringField(blank=True))
 
 # PAGES
 class Introduction(Page):
@@ -180,32 +128,6 @@ class Demographics(Page):
     form_model = 'player'
     form_fields = ['age', 'feel_closest', 'feel_closest_party', "how_polarised"]
 
-class MapE(Page):
-    form_model = 'player'
-    form_fields = ['positions', 'edges']
-
-    @staticmethod
-    def vars_for_template(player: Player):
-        labels = [
-            player.label_1,
-            player.label_2,
-            player.label_3,
-            player.label_4,
-            player.label_5,
-        ]
-        # Filter and assign x/y positions
-        belief_points = [
-        {"label": label, "x": 750, "y": 100 + i * 80}  # 750 is just beyond 700px canvas
-        for i, label in enumerate(labels) if label
-        ]
-
-        return dict(belief_points=belief_points)
-
-    @staticmethod
-    def before_next_page(player: Player, timeout_happened):
-        player.positions = player.positions
-        player.edges = player.edges
-        
 class ResultsWaitPage(WaitPage):
     pass
 
@@ -261,61 +183,6 @@ class Question5(Page):
     def vars_for_template(player: Player):
         return dict(prompt=C.QUESTIONS[4])
 
-class LabelingPage(Page):
-    form_model = 'player'
-
-    @staticmethod
-    def get_form_fields(player):
-        from . import C
-        return [f"label_{i}" for i in range(C.MAX_LABELS)]
-
-    @staticmethod
-    def vars_for_template(player: Player):
-        from . import C
-        qa_pairs = list(zip(C.QUESTIONS, [getattr(player, f"answer{i+1}") for i in range(len(C.QUESTIONS))]))
-        formfields = [f"label_{i}" for i in range(C.MAX_LABELS)]
-        return dict(qa_pairs=qa_pairs, formfields=formfields)
-
-class LabelingPageDynamic(Page):
-    form_model = 'player'
-
-    @staticmethod
-    def get_form_fields(player):
-        return [f'label_input_{i}' for i in range(C.LABELS_PER_PAGE)]
-
-    @staticmethod
-    def vars_for_template(player):
-        from . import C
-        q_index = player.round_number - 1
-        return dict(
-            qa_pairs=[(C.QUESTIONS[q_index], getattr(player, f"answer{q_index + 1}"))]
-        )
-
-    @staticmethod
-    def error_message(player, values):
-        non_empty = [v for v in values.values() if v.strip()]
-        if len(non_empty) < 1:
-            return "Please enter at least one belief label."
-
-    @staticmethod
-    def before_next_page(player, timeout_happened):
-        import json
-
-        page_labels = []
-        for i in range(C.LABELS_PER_PAGE):
-            label = getattr(player, f'label_input_{i}')
-            if label.strip():
-                page_labels.append(label)
-
-        # Append snapshot for this round
-        snapshots = json.loads(player.label_snapshots)
-        snapshots.append(page_labels)
-        player.label_snapshots = json.dumps(snapshots)
-
-        # Flatten everything into a single list and store
-        all_flat = [lbl for group in snapshots for lbl in group]
-        player.all_labels_json = json.dumps(all_flat)
-
 class LLMGenerate(Page):
     timeout_seconds = 300
     auto_submit = True
@@ -353,28 +220,37 @@ class LLMGenerate(Page):
             generated_nodes = [s.replace("I agree with the following: ", "", 1).strip() for s in generated_nodes]
             player.generated_nodes = json.dumps(generated_nodes)
 
-
-class LLMReview(Page):
-    form_model = 'player'
-    form_fields = [f'node_{i}' for i in range(C.MAX_NODES)]
-
-    @staticmethod
-    def vars_for_template(player: Player):
-        beliefs = json.loads(player.generated_nodes)
-        zipped_beliefs = list(zip(beliefs, [f'node_{i}' for i in range(len(beliefs))]))
+# new version of above.
+class LLMReviewRevise(Page):
+    def vars_for_template(self):
+        beliefs = json.loads(self.generated_nodes)
+        zipped_beliefs = list(zip(beliefs, range(len(beliefs))))
         return dict(zipped_beliefs=zipped_beliefs)
 
-    @staticmethod
-    def before_next_page(player: Player, timeout_happened):
-        beliefs = json.loads(player.generated_nodes)
-        accepted = []
+    def before_next_page(self, timeout_happened):
+        beliefs = json.loads(self.generated_nodes)
+
         for i, belief in enumerate(beliefs):
             if i >= C.MAX_NODES:
                 break
-            if getattr(player, f'node_{i}'):  # if True (Accepted)
-                accepted.append(belief)
-        player.accepted_nodes = json.dumps(accepted)
 
+            choice = self.request.POST.get(f'LLM_coding_choice_{i}')
+            modify_text = self.request.POST.get(f'LLM_modify_text_{i}', '').strip()
+            reject_reason = self.request.POST.get(f'LLM_reject_reason_{i}', '').strip()
+
+            if choice == "ACCEPT":
+                setattr(self, f"LLM_codings_{i}", "ACCEPT")
+                setattr(self, f"LLM_accepted_{i}", belief)
+
+            elif choice == "REJECT":
+                reason = f"REJECT: {reject_reason}" if reject_reason else "REJECT"
+                setattr(self, f"LLM_codings_{i}", reason)
+
+            elif choice == "MODIFY":
+                if modify_text:
+                    setattr(self, f"LLM_codings_{i}", f"MODIFY: {modify_text}")
+                    setattr(self, f"LLM_accepted_{i}", modify_text)
+        
 class MapLLM(Page):
     form_model = 'player'
     form_fields = ['positions', 'edges']
@@ -382,47 +258,56 @@ class MapLLM(Page):
     @staticmethod
     def vars_for_template(player: Player):
         accepted_nodes = json.loads(player.accepted_nodes)
-        # Filter and assign x/y positions
-        belief_points = [
-        {"label": label, "x": 750, "y": 100 + i * 80}  # 750 is just beyond 700px canvas
-        for i, label in enumerate(accepted_nodes) if label
-        ]
+        mode = 'all'  # 'sequential', 'all'
+        label_display = 'always' # 'hover', 'always' --- hover + list of numbers. 
 
-        return dict(belief_points=belief_points)
+        if mode == 'all':
+            belief_points = [
+                {"label": label, "x": 750, "y": 100 + i * 80}
+                for i, label in enumerate(accepted_nodes) if label
+            ]
+        else:
+            belief_points = []  # empty, will render first node via JS
+        return dict(
+            belief_points=belief_points,
+            mode=mode,
+            label_display=label_display,
+            all_labels_json=json.dumps(accepted_nodes)  # still safe
+        )
+
+class PlausibilityCheck(Page):
+    form_model = 'player'
+    form_fields = ['importance_pair_1', 'importance_pair_2']
 
     @staticmethod
-    def before_next_page(player: Player, timeout_happened):
-        player.positions = player.positions
-        player.edges = player.edges
-        
-# page sequence 
-ps = 'LLM_only' # 'LLM_only', 'human_only'
+    def vars_for_template(player):
+        all_nodes = json.loads(player.positions)
+        labels = [node['label'] for node in all_nodes]
+        random.shuffle(labels)
+        chosen = labels[:4]
 
-if ps == "LLM_only": 
-    page_sequence = [
-        Introduction, 
-        Question1, 
-        Question2, 
-        Question3, 
-        Question4, 
-        Question5, 
-        LLMGenerate,
-        LLMReview,
-        MapLLM, 
-        Demographics, 
-        Results
-    ]
-    
-elif ps == "human_only":
-    page_sequence = [
-        Introduction, 
-        Question1, 
-        Question2,
-        Question3,
-        Question4,
-        Question5,
-        *([LabelingPageDynamic] * C.N_QUESTIONS),  # <- unpack the repeated page class
-        #LabelingPage, 
-        MapE, # should just be one shared "map"
-        Demographics,
-        Results]
+        pair_1 = (chosen[0], chosen[1])
+        pair_2 = (chosen[2], chosen[3])
+
+        # Save pairs for display in HTML and record-keeping
+        player.importance_pairs_data = json.dumps({
+            "pair_1": pair_1,
+            "pair_2": pair_2
+        })
+
+        return dict(pair_1=pair_1, pair_2=pair_2)
+
+# page sequence 
+page_sequence = [
+    Introduction, 
+    Question1, 
+    Question2, 
+    Question3, 
+    Question4, 
+    Question5, 
+    LLMGenerate,
+    LLMReviewRevise,
+    MapLLM, 
+    Demographics, 
+    Results
+]

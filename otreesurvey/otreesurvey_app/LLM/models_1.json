@@ -1,0 +1,410 @@
+{
+  "gpt-4o": {
+    "response": {
+      "results": [
+        {
+          "stance": "I agree with the following: I am a liberal",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: Economic inequality is concerning",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: Anti-democratic sentiments are concerning",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: Climate change needs supernational solutions",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: People should live freely",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: Most drugs should be legal",
+          "importance": "MEDIUM"
+        },
+        {
+          "stance": "I agree with the following: LGBTQ rights are important",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: I voted for Radikale Venstre",
+          "importance": "MEDIUM"
+        },
+        {
+          "stance": "I agree with the following: Extreme-right parties are concerning",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: US anti-globalist policies are concerning",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: Climate change is a key challenge",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: European innovation is lacking",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: Danish society is structured well",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: Immigration views split me",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: Economic immigration is favorable",
+          "importance": "HIGH"
+        }
+      ]
+    },
+    "time_seconds": 6.588948011398315,
+    "num_stances": 15
+  },
+  "gpt-4.1": {
+    "response": {
+      "results": [
+        {
+          "stance": "I agree with the following: economic inequality is concerning",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: anti-immigration sentiment is concerning",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: climate change is a key challenge",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: people should have personal freedom",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: most drugs should be legal",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: LGBTQ rights should be equal",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: supernational cooperation is needed",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: right-wing extremism is a threat",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: education investment is important",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: global orientation is important",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: Denmark is more egalitarian",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: free education is valuable",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: universal healthcare is important",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: there are limits to refugee intake",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: economic immigration is beneficial",
+          "importance": "LOW"
+        }
+      ]
+    },
+    "time_seconds": 4.599725961685181,
+    "num_stances": 15
+  },
+  "gpt-4o-mini": {
+    "response": {
+      "results": [
+        {
+          "stance": "I agree with the following: climate change is a key challenge",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: I support economic immigration",
+          "importance": "MEDIUM"
+        },
+        {
+          "stance": "I agree with the following: integration has limits",
+          "importance": "MEDIUM"
+        },
+        {
+          "stance": "I agree with the following: I am concerned about extreme-right parties",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: Denmark is a free country",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: Danish society is egalitarian",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: education should be free",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: I support LGBTQ rights",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: I am concerned about economic inequality",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: I have mixed feelings about my vote",
+          "importance": "MEDIUM"
+        },
+        {
+          "stance": "I agree with the following: I want progressive policies",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: I am globally oriented",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: I support universal health care",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: I am concerned about protectionism",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: Denmark has a good welfare system",
+          "importance": "HIGH"
+        }
+      ]
+    },
+    "time_seconds": 5.734752178192139,
+    "num_stances": 15
+  },
+  "gpt-4-turbo": {
+    "response": {
+      "results": [
+        {
+          "stance": "I agree with the following: I am a liberal",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: Drugs should be legal",
+          "importance": "MEDIUM"
+        },
+        {
+          "stance": "I agree with the following: LGBTQ rights are essential",
+          "importance": "MEDIUM"
+        },
+        {
+          "stance": "I agree with the following: Economic inequality concerns me",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: Rising anti-immigration sentiment concerns me",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: Right-wing extremism concerns me",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: Climate change needs global solutions",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: Supranational bodies are necessary",
+          "importance": "MEDIUM"
+        },
+        {
+          "stance": "I agree with the following: Radikale Venstre represents my views",
+          "importance": "MEDIUM"
+        },
+        {
+          "stance": "I agree with the following: I am concerned about extreme-right parties",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: Economic systems are under threat",
+          "importance": "HIGH"
+        },
+        {
+          "stance": "I agree with the following: Europe's innovation is lacking",
+          "importance": "MEDIUM"
+        },
+        {
+          "stance": "I agree with the following: Danish society is well-structured",
+          "importance": "MEDIUM"
+        },
+        {
+          "stance": "I agree with the following: Economic immigration is favorable",
+          "importance": "MEDIUM"
+        },
+        {
+          "stance": "I agree with the following: Refugee limits are necessary",
+          "importance": "MEDIUM"
+        }
+      ]
+    },
+    "time_seconds": 8.614745140075684,
+    "num_stances": 15
+  },
+  "o3-mini": {
+    "response": {
+      "results": [
+        {
+          "stance": "I agree with the following: I am politically liberal",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: inequality is a problem",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: anti-democracy is dangerous",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: right-wing extremism concerns me",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: climate change must be solved",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: global collaboration is essential",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: individual freedom is vital",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: drugs should be legalized",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: LGBTQ rights are equal",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: center-left politics align me",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: extreme-right populism is worrisome",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: protectionism harms global economy",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: Danish system promotes equality",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: economic immigration is positive",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: cultural limits are necessary",
+          "importance": "LOW"
+        }
+      ]
+    },
+    "time_seconds": 21.63830590248108,
+    "num_stances": 15
+  },
+  "o4-mini": {
+    "response": {
+      "results": [
+        {
+          "stance": "I agree with the following: progressive political views",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: concerned about economic inequality",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: concerned about populism and extremism",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: climate change is critical",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: global problems need supranational solutions",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: individual freedoms matter",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: most drugs should be legal",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: LGBTQ rights equality",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: Radikale Venstre represents my views",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: concerned about anti-globalism",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: Danish social model is admirable",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: generous welfare system is good",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: free education enhances social mobility",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: economic immigration is positive",
+          "importance": "LOW"
+        },
+        {
+          "stance": "I agree with the following: immigration limits are necessary",
+          "importance": "LOW"
+        }
+      ]
+    },
+    "time_seconds": 21.468160152435303,
+    "num_stances": 15
+  }
+}
