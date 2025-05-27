@@ -1,0 +1,211 @@
+{% extends "global/Page.html" %}
+
+{% block content %}
+<h2>Adjust Importance of Beliefs</h2>
+<p>You can now resize the circles to indicate importance. Larger circles represent more important beliefs. You can still reposition and connect them as before.</p>
+
+<canvas id="dragCanvas" width="900" height="600" style="border:1px solid black;"></canvas>
+<div id="edgeSelectionPanel" style="display:none; position: absolute; left: 620px; top: 100px; background: #f9f9f9; border: 1px solid #ccc; padding: 20px;">
+    <p style="font-weight: bold; margin-bottom: 10px;">Choose edge type:</p>
+    <button id="selectPositive" type="button" style="background-color: green; color: white; padding: 10px 20px; font-size: 16px; margin-right: 10px;">Positive</button>
+    <button id="selectNegative" type="button" style="background-color: red; color: white; padding: 10px 20px; font-size: 16px;">Negative</button>
+</div>
+<input type="hidden" id="positions_3" name="positions_3">
+<input type="hidden" id="edges_3" name="edges_3">
+
+{{ formfield_errors 'positions_3' }}
+{{ formfield_errors 'edges_3' }}
+{{ next_button }}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const canvas = document.getElementById("dragCanvas");
+    const ctx = canvas.getContext("2d");
+    const resizeMargin = 4;
+    const labelDisplay = "always";
+
+    const points = [
+        {% for point in belief_points %}
+            { label: "{{ point.label }}", x: {{ point.x }}, y: {{ point.y }}, radius: {{ point.radius }} },
+        {% endfor %}
+    ];
+
+    let draggingPoint = null;
+    let resizingPoint = null;
+    let selectedPoint = null;
+    let hoveredPoint = null;
+    let wasDragging = false;
+    let pendingEdge = null;
+    const edges = [];
+
+    function drawCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(0, 0, 600, 600);
+
+        edges.forEach(edge => {
+            ctx.beginPath();
+            ctx.moveTo(edge.from.x, edge.from.y);
+            ctx.lineTo(edge.to.x, edge.to.y);
+            ctx.strokeStyle = edge.polarity === "positive" ? "green" : "red";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        });
+
+        points.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, 2 * Math.PI);
+            ctx.fillStyle = p === selectedPoint ? "yellow" : "orange";
+            ctx.fill();
+            ctx.strokeStyle = "black";
+            ctx.stroke();
+
+            if (labelDisplay === "always" || p === hoveredPoint) {
+                ctx.fillStyle = "black";
+                ctx.font = "16px sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "bottom";
+                ctx.fillText(p.label, p.x, p.y - 22);
+            }
+        });
+    }
+
+    function getMousePos(evt) {
+        const rect = canvas.getBoundingClientRect();
+        return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
+    }
+
+    function findPoint(pos) {
+        return points.find(p => Math.hypot(p.x - pos.x, p.y - pos.y) <= p.radius + 4);
+    }
+
+    canvas.addEventListener("mousedown", function (evt) {
+        const mousePos = getMousePos(evt);
+        const found = findPoint(mousePos);
+        if (found) {
+            const dist = Math.hypot(found.x - mousePos.x, found.y - mousePos.y);
+            if (dist > found.radius - resizeMargin && dist <= found.radius + resizeMargin) {
+                resizingPoint = found;
+            } else {
+                draggingPoint = found;
+            }
+        }
+        wasDragging = false;
+    });
+
+    canvas.addEventListener("mousemove", function (evt) {
+        const mousePos = getMousePos(evt);
+        hoveredPoint = findPoint(mousePos);
+
+        if (draggingPoint) {
+            draggingPoint.x = mousePos.x;
+            draggingPoint.y = mousePos.y;
+            wasDragging = true;
+        }
+
+        if (resizingPoint) {
+            const dx = mousePos.x - resizingPoint.x;
+            const dy = mousePos.y - resizingPoint.y;
+            resizingPoint.radius = Math.max(8, Math.min(80, Math.hypot(dx, dy)));
+            wasDragging = true;
+        }
+
+        // Update cursor style
+        if (hoveredPoint) {
+            const d = Math.hypot(hoveredPoint.x - mousePos.x, hoveredPoint.y - mousePos.y);
+            if (d > hoveredPoint.radius - resizeMargin && d <= hoveredPoint.radius + resizeMargin) {
+                canvas.style.cursor = "nwse-resize";
+            } else {
+                canvas.style.cursor = "grab";
+            }
+        } else {
+            canvas.style.cursor = "default";
+        }
+
+        drawCanvas();
+    });
+
+    canvas.addEventListener("mouseup", function (evt) {
+        const mousePos = getMousePos(evt);
+        const hit = findPoint(mousePos);
+
+        if (!wasDragging && hit) {
+            if (!selectedPoint) {
+                selectedPoint = hit;
+            } else if (selectedPoint !== hit) {
+                const exists = edges.find(e => (e.from === selectedPoint && e.to === hit) || (e.from === hit && e.to === selectedPoint));
+                if (exists) {
+                    edges.splice(edges.indexOf(exists), 1);
+                } else {
+                    pendingEdge = { from: selectedPoint, to: hit };
+                    document.getElementById("edgeSelectionPanel").style.display = "block";
+                }
+                selectedPoint = null;
+            } else {
+                selectedPoint = null;
+            }
+        }
+        draggingPoint = null;
+        resizingPoint = null;
+    });
+
+    document.getElementById("selectPositive").addEventListener("click", function () {
+        if (pendingEdge) {
+            pendingEdge.polarity = "positive";
+            edges.push(pendingEdge);
+            pendingEdge = null;
+            document.getElementById("edgeSelectionPanel").style.display = "none";
+            drawCanvas();
+        }
+    });
+
+    document.getElementById("selectNegative").addEventListener("click", function () {
+        if (pendingEdge) {
+            pendingEdge.polarity = "negative";
+            edges.push(pendingEdge);
+            pendingEdge = null;
+            document.getElementById("edgeSelectionPanel").style.display = "none";
+            drawCanvas();
+        }
+    });
+
+    const form = document.querySelector("form");
+    const nextButton = document.querySelector("button[type=submit], .otree-btn-next");
+
+    nextButton.addEventListener("click", function (e) {
+        e.preventDefault();
+
+        const allInside = points.every(p => p.x >= 0 && p.x <= 600 && p.y >= 0 && p.y <= 600);
+        const anyResized = points.some(p => p.radius !== 20);
+
+        if (!allInside) {
+            alert("Please drag all beliefs into the square before continuing.");
+            return;
+        }
+
+        if (!anyResized) {
+            alert("Please resize at least one belief to indicate importance.");
+            return;
+        }
+
+        document.getElementById("positions_3").value = JSON.stringify(points.map(p => ({
+            label: p.label,
+            x: p.x,
+            y: p.y,
+            radius: p.radius
+        })));
+
+        document.getElementById("edges_3").value = JSON.stringify(edges.map(e => ({
+            from: e.from.label,
+            to: e.to.label,
+            polarity: e.polarity
+        })));
+
+        form.submit();
+    });
+
+    drawCanvas();
+});
+</script>
+{% endblock %}

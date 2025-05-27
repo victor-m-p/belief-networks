@@ -16,7 +16,7 @@ custom_retry = retry(
         )
 
 @custom_retry
-def call_openai(response_model, content_prompt, model_name='gpt-4.1', temp=0.7):
+def call_openai(response_model, content_prompt, model_name='gpt-4.1', temp=0.7): # gpt-4.1
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
     client = instructor.from_openai(client, mode=instructor.Mode.TOOLS)
 
@@ -63,7 +63,7 @@ We will refer to all of the beliefs, attitudes, and considerations collectively 
 - Avoid statements that express more than one stance. Thus avoid words like "and" and instead break more complex stances up into simpler individual ones. 
 - Keep each statement short and concise and avoid filler words. 
 - Be direct in formulations (e.g. "climate change is human caused" is preferred to "I believe that climate change is human caused").
-- Aim for a maximum length of 4-8 words per stance formulation, and for a maximum of 15 stances.
+- Aim for a maximum length of 4-8 words per stance formulation, and for a maximum of the 7 most important stances.
 
 2. Rate importance for each stance:
 - Classify how important each stance (belief, attitude, consideration) is to the interviewee in the context of meat consumption.

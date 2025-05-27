@@ -16,15 +16,15 @@ class C(BaseConstants):
     NUM_ROUNDS = 1
     MAX_NODES=20
     MAX_CHAR=60
-    MAX_USER_NODES=5
+    MAX_USER_NODES=3
     
     QUESTIONS = [
-        "How do you place yourself politically? Would you call yourself a conservative or a liberal or something else? What does this mean to you?",
-        "Which party did you vote for at the last national election, and why did you vote for that party? If you did not vote in the last national election, why?", 
+        "How would you describe yourself politically? Would you call yourself a conservative or a liberal or something else? What does this mean to you?",
+        #"Which party did you vote for at the last national election, and why did you vote for that party? If you did not vote in the last national election, why?", 
         "What are some things that concern you in the political domain? Feel free to mention things that are important to you personally, or more long-term concerns or challenges for your country",
         "Are there things about your country that make you feel proud or ashamed? Feel free to write about any features or events that come to mind",
+        "Are there any political questions where you feel dissonance or conflict? Maybe something that is salient for you personally, or is discussed among your social contacts or in the media",
         "Are there any more things that are important to you politically that we have not yet discussed? Feel free to write about anything that comes to mind",
-        #"Are there any political questions where you feel dissonance or conflict? Either because you are not quite sure yourself, or because you disagree with some of your social contacts?"
     ]
     
     N_QUESTIONS = len(QUESTIONS)
@@ -100,6 +100,17 @@ class Player(BasePlayer):
     all_labels_json = models.LongStringField(initial='[]')  # final flat list
     label_snapshots = models.LongStringField(initial='[]')  # list of lists
 
+    # Position/NETWORK 
+    ## Stage 1.
+    positions_1 = models.LongStringField(blank=True)
+    ## Stage 2.
+    edges_2 = models.LongStringField(blank=True)
+    positions_2 = models.LongStringField(blank=True)
+    ## stage 3.
+    edges_3 = models.LongStringField(blank=True)
+    positions_3 = models.LongStringField(blank=True)
+    
+
     # Plausibility check (not implemented yet)
     importance_pair_1 = models.IntegerField(
     label="",
@@ -127,7 +138,7 @@ for i in range(C.MAX_NODES):
 class Introduction(Page):
     pass
 
-class Demographics(Page):
+class Demographics(Page): # what do we actually need here? 
     form_model = 'player'
     form_fields = ['age', 'feel_closest', 'feel_closest_party', "how_polarised"]
 
@@ -318,34 +329,78 @@ class LLMAddBeliefs(Page):
                 accepted.append({"text": node.strip(), "source": "USER"})
 
         player.final_nodes = json.dumps(accepted)
-        
-class MapLLM(Page):
+
+# splitting network part up # 
+class MapNodePlacement(Page):
     form_model = 'player'
-    form_fields = ['positions', 'edges']
+    form_fields = ['positions_1']
+
+    @staticmethod
+    def vars_for_template(player):
+        final_nodes = json.loads(player.final_nodes or '[]')
+        belief_texts = [item['text'] for item in final_nodes if item.get('text')]
+
+        belief_points = [
+            {"label": label, "x": 750, "y": 40 + i * 60, "radius": 20}
+            for i, label in enumerate(belief_texts)
+        ]
+
+        mode = 'all'
+        label_display = 'always'
+
+        return dict(
+            belief_points=belief_points,
+            belief_texts=belief_texts,
+            mode=mode,
+            label_display=label_display
+        )
+
+    @staticmethod
+    def before_next_page(player, timeout_happened):
+        pass
+
+class MapEdgeCreation(Page):
+    form_model = 'player'
+    form_fields = ['positions_2', 'edges_2']
 
     @staticmethod
     def vars_for_template(player: Player):
         final_nodes = json.loads(player.final_nodes or '[]')
-        belief_texts = [item['text'] for item in final_nodes if item.get('text')]
+        try:
+            positions = json.loads(player.positions_1 or '[]')
+        except (TypeError, json.JSONDecodeError):
+            positions = []
 
-        mode = 'all'  # or 'sequential'
-        label_display = 'always'  # or 'hover'
-
-        if mode == 'all':
-            belief_points = [
-                {"label": text, "x": 750, "y": 100 + i * 80}
-                for i, text in enumerate(belief_texts)
-            ]
-        else:
-            belief_points = []
+        belief_points = []
+        for i, item in enumerate(final_nodes):
+            x = positions[i]['x'] if i < len(positions) else 750
+            y = positions[i]['y'] if i < len(positions) else 100 + i * 80
+            radius = positions[i].get('radius', 20) if i < len(positions) else 20
+            belief_points.append({"label": item['text'], "x": x, "y": y, "radius": radius})
 
         return dict(
             belief_points=belief_points,
-            mode=mode,
-            label_display=label_display,
-            all_labels_json=json.dumps(belief_texts)
+            mode='all',
+            label_display='always',
+            all_labels_json=json.dumps([b['text'] for b in final_nodes])
         )
 
+    @staticmethod
+    def before_next_page(player: Player, timeout_happened):
+        pass
+
+
+class MapImportance(Page):
+    form_model = 'player'
+    form_fields = ['positions_3', 'edges_3']
+
+    @staticmethod
+    def vars_for_template(player):
+        prev_positions = json.loads(player.positions_2 or '[]')
+        return dict(
+            belief_points=prev_positions,
+            label_display='always'
+        )
 
 class PlausibilityCheck(Page):
     form_model = 'player'
@@ -380,7 +435,10 @@ page_sequence = [
     LLMGenerate,
     LLMReviewRevise,
     LLMAddBeliefs,
-    MapLLM, 
+    MapNodePlacement,
+    MapEdgeCreation,
+    MapImportance,
+    #MapLLM,
     Demographics, 
     Results
 ]

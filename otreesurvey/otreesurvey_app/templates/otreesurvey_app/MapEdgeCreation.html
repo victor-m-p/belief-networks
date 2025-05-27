@@ -1,0 +1,185 @@
+{% extends "global/Page.html" %}
+
+{% block content %}
+<h2>Create Connections Between Items</h2>
+<p style="margin-bottom: 0.5em;">You can now draw connections between items. Click one circle, then another, to toggle a connection.</p>
+<p style="margin-bottom: 0.5em;"><strong>Draw arrows between things that you feel are either positively or negatively connected to each other.</strong></p>
+<p style="margin-bottom: 0.5em;">If you create a connection by mistake, you can remove it again by clicking one circle and then the other.</p>
+<p style="margin-bottom: 0.5em;">You are still allowed to drag circles to reposition them.</p>
+
+<canvas id="dragCanvas" width="900" height="600" style="border:1px solid black;"></canvas>
+<div id="edgeSelectionPanel" style="display:none; position: absolute; left: 620px; top: 100px; background: #f9f9f9; border: 1px solid #ccc; padding: 20px;">
+    <p style="font-weight: bold; margin-bottom: 10px;">Choose edge type:</p>
+    <button id="selectPositive" type="button" style="background-color: green; color: white; padding: 10px 20px; font-size: 16px; margin-right: 10px;">Positive</button>
+    <button id="selectNegative" type="button" style="background-color: red; color: white; padding: 10px 20px; font-size: 16px;">Negative</button>
+</div>
+<input type="hidden" id="positions" name="positions_2">
+<input type="hidden" id="edges" name="edges_2">
+
+{{ formfield_errors 'positions_2' }}
+{{ formfield_errors 'edges_2' }}
+{{ next_button }}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const canvas = document.getElementById("dragCanvas");
+    const ctx = canvas.getContext("2d");
+    const labelDisplay = "{{ label_display }}";
+
+    const points = [
+        {% for point in belief_points %}
+            { label: "{{ point.label }}", x: {{ point.x }}, y: {{ point.y }}, radius: {{ point.radius }} },
+        {% endfor %}
+    ];
+
+    let draggingPoint = null;
+    let selectedPoint = null;
+    let pendingEdge = null;
+    let hoveredPoint = null;
+    let wasDragging = false;
+    const edges = [];
+
+    function drawCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(0, 0, 600, 600);
+
+        edges.forEach(edge => {
+            ctx.beginPath();
+            ctx.moveTo(edge.from.x, edge.from.y);
+            ctx.lineTo(edge.to.x, edge.to.y);
+            ctx.strokeStyle = edge.polarity === "positive" ? "green" : "red";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        });
+
+        points.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, 2 * Math.PI);
+            ctx.fillStyle = p === selectedPoint ? "yellow" : "orange";
+            ctx.fill();
+            ctx.strokeStyle = "black";
+            ctx.stroke();
+
+            if (labelDisplay === "always" || p === hoveredPoint) {
+                ctx.fillStyle = "black";
+                ctx.font = "16px sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "bottom";
+                ctx.fillText(p.label, p.x, p.y - 22);
+            }
+        });
+    }
+
+    function getMousePos(evt) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: evt.clientX - rect.left,
+            y: evt.clientY - rect.top
+        };
+    }
+
+    function findPoint(pos) {
+        return points.find(p => Math.hypot(p.x - pos.x, p.y - pos.y) <= p.radius);
+    }
+
+    canvas.addEventListener("mousedown", function (evt) {
+        const mousePos = getMousePos(evt);
+        const hit = findPoint(mousePos);
+        if (hit) draggingPoint = hit;
+        wasDragging = false;  // ✅ Reset when press starts
+    });
+
+    canvas.addEventListener("mousemove", function (evt) {
+        const mousePos = getMousePos(evt);
+        hoveredPoint = findPoint(mousePos);
+        if (draggingPoint) {
+            draggingPoint.x = mousePos.x;
+            draggingPoint.y = mousePos.y;
+            wasDragging = true;  // ✅ Track movement
+        }
+        drawCanvas();
+    });
+
+    canvas.addEventListener("mouseup", function (evt) {
+        const mousePos = getMousePos(evt);
+        const hit = findPoint(mousePos);
+    
+        if (!wasDragging && hit) {  // ✅ Only if it was a real click
+            if (!selectedPoint) {
+                selectedPoint = hit;
+            } else if (selectedPoint !== hit) {
+                const exists = edges.find(edge =>
+                    (edge.from === selectedPoint && edge.to === hit) ||
+                    (edge.from === hit && edge.to === selectedPoint)
+                );
+                if (exists) {
+                    edges.splice(edges.indexOf(exists), 1);
+                } else {
+                    pendingEdge = { from: selectedPoint, to: hit };
+                    document.getElementById("edgeSelectionPanel").style.display = "block";
+                }
+                selectedPoint = null;
+            } else {
+                selectedPoint = null;
+            }
+        }
+    
+        draggingPoint = null;
+        wasDragging = false;
+    });
+
+    document.getElementById("selectPositive").addEventListener("click", function () {
+        if (pendingEdge) {
+            pendingEdge.polarity = "positive";
+            edges.push(pendingEdge);
+            pendingEdge = null;
+            document.getElementById("edgeSelectionPanel").style.display = "none";
+            drawCanvas();
+        }
+    });
+
+    document.getElementById("selectNegative").addEventListener("click", function () {
+        if (pendingEdge) {
+            pendingEdge.polarity = "negative";
+            edges.push(pendingEdge);
+            pendingEdge = null;
+            document.getElementById("edgeSelectionPanel").style.display = "none";
+            drawCanvas();
+        }
+    });
+
+    function allInsideBox() {
+        return points.every(p => p.x >= 0 && p.x <= 600 && p.y >= 0 && p.y <= 600);
+    }
+
+    const form = document.querySelector("form");
+    const nextButton = document.querySelector("button[type=submit], .otree-btn-next");
+
+    nextButton.addEventListener("click", function (e) {
+        e.preventDefault();
+    
+        if (!allInsideBox()) {
+            alert("Please drag all beliefs into the square before continuing.");
+            return;
+        }
+    
+        if (edges.length < 1) {
+            alert("Please create at least one connection between beliefs before continuing.");
+            return;
+        }
+    
+        document.getElementById("positions").value = JSON.stringify(points);
+        document.getElementById("edges").value = JSON.stringify(edges.map(edge => ({
+            from: edge.from.label,
+            to: edge.to.label,
+            polarity: edge.polarity
+        })));
+        form.submit();
+    });
+
+    drawCanvas();
+});
+</script>
+{% endblock %}

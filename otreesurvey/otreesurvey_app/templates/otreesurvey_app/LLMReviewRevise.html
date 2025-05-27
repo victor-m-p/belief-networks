@@ -72,10 +72,10 @@
 
 {% block content %}
 <h2>Based on your responses, the following statements might describe your views</h2>
-<p>Please ACCEPT, REJECT, or MODIFY each statement below</p>
-<p>If the statement is an accurate reflection of what you wrote and what you believe, choose ACCEPT</p>
-<p>If the statement is not an accurate reflection of what you wrote and what you believe, choose REJECT</p>
-<p>If the statement is correct but not accurate then choose MODIFY and provide your own formulation</p>
+<p style="margin-bottom: 0.5em;">Please <strong>ACCEPT</strong>, <strong>REJECT</strong>, or <strong>MODIFY</strong> each statement below</p>
+<p style="margin-bottom: 0.5em;">If the statement is an accurate reflection of what you wrote and what you believe, choose ACCEPT</p>
+<p style="margin-bottom: 0.5em;">If the statement is not an accurate reflection of what you wrote and what you believe, choose REJECT</p>
+<p style="margin-bottom: 0.5em;">If the statement is correct but not accurate then choose MODIFY and provide your own formulation</p>
 
 <form method="post" id="belief-form" novalidate>
     {% for item in belief_items %}
