@@ -58,24 +58,48 @@ def define_friend(label):
 class Player(BasePlayer):
     # demography page 
     age = models.IntegerField(label='How old are you?', min=18, max=100)
-    feel_closest = models.StringField(label='Do you feel yourself closer to one of the political parties than the others?',
-                                     choices=["yes", "no", "refuse to say"],
-                                     widget=widgets.RadioSelectHorizontal)
-    feel_closest_party = models.StringField(label='Which party do you feel closest to?',
-                                     choices=["CDU/CSU", "AfD", "SPD", "Grüne", "Linke", "BSW", "FDP", "other", "refuse to say"],
-                                     widget=widgets.RadioSelectHorizontal, 
-                                     blank=True)
-    how_polarised = models.StringField(label='People sometimes say that the public polarises on political issues. Would you agree?',
-                                     choices=["Strongly Agree", "Somewhat Agree", "Somewhat Disagree", "Strongly Disagree"],
-                                     widget=widgets.RadioSelect)
+    gender = models.StringField(
+        label='What is your gender?',
+        choices=[
+            "Female", 
+            "Male", 
+            "Non-binary", 
+            "Prefer not to disclose", 
+            "Other"],
+        widget=widgets.RadioSelect
+        )
+    education = models.StringField(
+        label='What is the highest level of school you have completed or the highest degree you have received?',
+        choices=[
+            "Less than high school degree", 
+            "High school degree or equivalent (e.g., GED)",
+            "Some college but no degree", 
+            "Associate degree", 
+            "Bachelor degree",
+            "Graduate degree (e.g., Masters, PhD, M.D)"
+            ],
+        widget=widgets.RadioSelect
+    )
+    politics = models.StringField(
+        label='How would you describe your political viewpoints?',
+        choices=[
+            "Very liberal",
+            "Slightly liberal",
+            "Moderate",
+            "Slightly conservative",
+            "Very conservative",
+            "Prefer not to disclose"
+            ],
+        widget=widgets.RadioSelect
+    )
 
     # map positions
-    # positionsTest = models.LongStringField()  # Stores JSON data of positions
+    # this might now be outdated 
     positions = models.LongStringField()  # Stores JSON data of positions
     edges = models.LongStringField()  # Added for edges
     
-    # for questions 
-    answer1 = models.LongStringField(label="", blank=False)  # Will use dynamic label
+    # for questions (can we make this smoother?)
+    answer1 = models.LongStringField(label="", blank=False)  
     answer2 = models.LongStringField(label="", blank=False)
     answer3 = models.LongStringField(label="", blank=False)
     answer4 = models.LongStringField(label="", blank=False)
@@ -88,7 +112,6 @@ class Player(BasePlayer):
     revised_beliefs = models.LongStringField(blank=True)
     final_nodes = models.LongStringField(blank=True)
     user_nodes = models.LongStringField(blank=True)
-    #accepted_nodes = models.LongStringField(blank=True)
 
     # For new way of doing belief codings (humans)
     # Currently we are not doing these human labels.
@@ -110,7 +133,6 @@ class Player(BasePlayer):
     edges_3 = models.LongStringField(blank=True)
     positions_3 = models.LongStringField(blank=True)
     
-
     # Plausibility check (not implemented yet)
     importance_pair_1 = models.IntegerField(
     label="",
@@ -140,7 +162,7 @@ class Introduction(Page):
 
 class Demographics(Page): # what do we actually need here? 
     form_model = 'player'
-    form_fields = ['age', 'feel_closest', 'feel_closest_party', "how_polarised"]
+    form_fields = ['age', 'gender', 'education', 'politics']
 
 class ResultsWaitPage(WaitPage):
     pass
@@ -397,18 +419,22 @@ class MapImportance(Page):
     @staticmethod
     def vars_for_template(player):
         prev_positions = json.loads(player.positions_2 or '[]')
+        prior_edges = json.loads(player.edges_2 or '[]')
+
         return dict(
             belief_points=prev_positions,
+            belief_edges=prior_edges,
             label_display='always'
         )
 
-class PlausibilityCheck(Page):
+
+class PlausibilityImportance(Page):
     form_model = 'player'
     form_fields = ['importance_pair_1', 'importance_pair_2']
 
     @staticmethod
     def vars_for_template(player):
-        all_nodes = json.loads(player.positions)
+        all_nodes = json.loads(player.positions_3)
         labels = [node['label'] for node in all_nodes]
         random.shuffle(labels)
         chosen = labels[:4]
@@ -427,18 +453,25 @@ class PlausibilityCheck(Page):
 # page sequence 
 page_sequence = [
     Introduction, 
+    # QUESTIONS 
     Question1, 
     Question2, 
     Question3, 
     Question4, 
     Question5, 
+    # GENERATE + SELECT BELIEFS 
     LLMGenerate,
     LLMReviewRevise,
     LLMAddBeliefs,
+    # PLACEMENT 
     MapNodePlacement,
     MapEdgeCreation,
     MapImportance,
-    #MapLLM,
+    # PLAUSIBILITY 
+    # PlausibilityImportance,
+    # PlausibilityPosition, 
+    # PlausibilityEdges 
+    # DEMOGRAPHICS 
     Demographics, 
     Results
 ]

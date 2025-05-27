@@ -63,6 +63,7 @@ We will refer to all of the beliefs, attitudes, and considerations collectively 
 - Avoid statements that express more than one stance. Thus avoid words like "and" and instead break more complex stances up into simpler individual ones. 
 - Keep each statement short and concise and avoid filler words. 
 - Be direct in formulations (e.g. "climate change is human caused" is preferred to "I believe that climate change is human caused").
+- Avoid filler-words such as "major" (e.g. "concern" better than "major concern") and "key" (e.g., "challenge" better than "key challenge").
 - Aim for a maximum length of 4-8 words per stance formulation, and for a maximum of the 7 most important stances.
 
 2. Rate importance for each stance:
