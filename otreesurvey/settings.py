@@ -8,6 +8,13 @@ SESSION_CONFIGS = [
      ),
 ]
 
+ROOMS = [
+    dict(
+        name='belief_network_pretest_20250528',
+        display_name='belief_network_pretest_20250528'
+    )
+]
+
 SESSION_CONFIG_DEFAULTS = dict(
     real_world_currency_per_point=1.00, participation_fee=0.00, doc=""
 )
