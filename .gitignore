@@ -1,4 +1,6 @@
 AUTNES
+OtreeAnalysis/data_copy
+OtreeAnalysis/data
 otreesurvey/otreesurvey_app/templates/.env
 otreesurvey/otreesurvey_app/.env
 otreesurvey/otree-env
