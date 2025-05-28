@@ -1,0 +1,49 @@
+
+
+### Task Overview ###
+
+Your task is to analyze an interview transcript and identify the most central beliefs, attitudes and considerations expressed by the interviewee.
+By "beliefs" we mean statements with a truth value, such as "production animals are treated badly" or "meat consumption does not contribute to climate change". 
+By "attitudes" and "considerations" we mean evaluative statements without a truth value such as "I don't like meat" or "eating meat seems natural to me". 
+We will refer to all of the beliefs, attitudes, and considerations collectively as "stances". 
+
+### Interview Transcript ###
+
+- Q: How do you place yourself politically? Would you call yourself a conservative or a liberal or something else? What does this mean to you?
+- A: In an American context I would call myself a liberal or a progressive probably; I mostly hold progressive or left-wing views--e.g., I am concerned about rising economic inequality, about growing anti-democratic and anti-immigration sentiments (generally populism and right-wing extremism). I am globally oriented, and believe that the most important challenges that we have (e.g., climate change is one of them) needs to be solved in supernational fora. Generally I am liberal, and believe that people should be able to live their lives the way that they want, as long as they do not infringe on the freedom of other people: for instance, I believe that most drugs should be legal, and I believe that LGBTQ people should have similar rights as more heteronormative people do.
+- Q: What are some things that concern you in the political domain? Feel free to mention things that are important to you personally, or more long-term concerns or challenges for your country
+- A: Currently I am very concerned about the rise of extreme-right parties and populism globally. Of course Donald Trump in the US is the most clear example of this, but I am also concerned about the rapid rise of extreme right-wing parties in many european countries (e.g., Sweden, Germany, Austria). I am also concerned about economics right now, given that the global system is being shaken by both protectionistic and anti-globalist policies from the Trump administration and the war in Ukraine. More long-term I am concerned about climate change, which I see as one of the key challenges of my generation, and I am concerned about the future of Europe and the EU given that our economic growth is terrible, and that much of the key innovation (e.g., in AI, advanced chip manufacturing, etc.) is happening in the US and in China (and not in Europe).
+- Q: Are there things about your country that make you feel proud or ashamed? Feel free to write about any features or events that come to mind
+- A: Proud might not be exactly the right word to describe this, but I am generally very happy about the way that the Danish society and system is structured. It is one of the least corrupt, most happy countries in the world. It is more egalitarian than most countries, offering generous unemployment benefits, free (you even get paid) education, and good universal health care coverage. Besides maybe taxes (where we pay more in Denmark) I think that Denmark is really a much more free country than the for instance the US: for instance, I had the freedom (or opportunity) to do a long education even though my parents do not make a lot of money, which would maybe not have been possible in many other countries.
+- Q: Are there any political questions where you feel dissonance or conflict? Maybe something that is salient for you personally, or is discussed among your social contacts or in the media
+- A: I just had a very intense discussion recently with a good friend about whether (and when) to state your pronouns. For instance, on social media, twitter, work emails, in zoom calls etc. I do not think that we actually fundamentally agree on identity, gender, and LGBTQ+ questions (we are both leaning clearly progressive) but I feel mixed about putting this everywhere. I do think that the friend had a good point about this being important, and did add this in a few places (e.g., on twitter, work email). I think what bothers me a little bit about this is that I feel that the left is too focused on identity (gender, race, sex) and in general I think that class is a more fundamental and important axis that the progressive/left has emphasized too little.
+- Q: Are there any more things that are important to you politically that we have not yet discussed? Feel free to write about anything that comes to mind
+- A: Maybe we have not talked so much about immigration, which is a tricky topic for me. Mostly, my politics align with left-wing parties, e.g., on LGBTQ, feminism, economic inequality, climate change, etc., but on immigration I am really split between different concerns. I am very much in favor of economic immigration and mobility broadly, but I do think that there are limits to the number of refugees and immigrants from culturally very dissimilar places that we can integrate. This places me somewhere weird in the middle between the proper left-wing, and the right wing, and is also one of the clashes that I have with my party (Radikale Venstre). Probably, again in a Danish context, I am more of a social democrat on this point.
+
+### Instructions ###
+
+1. Identify stances (beliefs, attitudes, considerations):
+- Formulate each stance as a short statement starting exactly with: "I agree with the following: <...>".
+- Avoid empty statements such as "some people avoid eating meat because of important reasons".
+- Avoid statements that express more than one stance. Thus avoid words like "and" and instead break more complex stances up into simpler individual ones. 
+- Keep each statement short and concise and avoid filler words. 
+- Be direct in formulations (e.g. "climate change is human caused" is preferred to "I believe that climate change is human caused").
+- Avoid filler-words such as "major" (e.g. "concern" better than "major concern") and "key" (e.g., "challenge" better than "key challenge").
+- Aim for a maximum length of 4-8 words per stance formulation, and for a maximum of the 7 most important stances.
+
+2. Rate importance for each stance:
+- Classify how important each stance (belief, attitude, consideration) is to the interviewee in the context of meat consumption.
+- Return your answer as one of [LOW, MEDIUM, HIGH] where LOW are not very important and HIGH are extremely important. 
+
+### Output Format (JSON ONLY) ###
+{
+"results": [
+{
+        "stance": "I agree with the following: <stance>",
+        "importance": "<one of [LOW or MEDIUM or HIGH]>",
+},
+// Repeat for each stance expressed by the interviewee
+]
+}
+
+Return ONLY the JSON object, nothing else.

@@ -1,0 +1,75 @@
+{% extends "global/Page.html" %}
+
+{% block content %}
+<h2>Reflection on Your Belief Network</h2>
+<p>This is the final version of your belief network. You cannot edit it, but you can reflect on how well it represents your political beliefs.</p>
+
+<canvas id="dragCanvas" width="900" height="600" style="border:1px solid black;"></canvas>
+
+<hr>
+
+{{ formfields }}
+
+{{ next_button }}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const canvas = document.getElementById("dragCanvas");
+    const ctx = canvas.getContext("2d");
+    const labelDisplay = "always";
+
+    const points = [
+        {% for point in belief_points %}
+            { label: "{{ point.label }}", x: {{ point.x }}, y: {{ point.y }}, radius: {{ point.radius }} },
+        {% endfor %}
+    ];
+
+    const edges = [
+        {% for edge in belief_edges %}
+            { fromLabel: "{{ edge.from }}", toLabel: "{{ edge.to }}", polarity: "{{ edge.polarity }}" },
+        {% endfor %}
+    ];
+
+    function resolveEdges() {
+        return edges.map(edge => {
+            const from = points.find(p => p.label === edge.fromLabel);
+            const to = points.find(p => p.label === edge.toLabel);
+            return { from, to, polarity: edge.polarity };
+        }).filter(e => e.from && e.to);
+    }
+
+    function drawCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 3;
+        //ctx.strokeRect(0, 0, 600, 600);
+
+        resolveEdges().forEach(edge => {
+            ctx.beginPath();
+            ctx.moveTo(edge.from.x, edge.from.y);
+            ctx.lineTo(edge.to.x, edge.to.y);
+            ctx.strokeStyle = edge.polarity === "positive" ? "green" : "red";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        });
+
+        points.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, 2 * Math.PI);
+            ctx.fillStyle = "orange";
+            ctx.fill();
+            ctx.strokeStyle = "black";
+            ctx.stroke();
+
+            ctx.fillStyle = "black";
+            ctx.font = "16px sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "bottom";
+            ctx.fillText(p.label, p.x, p.y - 22);
+        });
+    }
+
+    drawCanvas();
+});
+</script>
+{% endblock %}

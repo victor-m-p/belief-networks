@@ -129,7 +129,7 @@ class Player(BasePlayer):
     ## Stage 2.
     edges_2 = models.LongStringField(blank=True)
     positions_2 = models.LongStringField(blank=True)
-    ## stage 3.
+    ## stage 3 (what about size here??)
     edges_3 = models.LongStringField(blank=True)
     positions_3 = models.LongStringField(blank=True)
     
@@ -145,6 +145,39 @@ class Player(BasePlayer):
         widget=widgets.RadioSelectHorizontal
     )
     importance_pairs_data = models.LongStringField()
+    
+    ## QUESTIONNAIRE ## 
+    # taken from: https://www.pewresearch.org/politics/quiz/political-typology/
+    policy_1 = models.IntegerField(
+        label="How much more, if anything, needs to be done to ensure equal rights for all Americans regardless of their racial or ethnic backgrounds?",
+        choices=[[1, "A lot"], [2, "A little"], [3, "Nothing at all"]],
+        widget=widgets.RadioSelect
+    )
+
+    policy_2 = models.IntegerField(
+        label="If you had to choose, would you rather have…",
+        choices=[[1, "A smaller government providing fewer services"], [2, "A bigger government providing more services"]],
+        widget=widgets.RadioSelect
+    )
+
+    # this is just taken out of my ass 
+    policy_3 = models.IntegerField(
+        label="Climate change is a major threat to our way of life.",
+        choices=[[1, "Strongly disagree"], [2, "Disagree"], [3, "Neutral"], [4, "Agree"], [5, "Strongly agree"]],
+        widget=widgets.RadioSelect
+    )
+    
+    ## judge network ## 
+    network_reflection_rating = models.IntegerField(
+        label="How well do you feel that this representation captures your political beliefs?",
+        choices=[[1, "Not at all"], [2, "Slightly"], [3, "Moderately"], [4, "Very well"], [5, "Extremely well"]],
+        widget=widgets.RadioSelectHorizontal
+    )
+
+    network_reflection_text = models.LongStringField(
+        label="Please share your thoughts about the network representation of your beliefs above. Does it make sense for you to think about your beliefs in this way or does it feel weird? Are there any connections or beliefs that feel especially meaningful or maybe surprising?",
+        blank=True
+    )
 
 for i in range(C.MAX_NODES):
     setattr(Player, f"node_choice_{i}", models.StringField(blank=True))
@@ -427,6 +460,29 @@ class MapImportance(Page):
             label_display='always'
         )
 
+class NetworkReflection(Page):
+    form_model = 'player'
+    form_fields = ['network_reflection_rating', 'network_reflection_text']
+
+    @staticmethod
+    def vars_for_template(player):
+        positions = json.loads(player.positions_3 or '[]')
+        raw_edges = json.loads(player.edges_3 or '[]')
+
+        # rename (could make this clearner.)
+        edges = []
+        for edge in raw_edges:
+            edges.append({
+                "from": edge["fromLabel"],
+                "to": edge["toLabel"],
+                "polarity": edge["polarity"]
+            })
+
+        return dict(
+            belief_points=positions,
+            belief_edges=edges,
+            label_display='always'
+        )
 
 class PlausibilityImportance(Page):
     form_model = 'player'
@@ -450,6 +506,11 @@ class PlausibilityImportance(Page):
 
         return dict(pair_1=pair_1, pair_2=pair_2)
 
+class PolicyQuestionnaire(Page):
+    form_model = 'player'
+    form_fields = ['policy_1', 'policy_2', 'policy_3']
+
+
 # page sequence 
 page_sequence = [
     Introduction, 
@@ -470,8 +531,12 @@ page_sequence = [
     # PLAUSIBILITY 
     # PlausibilityImportance,
     # PlausibilityPosition, 
-    # PlausibilityEdges 
+    # PlausibilityEdges
+    # Face Validity 
+    # FaceValidity, 
     # DEMOGRAPHICS 
+    NetworkReflection,
+    PolicyQuestionnaire,
     Demographics, 
     Results
 ]

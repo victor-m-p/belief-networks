@@ -1,35 +1,45 @@
-
 import numpy as np 
 import pandas as pd 
+import json 
 
-d = pd.read_csv('data/all_apps_wide-2025-05-16.csv')
+d = pd.read_csv('/Users/poulsen/Downloads/all_apps_wide-2025-05-28.csv')
 
 # base path 
 base_str = 'otreesurvey_app.1.player'
 
 # demographics
 age = d[[f"{base_str}.age"]]
-closest = d[[f"{base_str}.feel_closest"]]
-closest_pty = d[[f"{base_str}.feel_closest_party"]]
-polarized = d[[f'{base_str}.how_polarised']]
+gender = d[[f"{base_str}.gender"]]
+education = d[[f"{base_str}.education"]]
+politics = d[[f'{base_str}.politics']]
 
-# positions
-import json 
-json_str = d[f"{base_str}.positions"].iloc[0]
-pos_list = json.loads(json_str)
-
-# edges
-json_str = d[f"{base_str}.edges"].iloc[0]
-edge_list = json.loads(json_str)
-
-# all of the writing
+# answers 
 n_answers = 5 
 answer_list = [d[f'{base_str}.answer{i+1}'].iloc[0] for i in range(n_answers)]
 
-# all of the LLM 
+# LLM proposed  
 prompt_used = d[f'{base_str}.prompt_used'].iloc[0]
 llm_result = json.loads(d[f'{base_str}.llm_result'].iloc[0])
 generated_nodes = json.loads(d[f'{base_str}.generated_nodes'].iloc[0])
-accepted_nodes = json.loads(d[f'{base_str}.accepted_nodes'].iloc[0])
 
-### things to calculate / test ###
+# LLM+Human
+''' Try to do this properly. '''
+revised_nodes = json.loads(d[f'{base_str}.revised_beliefs'].iloc[0])
+final_nodes = json.loads(d[f'{base_str}.final_nodes'].iloc[0])
+user_nodes = json.loads(d[f'{base_str}.user_nodes'].iloc[0]) 
+
+# Network (NB: where is importance?)
+def json_loads_helper(df, column):
+    return json.loads(df[column].iloc[0])
+
+## Stage 1  
+pos_1 = json_loads_helper(d, f"{base_str}.positions_1")
+
+## Stage 2 
+pos_2 = json_loads_helper(d, f"{base_str}.positions_2")
+edges_2 = json_loads_helper(d, f"{base_str}.edges_2")
+
+## stage 3 
+pos_3 = json_loads_helper(d, f"{base_str}.positions_3")
+edges_3 = json_loads_helper(d, f"{base_str}.edges_3")
+

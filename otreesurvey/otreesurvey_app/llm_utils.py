@@ -1,11 +1,12 @@
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import List
 import instructor
 from tenacity import retry, stop_after_attempt, wait_fixed
 from pathlib import Path
+import re 
 
 load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
@@ -85,10 +86,91 @@ Return ONLY the JSON object, nothing else.
 """
         return prompt
 
-
 class NodeModel(BaseModel): 
     stance: str
     importance: str 
 
 class NodeModelList(BaseModel): 
     results: List[NodeModel]
+
+# Edge Model 
+
+def make_edge_prompt(questions_answers:dict, nodes_list): 
+        
+        # Format Q&A block
+        questions_answers_lines = "\n".join(
+                f"- Q: {q}\n- A: {a}" for q, a in questions_answers.items()
+        )
+        
+        # Format the nodes     
+        belief_string = "\n".join([f"- {x}" for x in nodes_list])
+        
+        prompt = f"""
+        
+### Task Overview ### 
+
+Your task is to analyze an interview transcript about political beliefs, attitudes and concerns.
+A number of stances (beliefs, attitudes, concerns) have been extracted from this transcript. 
+Your job is to judge which of the extracted stances are related for the interviewee.
+
+### Definitions ###
+- "Related" means there is a clear logical, conceptual, argumentative, or social connection.
+- A "POSITIVE" relation means that the two targets reinforce, support, or align with each other (they tend to go together).
+- A "NEGATIVE" relation means that the two targets conflict, oppose, contradict, or are mutually incompatible (they tend not to go together).
+- Do not use POSITIVE/NEGATIVE as a normative judgment (good/bad) but think in terms of reinforcement (POSITIVE) or conflict (NEGATIVE)
+
+### Examples ###
+- Two negative outcomes can have a POSITIVE relationship if one reinforces or leads to the other (e.g., meat consumption reinforces climate change concerns).
+- Two positive outcomes can have a NEGATIVE relationship if they conflict or oppose each other (e.g., health benefits from meat reduction conflicting with personal enjoyment of meat).
+
+### Interview Transcript ###
+
+{questions_answers_lines}
+
+### Targets ###
+The following stances (opinions, attitudes, concerns) were identified as held by the interviewee:
+
+{belief_string}
+
+### Task ###
+
+1. Find stances that POSITIVELY reinforce each other or NEGATIVELY conflict with each other. 
+2. Classify whether the direction is POSTIVE or NEGATIVE. 
+3. Classify whether the connection is STRONG or WEAK.
+4. A connection is symmetric so do not classify the same stance pair twice.
+
+### Output Format (JSON ONLY) ###
+{{
+"results": [
+{{
+        "stance_1": "<full stance>",
+        "stance_2": "<full stance>",
+        "direction": "<one among [POSITIVE, NEGATIVE]>",
+        "strength": "<one among [STRONG, WEAK]>"
+}}
+// Repeat for each relation between stances that is discovered
+]
+}}
+
+Return ONLY the JSON object, nothing else.
+        """
+        return prompt
+
+
+class EdgeModel(BaseModel): 
+        stance_1: str
+        stance_2: str 
+        direction: str 
+        strength: str 
+        
+        @field_validator("*")
+        def no_empty_or_unusual_strings(cls, v, field):
+                if isinstance(v, str):
+                        cleaned = re.sub(r'\s+', ' ', v).strip()
+                        if cleaned == "":
+                                raise ValueError(f"{field.name} must not be empty or whitespace.")
+                        return cleaned
+                return v
+                
+class EdgeModelList(BaseModel):
+        results: List[EdgeModel]
