@@ -105,3 +105,15 @@ coupling_dict = {
     }
     for i, edge in enumerate(response.results)
 }
+
+
+## test moderation ##
+response, moderation = call_openai_moderation(NodeModelList, node_prompt)
+response = call_openai(NodeModelList, node_prompt)
+
+## test moderation with pydantic ## 
+'''
+This feels clearly slower. 
+'''
+test = call_openai(NodeModelValidateList, node_prompt)
+

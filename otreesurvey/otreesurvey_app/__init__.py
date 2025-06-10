@@ -93,11 +93,6 @@ class Player(BasePlayer):
         widget=widgets.RadioSelect
     )
 
-    # map positions
-    # this might now be outdated 
-    positions = models.LongStringField()  # Stores JSON data of positions
-    edges = models.LongStringField()  # Added for edges
-    
     # for questions (can we make this smoother?)
     answer1 = models.LongStringField(label="", blank=False)  
     answer2 = models.LongStringField(label="", blank=False)
@@ -110,8 +105,8 @@ class Player(BasePlayer):
     llm_result = models.LongStringField(blank=True)
     generated_nodes = models.LongStringField(blank=True)
     revised_beliefs = models.LongStringField(blank=True)
-    final_nodes = models.LongStringField(blank=True)
     user_nodes = models.LongStringField(blank=True)
+    final_nodes = models.LongStringField(blank=True)
 
     # For new way of doing belief codings (humans)
     # Currently we are not doing these human labels.

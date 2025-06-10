@@ -1,14 +1,18 @@
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, AfterValidator, ValidationError
 from typing import List
 import instructor
+from instructor import openai_moderation
 from tenacity import retry, stop_after_attempt, wait_fixed
 from pathlib import Path
 import re 
+from typing_extensions import Annotated
 
 load_dotenv(dotenv_path=Path(__file__).parent / ".env")
+#client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+#client = instructor.from_openai(client, mode=instructor.Mode.TOOLS)
 
 custom_retry = retry(
         stop=stop_after_attempt(5),      # Number of retries (change as needed)
@@ -36,6 +40,62 @@ def call_openai(response_model, content_prompt, model_name='gpt-4.1', temp=0.7):
         print(f"Exception with model {model_name}: {exc}")
         raise
 
+# this does not quite work right now 
+# wants the response model 
+'''
+@custom_retry 
+def call_openai_moderation(response_model, content_prompt, model_name='gpt-4.1', temp=0.7):
+    client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+    client = instructor.from_openai(client, mode=instructor.Mode.TOOLS)
+
+    kwargs = dict(
+        model=model_name,
+        messages=[{"role": "user", "content": content_prompt}],
+        #response_model=response_model,
+    )
+
+    if model_name not in ['o3', 'o3-mini', 'o4-mini']:
+        kwargs['temperature'] = temp
+
+    try:
+        # Generate the summary using the language model
+        response = client.chat.completions.create(**kwargs)
+        summary_text = response.choices[0].message.content
+
+        # Use the Moderation API to evaluate the generated summary
+        moderation_response = client.moderations.create(input=summary_text)
+        flagged = moderation_response.results[0].flagged
+
+        if flagged:
+            # Handle flagged content appropriately
+            raise ValueError("Generated content was flagged by moderation.")
+        return response, moderation_response #summary_text
+
+    except Exception as exc:
+        print(f"Exception with model {model_name}: {exc}")
+        raise
+
+@custom_retry
+def call_openai_validate(response_model, content_prompt, model_name='gpt-4.1', temp=0.7): # gpt-4.1
+        client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        client = instructor.from_openai(client, mode=instructor.Mode.TOOLS)
+
+        kwargs = dict(
+                model=model_name,
+                messages=[{"role": "user", "content": content_prompt}],
+                response_model=response_model,
+        )
+
+        if model_name not in ['o3', 'o3-mini', 'o4-mini']:
+                kwargs['temperature'] = temp
+
+        try:
+                return client.chat.completions.create(**kwargs)
+        except ValidationError as e:
+                print(f"Validation error: {e}")
+        except Exception as exc: 
+                print(f"Exception with model {model_name}: {exc}") 
+'''
 # prompt to extract nodes 
 def make_node_prompt(questions_answers: dict) -> str:
         # Format Q&A block
@@ -44,7 +104,7 @@ def make_node_prompt(questions_answers: dict) -> str:
         )
         
         prompt = f"""
-
+        
 ### Task Overview ###
 
 Your task is to analyze an interview transcript and identify the most central beliefs, attitudes and considerations expressed by the interviewee.
@@ -86,15 +146,25 @@ Return ONLY the JSON object, nothing else.
 """
         return prompt
 
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+client = instructor.from_openai(client, mode=instructor.Mode.TOOLS)
+
+'''
+class NodeModelValidate(BaseModel): 
+        stance: Annotated[str, AfterValidator(openai_moderation(client=client))]
+        importance: Annotated[str, AfterValidator(openai_moderation(client=client))]
+
+class NodeModelValidateList(BaseModel):
+        results: List[NodeModelValidate]
+'''
 class NodeModel(BaseModel): 
-    stance: str
-    importance: str 
+        stance: str
+        importance: str 
 
 class NodeModelList(BaseModel): 
-    results: List[NodeModel]
+        results: List[NodeModel]
 
 # Edge Model 
-
 def make_edge_prompt(questions_answers:dict, nodes_list): 
         
         # Format Q&A block
