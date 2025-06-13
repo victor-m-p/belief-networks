@@ -1,7 +1,7 @@
 
 ### Task Overview ###
 
-Analyze the interview transcript provided and clearly extract attitudes (beliefs, concerns, etc.) and behaviors around meat eating.
+Analyze the interview transcript provided and predict the distribution of meat eating behavior among the social contacts of the interviewee.
 
 ### Interview Transcript ###
 - Q: Please describe your dietary pattern, specifically your meat eating habits. Think about what you would consume in a typical week
@@ -13,39 +13,34 @@ Analyze the interview transcript provided and clearly extract attitudes (beliefs
 - Q: Think about the people you interact with on a regular basis and whose opinions are important to you. What are their motivations to eat or to avoid eating meat?
 - A: I think that motivations are generally similar to me. I guess that some of my social contacts are more motivated by climate change considerations and some are more motivated by animal welfare considerations.
 
-### Extraction Instructions ###
+### Meat Eating Scale ### 
 
-1. Summarize the interviewee's behaviors about meat eating (PERSONAL, BEHAVIORS):
-- EXAMPLES: "I eat meat every day", "I only eat meat at special occasions".
+The interviewee was asked the following question:
 
-2. Summarize the interviewee's attitudes about meat eating (PERSONAL, MOTIVATIONS):
-- EXAMPLES: "meat is high protein", "I like the taste of meat", "meat production harms the environment", "I am concerned about animal welfare".
+Question: 
+"Think about your most important social contacts (friends, family, colleagues, etc.).
+Out of 100 people how many of them do you think eat meat in the following ways?"
 
-3. Summarize the behaviors of the social contacts of the interviewee about meat eating (SOCIAL, BEHAVIORS):
-- EXAMPLES: "My family eats meat every day", "Most friends eat meat less than once a week". 
+Answer options: 
+- 1: never
+- 2: less than once a week 
+- 3: one or two days a week 
+- 4: three or four days a week
+- 5: five or six days a week 
+- 6: every day: 
 
-4. Summarize the attitudes of the social contacts of the interviewee about meat eating (SOCIAL, MOTIVATIONS):
-- EXAMPLES: "My friends are concerned about animal welfare", "Some friends eat meat for protein".
+For the following questions, by "meat", we mean any meat or meat products, including
+chicken, fish, beef, pork, lamb, mutton, goat etc.
 
-For each category the following rules apply:
-- Each attitude or behavior must be concise and MAXIMUM 8 words.
-- Each attitude or behavior must be a complete sentence.
-- Each attitide or behavior must be a single thing, not a list of things (avoid "and" or "or").
-- EXAMPLES: "I am concerned about animal welfare and climate change" is not allowed, but "I am concerned about animal welfare" and "I am concerned about climate change" are allowed.
-
-5. Rate importance for each node:
-- Rate the importance of each node on a scale from 1 to 10 where 1 is "not important at all" and 10 is "extremely important".
-
-For each type-category pair return a MAXIMUM of 10 things.
+It is important that your answers add up to 100 people exactly.
 
 ### Output Format (JSON ONLY) ###
 {
 "results": [
 {
-        "stance": "<concise summary of attitude or behavior>",
-        "importance": "<importance rating from 1 to 10>",
-        "type": "<one among [PERSONAL, SOCIAL]>",
-        "category": "<one among [BEHAVIOR, MOTIVATION]>"
+        "answer_option": "<[1-6] one of the answer options>",
+        "answer_name": "<one of [never, less than once a week, one or two days a week, three or four days a week, five or six days a week, every day]>",
+        "number_contacts": "<[1-100] number of contacts who eat meat in this way>"
 },
 // Repeat for each node found
 ]

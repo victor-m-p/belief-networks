@@ -150,6 +150,7 @@ def social_text(metadict, social_focal_gpt):
     
     return s_backgrounds, s_prompts
 
+
 class FocalBeliefs(BaseModel): 
     consumption: int
     importance: int

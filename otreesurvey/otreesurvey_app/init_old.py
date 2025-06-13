@@ -8,21 +8,6 @@ doc = """
 Your app description
 """
 
-states = [
-    'Alaska', 'Alabama', 'Arkansas', 'Arizona',
-    'California', 'Colorado', 'Connecticut', 'District of Columbia',
-    'Delaware', 'Florida', 'Georgia', 'Hawaii',
-    'Iowa', 'Idaho', 'Illinois', 'Indiana',
-    'Kansas', 'Kentucky', 'Louisiana', 'Massachusetts',
-    'Maryland', 'Maine', 'Michigan', 'Minnesota',
-    'Missouri', 'Mississippi', 'Montana', 'North Carolina',
-    'North Dakota', 'Nebraska', 'New Hampshire', 'New Jersey',
-    'New Mexico', 'Nevada', 'New York', 'Ohio',
-    'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island',
-    'South Carolina', 'South Dakota', 'Tennessee', 'Texas',
-    'Utah', 'Virginia', 'Vermont', 'Washington',
-    'Wisconsin', 'West Virginia', 'Wyoming']
-
 class C(BaseConstants): 
     
     # not sure we need this 
@@ -34,16 +19,14 @@ class C(BaseConstants):
     MAX_USER_NODES=3
     
     QUESTIONS = [
-        "Please describe your dietary pattern, specifically your meat eating habits. Think about what you would consume in a typical week",
-        "Are there any personal motivations that you have to eat or not to eat meat? Feel free to write about anything that comes to mind",
-        "Think about the people you interact with on a regular basis and whose opinions are important to you. What are their meat eating habits?",
-        "Think about the people you interact with on a regular basis and whose opinions are important to you. What are their motivations to eat or to avoid eating meat?"
-        #"What are some things that come to mind when you think about meat eating? What are your thoughts, feelings, or concerns about meat consumption?",
-        #"Are there any personal motivations that you have to eat or not eat meat? Feel free to write about anything that comes to mind",
-        #"Think about the people you interact with on a regular basis and whose opinions are important to you. What are their motivations to eat or avoid meat?",
-        #"Think about the people you interact with on a regular basis and whoso opinions are important to you. What are their meat eating habits?"
+        "How would you describe yourself politically? Would you call yourself a conservative or a liberal or something else? What does this mean to you?",
+        #"Which party did you vote for at the last national election, and why did you vote for that party? If you did not vote in the last national election, why?", 
+        "What are some things that concern you in the political domain? Feel free to mention things that are important to you personally, or more long-term concerns or challenges for your country",
+        "Are there things about your country that make you feel proud or ashamed? Feel free to write about any features or events that come to mind",
+        "Are there any political questions where you feel dissonance or conflict? Maybe something that is salient for you personally, or is discussed among your social contacts or in the media",
+        "Are there any more things that are important to you politically that we have not yet discussed? Feel free to write about anything that comes to mind",
     ]
-
+    
     N_QUESTIONS = len(QUESTIONS)
 
 class Subsession(BaseSubsession):
@@ -71,17 +54,6 @@ def make_slider(label):
 def define_friend(label):
     return  models.LongStringField(label=label)
 
-
-# helper function
-def get_filtered_nodes(player, type_filter, category_filter):
-    try:
-        llm_data = json.loads(player.llm_result)
-    except (TypeError, json.JSONDecodeError):
-        llm_data = []
-    return [
-        node for node in llm_data
-        if node.get('type') == type_filter and node.get('category') == category_filter
-    ]
 
 class Player(BasePlayer):
     # demography page 
@@ -118,21 +90,6 @@ class Player(BasePlayer):
             "Very conservative",
             "Prefer not to disclose"
             ],
-        widget=widgets.RadioSelect
-    )
-    # add state + zip code
-
-    # add the scale  
-    meat_consumption = models.StringField(
-        choices=[
-            'never',
-            'less than once a week',
-            'one or two days a week',
-            'three or four days a week',
-            'five or six days a week',
-            'every day',
-        ],
-        label="Approximately, how often, if at all, do you eat any meat in an average week?",
         widget=widgets.RadioSelect
     )
 
@@ -216,34 +173,8 @@ class Player(BasePlayer):
         label="Please share your thoughts about the network representation of your beliefs above. Does it make sense for you to think about your beliefs in this way or does it feel weird? Are there any connections or beliefs that feel especially meaningful or maybe surprising?",
         blank=True
     )
-    
-    '''
-    ## rate personal behavior, personal motivations, social behavior, social motivations? ## 
-    personal_behavior_accurate = models.IntegerField(
-        label="How accurately do the following statements summarize the personal behaviors you described in the interview?",
-        choices=[[1, "Not at all"], [2, "Slightly"], [3, "Moderately"], [4, "Very well"], [5, "Extremely well"]],
-        widget=widgets.RadioSelectHorizontal
-    )
-
-    personal_behavior_describe = models.IntegerField(
-        label="How well overall do you feel that the following statements describe your meat eating habits?",
-        choices=[[1, "Not at all"], [2, "Slightly"], [3, "Moderately"], [4, "Very well"], [5, "Extremely well"]],
-        widget=widgets.RadioSelectHorizontal
-    )
-
-    personal_behavior_comments = models.LongStringField(
-        blank=True,
-        label="If there is anything you feel is not accurately captured in these statements, please describe it here (optional):"
-    )
-    
-    node_accuracy_ratings = models.LongStringField(blank=True)
-    '''
-    
-    social_circle_distribution = models.LongStringField(blank=True)
-    #belief_accuracy_ratings = models.LongStringField(blank=True)
 
 for i in range(C.MAX_NODES):
-    setattr(Player, f"belief_rating_{i}", models.StringField(blank=True))
     setattr(Player, f"node_choice_{i}", models.StringField(blank=True))
     setattr(Player, f"node_modify_text_{i}", models.StringField(blank=True))
     setattr(Player, f"node_reject_reason_{i}", models.StringField(blank=True))
@@ -275,7 +206,12 @@ class Question1(Page):
     @staticmethod
     def vars_for_template(player: Player):
         return dict(prompt=C.QUESTIONS[0])
-    
+
+    @staticmethod
+    def before_next_page(player: Player, timeout_happened):
+        print("Main response:", player.answer1)
+
+
 class Question2(Page):
     form_model = 'player'
     form_fields = ['answer2']
@@ -311,43 +247,6 @@ class Question5(Page):
     def vars_for_template(player: Player):
         return dict(prompt=C.QUESTIONS[4])
 
-class SocialCircleDistribution(Page):
-
-    form_model = 'player'
-    form_fields = ['social_circle_distribution']
-
-    @staticmethod
-    def vars_for_template(player):
-        categories = [
-            'never',
-            'less than once a week',
-            'one or two days a week',
-            'three or four days a week',
-            'five or six days a week',
-            'every day',
-        ]
-
-        initial_distribution = json.dumps({category: 0 for category in categories})
-
-        return dict(
-            categories=categories,
-            initial_distribution=initial_distribution
-        )
-
-    @staticmethod
-    def error_message(player, values):
-        import json
-
-        try:
-            data = json.loads(values['social_circle_distribution'])
-        except Exception:
-            return "Something went wrong. Please adjust the sliders again."
-
-        total = sum(data.values())
-        if total != 10:
-            return "The total must sum to exactly 10."
-
-
 class LLMGenerate(Page):
     timeout_seconds = 300
     auto_submit = True
@@ -382,189 +281,16 @@ class LLMGenerate(Page):
 
             # here only the nodes
             generated_nodes = [x['stance'] for x in llm_nodes]
-            #generated_nodes = [s.replace("I agree with the following: ", "", 1).strip() for s in generated_nodes]
+            generated_nodes = [s.replace("I agree with the following: ", "", 1).strip() for s in generated_nodes]
             player.generated_nodes = json.dumps(generated_nodes)
 
-'''
-class RatePersonalBehavior(Page):
-    form_model = 'player'
-    form_fields = [
-        'personal_behavior_accurate',
-        'personal_behavior_describe',
-        'personal_behavior_comments'
-    ]
-
-    @staticmethod
-    def vars_for_template(player):
-        try:
-            llm_data = json.loads(player.llm_result)
-        except (TypeError, json.JSONDecodeError):
-            llm_data = []
-
-        # Filter nodes for PERSONAL + BEHAVIOR
-        filtered_beliefs = [
-            node['stance'] for node in llm_data
-            if node.get('type') == 'PERSONAL' and node.get('category') == 'BEHAVIOR'
-        ]
-
-        # Build interview transcript (as before)
-        qa_pairs = []
-        for i, question in enumerate(C.QUESTIONS):
-            fieldname = f'answer{i+1}'
-            answer = getattr(player, fieldname, '')
-            qa_pairs.append({'question': question, 'answer': answer})
-
-        return dict(
-            beliefs=filtered_beliefs,
-            transcript=qa_pairs
-        )
-
-class AccuracyRatingPage(Page):
-    type_filter = None
-    category_filter = None
-
-    @classmethod
-    def vars_for_template(cls, player):
-        nodes = get_filtered_nodes(player, cls.type_filter, cls.category_filter)
-        transcript = [
-            {"question": C.QUESTIONS[i], "answer": getattr(player, f"answer{i+1}", '')}
-            for i in range(len(C.QUESTIONS))
-        ]
-        return dict(beliefs=nodes, transcript=transcript)
-
-    def before_next_page(self, timeout_happened):
-        nodes = get_filtered_nodes(self.player, self.type_filter, self.category_filter)
-        request_data = self.request.POST
-
-        new_ratings = []
-        for i, node in enumerate(nodes):
-            initialized = request_data.get(f'initialized_{i}')
-            if initialized != 'true':
-                self._record_error()
-                return
-
-            rating = request_data.get(f'belief_accuracy_{i}')
-            try:
-                rating_int = int(rating)
-            except (ValueError, TypeError):
-                self._record_error()
-                return
-
-            new_ratings.append({
-                "stance": node['stance'],
-                "type": node['type'],
-                "category": node['category'],
-                "accuracy": rating_int
-            })
-
-        # Load existing ratings if any
-        try:
-            all_ratings = json.loads(self.player.node_accuracy_ratings)
-        except (TypeError, json.JSONDecodeError):
-            all_ratings = []
-
-        all_ratings.extend(new_ratings)
-        self.player.node_accuracy_ratings = json.dumps(all_ratings)
-        self._record_success()
-
-    def error_message(self, values):
-        if self.participant.vars.get('rating_error'):
-            return "Please provide accuracy ratings for all beliefs."
-
-    def _record_error(self):
-        self.participant.vars['rating_error'] = True
-
-    def _record_success(self):
-        self.participant.vars['rating_error'] = False
-
-
-class AccuracyPersonalBehavior(AccuracyRatingPage):
-    type_filter = "PERSONAL"
-    category_filter = "BEHAVIOR"
-
-class AccuracyPersonalMotivation(AccuracyRatingPage):
-    type_filter = "PERSONAL"
-    category_filter = "MOTIVATION"
-
-class AccuracySocialBehavior(AccuracyRatingPage):
-    type_filter = "SOCIAL"
-    category_filter = "BEHAVIOR"
-
-class AccuracySocialMotivation(AccuracyRatingPage):
-    type_filter = "SOCIAL"
-    category_filter = "MOTIVATION"
-'''
-
 # new version of above.
-class BeliefAccuracyRating(Page):
-    form_model = 'player'
-
-    @staticmethod
-    def get_form_fields(player):
-        revised_raw = player.field_maybe_none('final_nodes') or '[]'
-        revised = json.loads(revised_raw)
-        fields = []
-        for i in range(len(revised)):
-            fields.append(f"belief_rating_{i}")
-        return fields
-
-    @staticmethod
-    def vars_for_template(player):
-        beliefs = json.loads(player.generated_nodes)
-        try:
-            revised = json.loads(player.final_nodes)
-        except (TypeError, json.JSONDecodeError):
-            revised = [
-                {"belief": b, "user_action": "", "text_field": ""}
-                for b in beliefs
-            ]
-            player.final_nodes = json.dumps(revised)
-
-        qa_pairs = []
-        for i, question in enumerate(C.QUESTIONS):
-            fieldname = f'answer{i+1}'
-            answer = getattr(player, fieldname, '')
-            qa_pairs.append({'question': question, 'answer': answer})
-
-        rating_items = []
-        for i, belief in enumerate(revised):
-            rating = player.field_maybe_none(f"belief_rating_{i}") or ""
-            rating_items.append({
-                "index": i,
-                "belief": belief['belief'],
-                "rating": str(rating)
-            })
-
-        return dict(
-            belief_items=rating_items,
-            transcript=qa_pairs,
-            C=C,
-            rating_options=[str(n) for n in range(1, 8)]
-        )
-
-    @staticmethod
-    def error_message(player, values):
-        revised = json.loads(player.final_nodes)
-        for i, item in enumerate(revised):
-            rating = values.get(f"belief_rating_{i}", "")
-            item['rating'] = rating
-        player.final_nodes = json.dumps(revised)
-
-        for item in revised:
-            if not item['rating']:
-                return "Please rate all beliefs before continuing."
-
-    @staticmethod
-    def before_next_page(player, timeout_happened):
-        pass
-
-
 class LLMReviewRevise(Page):
     form_model = 'player'
 
     @staticmethod
     def get_form_fields(player):
-        revised_raw = player.field_maybe_none('final_nodes') or '[]'
+        revised_raw = player.field_maybe_none('revised_beliefs') or '[]'
         revised = json.loads(revised_raw)
         fields = []
         for i in range(len(revised)):
@@ -577,30 +303,19 @@ class LLMReviewRevise(Page):
     def vars_for_template(player):
         beliefs = json.loads(player.generated_nodes)
         try:
-            revised = json.loads(player.final_nodes)
+            revised = json.loads(player.revised_beliefs)
         except (TypeError, json.JSONDecodeError):
             revised = [
                 {"belief": b, "user_action": "", "text_field": ""}
                 for b in beliefs
             ]
-            player.final_nodes = json.dumps(revised)
+            player.revised_beliefs = json.dumps(revised)
 
-        # Build interview transcript (Q&A pairs)
-        qa_pairs = []
-        for i, question in enumerate(C.QUESTIONS):
-            fieldname = f'answer{i+1}'
-            answer = getattr(player, fieldname, '')
-            qa_pairs.append({'question': question, 'answer': answer})
-
-        return dict(
-            belief_items=revised,
-            transcript=qa_pairs,  # <-- we add this
-            C=C
-        )
+        return dict(belief_items=revised, C=C)
 
     @staticmethod
     def error_message(player, values):
-        revised = json.loads(player.final_nodes)
+        revised = json.loads(player.revised_beliefs)
         for i, item in enumerate(revised):
             choice = values.get(f"node_choice_{i}", "")
             reason = values.get(f"node_reject_reason_{i}", "")
@@ -614,7 +329,7 @@ class LLMReviewRevise(Page):
             else:
                 item['text_field'] = ""
 
-        player.final_nodes = json.dumps(revised)
+        player.revised_beliefs = json.dumps(revised)
 
         for item in revised:
             if not item['user_action']:
@@ -626,7 +341,6 @@ class LLMReviewRevise(Page):
     def before_next_page(player, timeout_happened):
         pass
 
-'''
 class LLMAddBeliefs(Page):
     form_model = 'player'
     form_fields = ['user_nodes']
@@ -665,7 +379,6 @@ class LLMAddBeliefs(Page):
                 accepted.append({"text": node.strip(), "source": "USER"})
 
         player.final_nodes = json.dumps(accepted)
-'''
 
 # splitting network part up # 
 class MapNodePlacement(Page):
@@ -792,73 +505,20 @@ class PolicyQuestionnaire(Page):
     form_model = 'player'
     form_fields = ['policy_1', 'policy_2', 'policy_3']
 
-class MeatScale(Page):
-    form_model = 'player'
-    form_fields = ['meat_consumption']
-
-# Asking about attention to meat eating behaviors # 
-# Asking about attention in the interview # 
-# Asking about past + prediction # 
-
-class MotivationBehaviorMapping(Page):
-    form_model = 'player'
-
-    @staticmethod
-    def vars_for_template(player):
-        llm_data = json.loads(player.llm_result)
-
-        motivations = [
-            node['stance'] for node in llm_data
-            if node.get('type') == 'PERSONAL' and node.get('category') == 'MOTIVATION'
-        ]
-
-        meat_statement = f"I eat meat: {player.meat_consumption}"
-
-        return dict(
-            motivations=motivations,
-            behavior_statement=meat_statement
-        )
-
-    @staticmethod
-    def error_message(player, values):
-        llm_data = json.loads(player.llm_result)
-        motivations = [
-            node['stance'] for node in llm_data
-            if node.get('type') == 'PERSONAL' and node.get('category') == 'MOTIVATION'
-        ]
-
-        mappings = []
-        for i, motivation in enumerate(motivations):
-            response = values.get(f'link_{i}')
-            if not response:
-                return "Please complete all mappings before continuing."
-            mappings.append({
-                "motivation": motivation,
-                "behavior": f"I eat meat: {player.meat_consumption}",
-                "direction": response
-            })
-
-        player.motivation_behavior_links = json.dumps(mappings)
 
 # page sequence 
 page_sequence = [
-    SocialCircleDistribution,
     Introduction, 
     # QUESTIONS 
     Question1, 
     Question2, 
     Question3, 
-    Question4,
-    MeatScale,
+    Question4, 
+    Question5, 
     # GENERATE + SELECT BELIEFS 
     LLMGenerate,
-    #RatePersonalBehavior,
-    #AccuracyPersonalBehavior, # I mean of course looks terrible right now
-    #MotivationBehaviorMapping,
     LLMReviewRevise,
-    BeliefAccuracyRating,
-    #LLMReviewRevise,
-    #LLMAddBeliefs, # Need to figure out whether this would be on each page 
+    LLMAddBeliefs,
     # PLACEMENT 
     MapNodePlacement,
     MapEdgeCreation,
@@ -871,7 +531,7 @@ page_sequence = [
     # FaceValidity, 
     # DEMOGRAPHICS 
     NetworkReflection,
-    # PolicyQuestionnaire,
+    PolicyQuestionnaire,
     Demographics, 
     Results
 ]

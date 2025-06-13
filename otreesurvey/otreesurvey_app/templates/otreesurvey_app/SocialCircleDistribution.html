@@ -1,0 +1,88 @@
+{% block content %}
+<h2>Social Circle Meat Consumption</h2>
+
+<p>Think about the people you interact with on a regular basis and whose opinions and behaviors are important to your meat consumption. Place 10 of the most important of these into the following categories.</p>
+
+<form method="post" id="distributionForm">
+
+    <table style="border-collapse: collapse;">
+        {% for category in categories %}
+            <tr>
+                <td style="padding: 0.5rem;">
+                    Eats meat: <strong>{{ category }}</strong>
+                </td>
+                <td style="padding: 0.5rem;">
+                    <input type="range" min="0" max="10" value="0" 
+                           style="width: 300px;" 
+                           data-index="{{ forloop.counter0 }}" 
+                           data-category="{{ category }}">
+                    <span id="value_display_{{ forloop.counter0 }}">0</span>
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+
+    <p>Total: <span id="totalDisplay">0</span> / 10</p>
+
+    <input type="hidden" name="social_circle_distribution" value="{{ initial_distribution }}">
+    {{ next_button }}
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const sliders = document.querySelectorAll('input[type="range"]');
+    const totalDisplay = document.getElementById('totalDisplay');
+    const TOTAL_MAX = 10;
+    const hiddenField = document.querySelector('input[name="social_circle_distribution"]');
+
+    function getTotal(excludeSlider=null) {
+        let total = 0;
+        sliders.forEach(slider => {
+            if (slider !== excludeSlider) {
+                total += parseInt(slider.value);
+            }
+        });
+        return total;
+    }
+
+    function updateDisplays() {
+        sliders.forEach(slider => {
+            const idx = slider.dataset.index;
+            document.getElementById(`value_display_${idx}`).textContent = slider.value;
+        });
+        const sum = slidersTotal();
+        totalDisplay.textContent = sum;
+
+        const result = {};
+        sliders.forEach(slider => {
+            const category = slider.dataset.category;
+            result[category] = parseInt(slider.value);
+        });
+
+        hiddenField.value = JSON.stringify(result);
+    }
+
+    function slidersTotal() {
+        let total = 0;
+        sliders.forEach(slider => {
+            total += parseInt(slider.value);
+        });
+        return total;
+    }
+
+    sliders.forEach(slider => {
+        slider.addEventListener('input', function () {
+            const otherTotal = getTotal(slider);
+            const remaining = TOTAL_MAX - otherTotal;
+
+            if (parseInt(slider.value) > remaining) {
+                slider.value = remaining;
+            }
+            updateDisplays();
+        });
+    });
+
+    updateDisplays();
+});
+</script>
+{% endblock %}

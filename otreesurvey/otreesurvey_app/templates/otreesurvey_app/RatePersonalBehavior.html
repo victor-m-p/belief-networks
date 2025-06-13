@@ -1,0 +1,83 @@
+{% block styles %}
+<style>
+    button#toggle-transcript {
+        margin: 2rem 0;
+        padding: 1rem 2rem;
+        font-size: 1.2rem;
+        font-weight: bold;
+        border: none;
+        border-radius: 8px;
+        background-color: #007BFF;
+        color: white;
+        cursor: pointer;
+    }
+
+    #transcript {
+        display: none;
+        border: 1px solid #ccc;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background-color: #f9f9f9;
+    }
+
+    .qa-pair {
+        margin-bottom: 1rem;
+    }
+
+    .qa-pair p {
+        margin: 0.3rem 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<h2>Personal Behavior Summary</h2>
+
+Below are some statements that might describe your meat eating habits:
+
+<ul>
+    {% for belief in beliefs %}
+        <li>{{ belief }}</li>
+    {% endfor %}
+</ul>
+
+<button type="button" id="toggle-transcript">
+    Show Interview Transcript
+</button>
+
+<div id="transcript">
+    {% for pair in transcript %}
+        <div class="qa-pair">
+            <p><strong>Q:</strong> {{ pair.question }}</p>
+            <p><strong>A:</strong> {{ pair.answer }}</p>
+        </div>
+    {% endfor %}
+</div>
+
+<form method="post">
+    {{ formfield 'personal_behavior_accurate' }}
+    {{ formfield 'personal_behavior_describe' }}
+    {{ formfield 'personal_behavior_comments' }}
+
+    {{ next_button }}
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const toggleButton = document.getElementById('toggle-transcript');
+    const transcriptDiv = document.getElementById('transcript');
+
+    toggleButton.addEventListener('click', function () {
+        if (transcriptDiv.style.display === 'none') {
+            transcriptDiv.style.display = 'block';
+            toggleButton.textContent = 'Hide Interview Transcript';
+        } else {
+            transcriptDiv.style.display = 'none';
+            toggleButton.textContent = 'Show Interview Transcript';
+        }
+    });
+});
+</script>
+
+{% endblock %}

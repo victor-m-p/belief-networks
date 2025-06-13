@@ -40,62 +40,7 @@ def call_openai(response_model, content_prompt, model_name='gpt-4.1', temp=0.7):
         print(f"Exception with model {model_name}: {exc}")
         raise
 
-# this does not quite work right now 
-# wants the response model 
-'''
-@custom_retry 
-def call_openai_moderation(response_model, content_prompt, model_name='gpt-4.1', temp=0.7):
-    client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-    client = instructor.from_openai(client, mode=instructor.Mode.TOOLS)
 
-    kwargs = dict(
-        model=model_name,
-        messages=[{"role": "user", "content": content_prompt}],
-        #response_model=response_model,
-    )
-
-    if model_name not in ['o3', 'o3-mini', 'o4-mini']:
-        kwargs['temperature'] = temp
-
-    try:
-        # Generate the summary using the language model
-        response = client.chat.completions.create(**kwargs)
-        summary_text = response.choices[0].message.content
-
-        # Use the Moderation API to evaluate the generated summary
-        moderation_response = client.moderations.create(input=summary_text)
-        flagged = moderation_response.results[0].flagged
-
-        if flagged:
-            # Handle flagged content appropriately
-            raise ValueError("Generated content was flagged by moderation.")
-        return response, moderation_response #summary_text
-
-    except Exception as exc:
-        print(f"Exception with model {model_name}: {exc}")
-        raise
-
-@custom_retry
-def call_openai_validate(response_model, content_prompt, model_name='gpt-4.1', temp=0.7): # gpt-4.1
-        client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-        client = instructor.from_openai(client, mode=instructor.Mode.TOOLS)
-
-        kwargs = dict(
-                model=model_name,
-                messages=[{"role": "user", "content": content_prompt}],
-                response_model=response_model,
-        )
-
-        if model_name not in ['o3', 'o3-mini', 'o4-mini']:
-                kwargs['temperature'] = temp
-
-        try:
-                return client.chat.completions.create(**kwargs)
-        except ValidationError as e:
-                print(f"Validation error: {e}")
-        except Exception as exc: 
-                print(f"Exception with model {model_name}: {exc}") 
-'''
 # prompt to extract nodes 
 def make_node_prompt(questions_answers: dict) -> str:
         # Format Q&A block
@@ -104,65 +49,193 @@ def make_node_prompt(questions_answers: dict) -> str:
         )
         
         prompt = f"""
-        
 ### Task Overview ###
 
-Your task is to analyze an interview transcript and identify the most central beliefs, attitudes and considerations expressed by the interviewee.
-By "beliefs" we mean statements with a truth value, such as "production animals are treated badly" or "meat consumption does not contribute to climate change". 
-By "attitudes" and "considerations" we mean evaluative statements without a truth value such as "I don't like meat" or "eating meat seems natural to me". 
-We will refer to all of the beliefs, attitudes, and considerations collectively as "stances". 
+Analyze the interview transcript provided and clearly extract attitudes (beliefs, concerns, etc.) and behaviors around meat eating.
 
 ### Interview Transcript ###
-
 {questions_answers_lines}
 
-### Instructions ###
+### Extraction Instructions ###
 
-1. Identify stances (beliefs, attitudes, considerations):
-- Formulate each stance as a short statement starting exactly with: "I agree with the following: <...>".
-- Avoid empty statements such as "some people avoid eating meat because of important reasons".
-- Avoid statements that express more than one stance. Thus avoid words like "and" and instead break more complex stances up into simpler individual ones. 
-- Keep each statement short and concise and avoid filler words. 
-- Be direct in formulations (e.g. "climate change is human caused" is preferred to "I believe that climate change is human caused").
-- Avoid filler-words such as "major" (e.g. "concern" better than "major concern") and "key" (e.g., "challenge" better than "key challenge").
-- Aim for a maximum length of 4-8 words per stance formulation, and for a maximum of the 7 most important stances.
+1. Summarize the interviewee's behaviors about meat eating (PERSONAL, BEHAVIORS):
+- EXAMPLES: "I eat meat every day", "I only eat meat at special occasions".
 
-2. Rate importance for each stance:
-- Classify how important each stance (belief, attitude, consideration) is to the interviewee in the context of meat consumption.
-- Return your answer as one of [LOW, MEDIUM, HIGH] where LOW are not very important and HIGH are extremely important. 
+2. Summarize the interviewee's attitudes about meat eating (PERSONAL, MOTIVATIONS):
+- EXAMPLES: "meat is high protein", "I like the taste of meat", "meat production harms the environment", "I am concerned about animal welfare".
+
+3. Summarize the behaviors of the social contacts of the interviewee about meat eating (SOCIAL, BEHAVIORS):
+- EXAMPLES: "My family eats meat every day", "Most friends eat meat less than once a week". 
+
+4. Summarize the attitudes of the social contacts of the interviewee about meat eating (SOCIAL, MOTIVATIONS):
+- EXAMPLES: "My friends are concerned about animal welfare", "Some friends eat meat for protein".
+
+For each category the following rules apply:
+- Each attitude or behavior must be concise and MAXIMUM 8 words.
+- Each attitude or behavior must be a complete sentence.
+- Each attitide or behavior must be a single thing, not a list of things (avoid "and" or "or").
+- EXAMPLES: "I am concerned about animal welfare and climate change" is not allowed, but "I am concerned about animal welfare" and "I am concerned about climate change" are allowed.
+
+5. Rate importance for each node:
+- Rate the importance of each node on a scale from 1 to 10 where 1 is "not important at all" and 10 is "extremely important".
+
+For each type-category pair return a MAXIMUM of 10 things.
 
 ### Output Format (JSON ONLY) ###
 {{
 "results": [
 {{
-        "stance": "I agree with the following: <stance>",
-        "importance": "<one of [LOW or MEDIUM or HIGH]>",
+        "stance": "<concise summary of attitude or behavior>",
+        "importance": "<importance rating from 1 to 10>",
+        "type": "<one among [PERSONAL, SOCIAL]>",
+        "category": "<one among [BEHAVIOR, MOTIVATION]>"
 }},
-// Repeat for each stance expressed by the interviewee
+// Repeat for each node found
 ]
 }}
 
 Return ONLY the JSON object, nothing else.
-"""
+                """
         return prompt
 
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 client = instructor.from_openai(client, mode=instructor.Mode.TOOLS)
 
-'''
-class NodeModelValidate(BaseModel): 
-        stance: Annotated[str, AfterValidator(openai_moderation(client=client))]
-        importance: Annotated[str, AfterValidator(openai_moderation(client=client))]
-
-class NodeModelValidateList(BaseModel):
-        results: List[NodeModelValidate]
-'''
 class NodeModel(BaseModel): 
-        stance: str
-        importance: str 
+    stance: str
+    importance: str 
+    type: str
+    category: str
 
 class NodeModelList(BaseModel): 
-        results: List[NodeModel]
+    results: List[NodeModel]
+
+def make_social_behavior_prompt(questions_answers: dict) -> str:
+
+        # Format Q&A block
+        questions_answers_lines = "\n".join(
+                f"- Q: {q}\n- A: {a}" for q, a in questions_answers.items()
+        )
+
+        prompt = f"""
+### Task Overview ###
+
+Analyze the interview transcript provided and predict the distribution of meat eating behavior among the social contacts of the interviewee.
+
+### Interview Transcript ###
+{questions_answers_lines}
+
+### Meat Eating Scale ### 
+
+The interviewee was asked the following question:
+
+Question: 
+"Think about your most important social contacts (friends, family, colleagues, etc.).
+Out of 100 people how many of them do you think eat meat in the following ways?"
+
+Answer options: 
+- 1: never
+- 2: less than once a week 
+- 3: one or two days a week 
+- 4: three or four days a week
+- 5: five or six days a week 
+- 6: every day: 
+
+For the following questions, by "meat", we mean any meat or meat products, including
+chicken, fish, beef, pork, lamb, mutton, goat etc.
+
+It is important that your answers add up to 100 people exactly.
+
+### Output Format (JSON ONLY) ###
+{{
+"results": [
+{{
+        "answer_option": "<[1-6] one of the answer options>",
+        "answer_name": "<one of [never, less than once a week, one or two days a week, three or four days a week, five or six days a week, every day]>",
+        "number_contacts": "<[1-100] number of contacts who eat meat in this way>"
+}},
+// Repeat for each node found
+]
+}}
+
+Return ONLY the JSON object, nothing else.
+                """
+        return prompt
+
+class SocialBehavior(BaseModel): 
+    answer_option: str
+    answer_name: str 
+    number_contacts: str
+
+class SocialBehaviorList(BaseModel): 
+    results: List[SocialBehavior]
+
+def make_social_node_prompt(questions_answers: dict, nodes_list: List[str]) -> str:
+        # Format Q&A block
+        questions_answers_lines = "\n".join(
+                f"- Q: {q}\n- A: {a}" for q, a in questions_answers.items()
+        )
+        
+        # Format the nodes     
+        belief_string = "\n".join([f"- {x}" for x in nodes_list])
+        
+        # For each of the nodes 
+        prompt = f"""
+### Task Overview ###
+
+An interview transcript about meat eating attitudes and behaviors has been provided.
+The interview transcript contains a number of stances (beliefs, attitudes, concerns) that the interviewee holds towards meat eating.
+These have been extracted and are provided below. 
+
+The interviewee was asked about their social contacts and their attitudes and behaviors towards meat eating.
+Your task is to analyze the interview transcript and judge to which degree the interviewee's social contacts share the attitudes of the interviewee.
+
+### Transcript ###
+
+{questions_answers_lines}
+
+### Targets ###   
+
+{belief_string}
+
+### Instructions ###
+
+For each of the targets, judge the following:
+
+1. Social Agreement: 
+- Based on the interview transcript, what percentage of the interviewee's social contacts agree with the target attitude?
+- The social agreement score should be a number between 0 and 100, where 0 means no one agrees and 100 means everyone agrees.
+
+2. Social Care:
+- Based on the interview transcript, what percentage of the interviewee's social contacts care about the target attitude?
+- The social care score should be a number between 0 and 100, where 0 means no one cares and 100 means everyone cares.
+
+### Output Format (JSON ONLY) ###
+{{
+"results": [
+{{
+        "attitude": "<the target attitude from the list>",
+        "social_agree": "<[0-100] social agreement score>",
+        "social_care": "[0-100] social care score>",
+        "explanation": "<a short explanation of the social agreement score and the social care score>"
+}},
+// Repeat for each item in the list of targets
+]
+}}
+
+Return ONLY the JSON object, nothing else.
+
+        """
+        return prompt
+
+class SocialNodes(BaseModel): 
+    attitude: str
+    social_agree: str 
+    social_care: str
+    explanation: str
+
+class SocialNodesList(BaseModel): 
+    results: List[SocialNodes]
 
 # Edge Model 
 def make_edge_prompt(questions_answers:dict, nodes_list): 

@@ -2,13 +2,10 @@
     <link rel="stylesheet" href="{{ static 'global.css' }}">
 {% endblock %}
 
-{{ block title }} Open Questions {{ endblock }}
+{% block title %} Personal Meat Eating Habits {% endblock %}
 
-{{ block content }}
-
+{% block content %}
 <p>{{ prompt }}</p>
-{{ formfield 'answer1'}}
+{{ formfield 'answer1' }}
 {{ next_button }}
-
-
-{{ endblock }}
+{% endblock %}

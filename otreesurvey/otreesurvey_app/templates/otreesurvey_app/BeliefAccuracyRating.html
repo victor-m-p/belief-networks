@@ -1,0 +1,103 @@
+{% block styles %}
+<style>
+    .belief-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+        border-bottom: 1px solid #ccc;
+    }
+
+    .belief-text {
+        flex: 2;
+        font-size: 1rem;
+        margin-right: 1rem;
+    }
+
+    .choice-buttons {
+        flex: 2;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .choice-buttons label {
+        flex: 1;
+        text-align: center;
+        padding: 10px 0;
+        min-width: 40px;
+        border-radius: 6px;
+        cursor: pointer;
+        background-color: #ffffff;
+        border: 1px solid #ccc;
+        color: black;
+        font-weight: bold;
+        user-select: none;
+        transition: background-color 0.2s ease;
+    }
+
+    .choice-buttons input {
+        display: none;
+    }
+
+    .choice-buttons input:checked + label {
+        background-color: #cce5ff;
+        border: 2px solid #007BFF;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>Evaluate Summaries of Meat Eating Behaviors and Motivations</h2>
+<p>Please rate how accurately each statement reflects what you wrote in the interview:</p>
+
+<form method="post" id="belief-form" novalidate>
+    {% for item in belief_items %}
+        <div class="belief-row" data-fieldname="belief_{{ item.index }}">
+            <div class="belief-text"><strong>{{ item.belief }}</strong></div>
+            <div class="choice-buttons">
+                {% for i in rating_options %}
+                    <input type="radio" name="belief_rating_{{ item.index }}" id="belief_rating_{{ item.index }}_{{ i }}" value="{{ i }}"
+                        {% if item.rating == i %}checked{% endif %}>
+                    <label for="belief_rating_{{ item.index }}_{{ i }}">{{ i }}</label>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+
+    <p style="font-size: 0.9rem; margin-top: -0.5rem;">1 = Not accurate at all &nbsp;&nbsp; | &nbsp;&nbsp; 7 = Very accurate</p>
+
+    <p id="error-message" style="display: none; color: red; font-weight: bold;">
+        Please rate all beliefs before continuing.
+    </p>
+
+    {{ next_button }}
+</form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('belief-form');
+        const errorMessage = document.getElementById('error-message');
+
+        form.addEventListener('submit', function (e) {
+            let allComplete = true;
+
+            document.querySelectorAll('.belief-row').forEach(row => {
+                const index = row.dataset.fieldname.replace('belief_', '');
+                const selected = document.querySelector(`input[name="belief_rating_${index}"]:checked`);
+                if (!selected) {
+                    allComplete = false;
+                }
+            });
+
+            if (!allComplete) {
+                e.preventDefault();
+                errorMessage.style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                errorMessage.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

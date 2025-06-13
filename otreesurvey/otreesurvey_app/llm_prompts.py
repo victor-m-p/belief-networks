@@ -4,12 +4,12 @@ import json
 from pathlib import Path
 
 questions_answers = {
-    'How do you place yourself politically? Would you call yourself a conservative or a liberal or something else? What does this mean to you?': 'In an American context I would call myself a liberal or a progressive probably; I mostly hold progressive or left-wing views--e.g., I am concerned about rising economic inequality, about growing anti-democratic and anti-immigration sentiments (generally populism and right-wing extremism). I am globally oriented, and believe that the most important challenges that we have (e.g., climate change is one of them) needs to be solved in supernational fora. Generally I am liberal, and believe that people should be able to live their lives the way that they want, as long as they do not infringe on the freedom of other people: for instance, I believe that most drugs should be legal, and I believe that LGBTQ people should have similar rights as more heteronormative people do.',
-    'What are some things that concern you in the political domain? Feel free to mention things that are important to you personally, or more long-term concerns or challenges for your country': 'Currently I am very concerned about the rise of extreme-right parties and populism globally. Of course Donald Trump in the US is the most clear example of this, but I am also concerned about the rapid rise of extreme right-wing parties in many european countries (e.g., Sweden, Germany, Austria). I am also concerned about economics right now, given that the global system is being shaken by both protectionistic and anti-globalist policies from the Trump administration and the war in Ukraine. More long-term I am concerned about climate change, which I see as one of the key challenges of my generation, and I am concerned about the future of Europe and the EU given that our economic growth is terrible, and that much of the key innovation (e.g., in AI, advanced chip manufacturing, etc.) is happening in the US and in China (and not in Europe).',
-    'Are there things about your country that make you feel proud or ashamed? Feel free to write about any features or events that come to mind': 'Proud might not be exactly the right word to describe this, but I am generally very happy about the way that the Danish society and system is structured. It is one of the least corrupt, most happy countries in the world. It is more egalitarian than most countries, offering generous unemployment benefits, free (you even get paid) education, and good universal health care coverage. Besides maybe taxes (where we pay more in Denmark) I think that Denmark is really a much more free country than the for instance the US: for instance, I had the freedom (or opportunity) to do a long education even though my parents do not make a lot of money, which would maybe not have been possible in many other countries.',
-    'Are there any political questions where you feel dissonance or conflict? Maybe something that is salient for you personally, or is discussed among your social contacts or in the media': 'I just had a very intense discussion recently with a good friend about whether (and when) to state your pronouns. For instance, on social media, twitter, work emails, in zoom calls etc. I do not think that we actually fundamentally agree on identity, gender, and LGBTQ+ questions (we are both leaning clearly progressive) but I feel mixed about putting this everywhere. I do think that the friend had a good point about this being important, and did add this in a few places (e.g., on twitter, work email). I think what bothers me a little bit about this is that I feel that the left is too focused on identity (gender, race, sex) and in general I think that class is a more fundamental and important axis that the progressive/left has emphasized too little.',
-    'Are there any more things that are important to you politically that we have not yet discussed? Feel free to write about anything that comes to mind': 'Maybe we have not talked so much about immigration, which is a tricky topic for me. Mostly, my politics align with left-wing parties, e.g., on LGBTQ, feminism, economic inequality, climate change, etc., but on immigration I am really split between different concerns. I am very much in favor of economic immigration and mobility broadly, but I do think that there are limits to the number of refugees and immigrants from culturally very dissimilar places that we can integrate. This places me somewhere weird in the middle between the proper left-wing, and the right wing, and is also one of the clashes that I have with my party (Radikale Venstre). Probably, again in a Danish context, I am more of a social democrat on this point.'
+    "Please describe your dietary pattern, specifically your meat eating habits. Think about what you would consume in a typical week": "In a typical week I would probably consume some meat most days. But I do not eat meat everyday, and mostly what I consume would be slices of meat on bread for e.g. lunch. I never cook meat myself, but will eat it when I am out.",
+    "Are there any personal motivations that you have to eat or not to eat meat? Feel free to write about anything that comes to mind": "Some of the motivations that I have to eat meat is just that it is convenient and that I like the taste of meat. Especially for some things—e.g., slices of meat on bread this is just a habit where I have not properly implemented or found a good alternative. Also meat can be a good source of protein, but overall I actually think that restricting meat is the more healthy option. My main motivations to not eat meat is that I think it is better for the world not to. One reason is climate change, but actually I am more concerned with animal welfare with most meat produced unethically.",  
+    "Think about the people you interact with on a regular basis and whoso opinions are important to you. What are their meat eating habits?": "There are some strict vegetarians in my social circle, and I also know some vegans. Very few people that I know eat a lot of meat, but most will occasionally eat meat. Mostly I think that are similar to me in the sense that they would never cook a big steak or something like that, but would maybe be okay with buying a pizza with pepperoni.",
+    "Think about the people you interact with on a regular basis and whose opinions are important to you. What are their motivations to eat or to avoid eating meat?": "I think that motivations are generally similar to me. I guess that some of my social contacts are more motivated by climate change considerations and some are more motivated by animal welfare considerations."
     }
+
 node_prompt = make_node_prompt(questions_answers)
 with open('LLM/node_prompt.txt', 'w') as f: 
     f.write(node_prompt)
@@ -24,6 +24,47 @@ models = [
     'o3-mini',        # needs to be without temperature (done)
     'o4-mini',        # needs to be without temperature (done)
 ]
+
+# this seems okay but sometimes collapses. 
+# but not sure what to do with behavior distribution
+# also behavior more difficult in the 
+# "I agree with the following: " prefix setup.
+mdl = 'gpt-4.1' # seems better than 4o-mini
+node_prompt = make_node_prompt(questions_answers)
+
+with open('LLM/node_prompt.txt', 'w') as f:
+    f.write(node_prompt)
+
+node_response = call_openai(NodeModelList, node_prompt, model_name=mdl)
+node_results = node_response.model_dump()['results']
+node_results # should this have predicted direction to focal? we are assumming this for at least the personal beliefs.
+node_results
+# save results
+
+
+# this seems reasonable
+# need to implement check that it sums to 100
+soc_prompt = make_social_behavior_prompt(questions_answers)
+
+with open('LLM/soc_prompt.txt', 'w') as f:
+    f.write(soc_prompt)
+
+social_response = call_openai(SocialBehaviorList, soc_prompt, model_name=mdl)
+social_results = social_response.model_dump()['results']
+social_results  
+
+# now try to predict social pressure on each belief 
+# but predict this such that it can be none as well
+# this overall seems pretty good actually. 
+personal_nodes = [node['attitude'] for node in node_results if node['type'] == "PERSONAL"]
+soc_node_prompt = make_social_node_prompt(questions_answers, personal_nodes)
+
+with open('LLM/soc_node_prompt.txt', 'w') as f:
+    f.write(soc_node_prompt)
+
+soc_node_response = call_openai(SocialNodesList, soc_node_prompt, model_name=mdl)
+soc_node_results = soc_node_response.model_dump()['results']  # this is a list of SocialNodeModel
+soc_node_results
 
 # run over models and store results
 results = {}
@@ -106,7 +147,6 @@ coupling_dict = {
     for i, edge in enumerate(response.results)
 }
 
-
 ## test moderation ##
 response, moderation = call_openai_moderation(NodeModelList, node_prompt)
 response = call_openai(NodeModelList, node_prompt)
@@ -116,4 +156,3 @@ response = call_openai(NodeModelList, node_prompt)
 This feels clearly slower. 
 '''
 test = call_openai(NodeModelValidateList, node_prompt)
-
