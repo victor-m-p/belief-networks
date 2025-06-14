@@ -77,6 +77,30 @@
 <p style="margin-bottom: 0.5em;">If the statement is not an accurate reflection of what you wrote and what you believe, choose REJECT</p>
 <p style="margin-bottom: 0.5em;">If the statement is correct but not accurate then choose MODIFY and provide your own formulation</p>
 
+<button type="button" id="toggle-transcript" style="
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 1rem;">
+    Show transcript
+</button>
+
+<div id="transcript-container" style="display: none; margin-bottom: 1rem; border: 1px solid #ccc; padding: 1rem; border-radius: 5px; background-color: #f9f9f9;">
+    <h3>Interview transcript</h3>
+    <ul style="list-style-type: none; padding: 0;">
+    {% for pair in transcript %}
+        <li style="margin-bottom: 1rem;">
+            <strong>Q:</strong> {{ pair.question }}<br>
+            <strong>A:</strong> {{ pair.answer }}
+        </li>
+    {% endfor %}
+    </ul>
+</div>
+
 <form method="post" id="belief-form" novalidate>
     {% for item in belief_items %}
         <div class="belief-row" data-fieldname="belief_{{ forloop.counter0 }}">
@@ -148,74 +172,93 @@
 </form>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const rows = document.querySelectorAll('.belief-row');
-    
-        rows.forEach(row => {
-            const index = row.dataset.fieldname.replace('belief_', '');
-            const radios = document.querySelectorAll(`input[name="node_choice_${index}"]`);
-            const expansion = document.getElementById(`belief_${index}_expansion`);
-            const rejectBox = expansion.querySelector('.reject-box');
-            const modifyBox = expansion.querySelector('.modify-box');
-            const rejectInput = document.getElementById(`belief_${index}_reject_text`);
-            const modifyInput = document.getElementById(`belief_${index}_modify_text`);
-    
-            radios.forEach(radio => {
-                radio.addEventListener('change', () => {
-                    if (radio.value === "REJECT") {
-                        expansion.style.display = "block";
-                        rejectBox.style.display = "block";
-                        modifyBox.style.display = "none";
-                        modifyInput.removeAttribute("required");
-                    } else if (radio.value === "MODIFY") {
-                        expansion.style.display = "block";
-                        rejectBox.style.display = "none";
-                        modifyBox.style.display = "block";
-                        modifyInput.setAttribute("required", "required");
-                    } else {
-                        expansion.style.display = "none";
-                        rejectBox.style.display = "none";
-                        modifyBox.style.display = "none";
-                        modifyInput.removeAttribute("required");
-                        rejectInput.value = "";
-                        modifyInput.value = "";
-                    }
-                });
-            });
-        });
-    
-        // Error display
-        const form = document.getElementById('belief-form');
-        const errorMessage = document.getElementById('error-message');
-    
-        form.addEventListener('submit', function (e) {
-            let allComplete = true;
-    
-            document.querySelectorAll('.belief-row').forEach(row => {
-                const index = row.dataset.fieldname.replace('belief_', '');
-                const selected = document.querySelector(`input[name="node_choice_${index}"]:checked`);
-    
-                if (!selected) {
-                    allComplete = false;
-                    return;
-                }
-    
-                if (selected.value === "MODIFY") {
-                    const modInput = document.getElementById(`belief_${index}_modify_text`);
-                    if (!modInput || modInput.value.trim() === "") {
-                        allComplete = false;
-                    }
+window.addEventListener('load', function () {
+    const rows = document.querySelectorAll('.belief-row');
+
+    rows.forEach(row => {
+        const index = row.dataset.fieldname.replace('belief_', '');
+        const radios = document.querySelectorAll(`input[name="node_choice_${index}"]`);
+        const expansion = document.getElementById(`belief_${index}_expansion`);
+        const rejectBox = expansion.querySelector('.reject-box');
+        const modifyBox = expansion.querySelector('.modify-box');
+        const rejectInput = document.getElementById(`belief_${index}_reject_text`);
+        const modifyInput = document.getElementById(`belief_${index}_modify_text`);
+
+        radios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (radio.value === "REJECT") {
+                    expansion.style.display = "block";
+                    rejectBox.style.display = "block";
+                    modifyBox.style.display = "none";
+                    modifyInput.removeAttribute("required");
+                } else if (radio.value === "MODIFY") {
+                    expansion.style.display = "block";
+                    rejectBox.style.display = "none";
+                    modifyBox.style.display = "block";
+                    modifyInput.setAttribute("required", "required");
+                } else {
+                    expansion.style.display = "none";
+                    rejectBox.style.display = "none";
+                    modifyBox.style.display = "none";
+                    modifyInput.removeAttribute("required");
+                    rejectInput.value = "";
+                    modifyInput.value = "";
                 }
             });
-    
-            if (!allComplete) {
-                e.preventDefault();
-                errorMessage.style.display = 'block';
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            } else {
-                errorMessage.style.display = 'none';
-            }
         });
     });
-    </script>
+
+    const form = document.getElementById('belief-form');
+    if (!form) return;  // ✅ graceful fail if form not yet exists
+    const errorMessage = document.getElementById('error-message');
+
+    form.addEventListener('submit', function (e) {
+        let allComplete = true;
+
+        document.querySelectorAll('.belief-row').forEach(row => {
+            const index = row.dataset.fieldname.replace('belief_', '');
+            const selected = document.querySelector(`input[name="node_choice_${index}"]:checked`);
+
+            if (!selected) {
+                allComplete = false;
+                return;
+            }
+
+            if (selected.value === "MODIFY") {
+                const modInput = document.getElementById(`belief_${index}_modify_text`);
+                if (!modInput || modInput.value.trim() === "") {
+                    allComplete = false;
+                }
+            }
+        });
+
+        if (!allComplete) {
+            e.preventDefault();
+            errorMessage.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            errorMessage.style.display = 'none';
+        }
+    });
+
+});
+
+// This part runs immediately, without waiting for load
+(function () {
+    const toggleButton = document.getElementById('toggle-transcript');
+    const transcript = document.getElementById('transcript-container');
+
+    if (!toggleButton || !transcript) {
+        console.warn("Transcript toggle elements not found.");
+        return;
+    }
+
+    toggleButton.addEventListener('click', function () {
+        const isHidden = transcript.style.display === 'none' || transcript.style.display === '';
+        transcript.style.display = isHidden ? 'block' : 'none';
+        toggleButton.textContent = isHidden ? 'Hide transcript' : 'Show transcript';
+    });
+})();
+
+</script>
 {% endblock %}

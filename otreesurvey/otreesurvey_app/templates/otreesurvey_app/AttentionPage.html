@@ -1,0 +1,75 @@
+{% extends "global/Page.html" %}
+{% block content %}
+
+<h3>Attention to Meat Eating</h3>
+
+<p>Please indicate how much attention you pay to each of the following aspects of meat eating. Use the scale from 1 (Very little attention) to 7 (A great deal of attention).</p>
+
+<style>
+    .question-block {
+        margin-bottom: 30px;
+    }
+    .likert-wrapper {
+        display: flex;
+        align-items: center;
+        margin-top: 5px;
+        margin-left: 20px;
+    }
+    .likert-label-left {
+        margin-right: 15px;
+        white-space: nowrap;
+    }
+    .likert-label-right {
+        margin-left: 15px;
+        white-space: nowrap;
+    }
+</style>
+
+<div class="question-block">
+    {{ form.attention_personal_behaviors.label }}
+    <div class="likert-wrapper">
+        <div class="likert-label-left">Very little</div>
+        {{ form.attention_personal_behaviors }}
+        <div class="likert-label-right">A great deal</div>
+    </div>
+</div>
+
+<div class="question-block">
+    {{ form.attention_personal_motivations.label }}
+    <div class="likert-wrapper">
+        <div class="likert-label-left">Very little</div>
+        {{ form.attention_personal_motivations }}
+        <div class="likert-label-right">A great deal</div>
+    </div>
+</div>
+
+<div class="question-block">
+    {{ form.attention_social_motivations.label }}
+    <div class="likert-wrapper">
+        <div class="likert-label-left">Very little</div>
+        {{ form.attention_social_motivations }}
+        <div class="likert-label-right">A great deal</div>
+    </div>
+</div>
+
+<div class="question-block">
+    {{ form.attention_social_behaviors.label }}
+    <div class="likert-wrapper">
+        <div class="likert-label-left">Very little</div>
+        {{ form.attention_social_behaviors }}
+        <div class="likert-label-right">A great deal</div>
+    </div>
+</div>
+
+<div class="question-block">
+    {{ form.attention_meat_eating.label }}
+    <div class="likert-wrapper">
+        <div class="likert-label-left">Very little</div>
+        {{ form.attention_meat_eating }}
+        <div class="likert-label-right">A great deal</div>
+    </div>
+</div>
+
+{{ next_button }}
+
+{% endblock %}

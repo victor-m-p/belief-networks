@@ -79,6 +79,10 @@ For each category the following rules apply:
 5. Rate importance for each node:
 - Rate the importance of each node on a scale from 1 to 10 where 1 is "not important at all" and 10 is "extremely important".
 
+6. Create an extremely short (2 word) summary of each attitude or behavior
+- For each summary create a 2 word unique short hand (no duplicates allowed).
+- EXAMPLES: "I am concerned about animal welfare" --> "Animal welfare", "I rarely eat meat" --> "Rare meat"
+
 For each type-category pair return a MAXIMUM of 10 things.
 
 ### Output Format (JSON ONLY) ###
@@ -86,6 +90,7 @@ For each type-category pair return a MAXIMUM of 10 things.
 "results": [
 {{
         "stance": "<concise summary of attitude or behavior>",
+        "stance_short": "<2 WORD summary>",
         "importance": "<importance rating from 1 to 10>",
         "type": "<one among [PERSONAL, SOCIAL]>",
         "category": "<one among [BEHAVIOR, MOTIVATION]>"
@@ -103,6 +108,7 @@ client = instructor.from_openai(client, mode=instructor.Mode.TOOLS)
 
 class NodeModel(BaseModel): 
     stance: str
+    stance_summary: str
     importance: str 
     type: str
     category: str

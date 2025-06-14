@@ -8,7 +8,7 @@ doc = """
 Your app description
 """
 
-states = [
+US_STATES = [
     'Alaska', 'Alabama', 'Arkansas', 'Arizona',
     'California', 'Colorado', 'Connecticut', 'District of Columbia',
     'Delaware', 'Florida', 'Georgia', 'Hawaii',
@@ -22,6 +22,8 @@ states = [
     'South Carolina', 'South Dakota', 'Tennessee', 'Texas',
     'Utah', 'Virginia', 'Vermont', 'Washington',
     'Wisconsin', 'West Virginia', 'Wyoming']
+
+
 
 class C(BaseConstants): 
     
@@ -120,10 +122,19 @@ class Player(BasePlayer):
             ],
         widget=widgets.RadioSelect
     )
-    # add state + zip code
+    state = models.StringField(
+        label="In which state do you currently live?",
+        choices=US_STATES
+    )
+
+    zipcode = models.StringField(
+        label="Please enter your 5-digit ZIP code:",
+        min_length=5,
+        max_length=5,
+    )
 
     # add the scale  
-    meat_consumption = models.StringField(
+    meat_consumption_present = models.StringField(
         choices=[
             'never',
             'less than once a week',
@@ -133,6 +144,30 @@ class Player(BasePlayer):
             'every day',
         ],
         label="Approximately, how often, if at all, do you eat any meat in an average week?",
+        widget=widgets.RadioSelect
+    )
+    meat_consumption_past = models.StringField(
+        choices=[
+            'never',
+            'less than once a week',
+            'one or two days a week',
+            'three or four days a week',
+            'five or six days a week',
+            'every day',
+        ],
+        label="Try to recall your meat eating habits 5 years ago. Approximately, how often, if at all, did you eat any meat in an average week?",
+        widget=widgets.RadioSelect
+    )
+    meat_consumption_future = models.StringField(
+        choices=[
+            'never',
+            'less than once a week',
+            'one or two days a week',
+            'three or four days a week',
+            'five or six days a week',
+            'every day',
+        ],
+        label="Try to imagine how your meat eating habits might look 5 years from now. Approximately, how often, if at all, do you think you will eat any meat in an average week?",
         widget=widgets.RadioSelect
     )
 
@@ -217,6 +252,34 @@ class Player(BasePlayer):
         blank=True
     )
     
+    # attention
+
+    attention_personal_behaviors = models.IntegerField(
+        label="How much attention do you pay to your own meat eating habits?",
+        choices=[1, 2, 3, 4, 5, 6, 7],
+        widget=widgets.RadioSelectHorizontal
+    )
+    attention_personal_motivations = models.IntegerField(
+        label="How much attention do you pay to your own meat eating motivations?",
+        choices=[1, 2, 3, 4, 5, 6, 7],
+        widget=widgets.RadioSelectHorizontal
+    )
+    attention_social_motivations = models.IntegerField(
+        label="How much attention do you pay to the meat eating motivations of your social contacts?",
+        choices=[1, 2, 3, 4, 5, 6, 7],
+        widget=widgets.RadioSelectHorizontal
+    )
+    attention_social_behaviors = models.IntegerField(
+        label="How much attention do you pay to the meat eating habits of your social contacts?",
+        choices=[1, 2, 3, 4, 5, 6, 7],
+        widget=widgets.RadioSelectHorizontal
+    )
+    attention_meat_eating = models.IntegerField(
+        label="How much attention do you overall pay to meat eating?",
+        choices=[1, 2, 3, 4, 5, 6, 7],
+        widget=widgets.RadioSelectHorizontal
+    )
+    
     '''
     ## rate personal behavior, personal motivations, social behavior, social motivations? ## 
     personal_behavior_accurate = models.IntegerField(
@@ -257,15 +320,25 @@ for i in range(C.MAX_NODES):
 class Introduction(Page):
     pass
 
-class Demographics(Page): # what do we actually need here? 
+class Demographics(Page): 
     form_model = 'player'
-    form_fields = ['age', 'gender', 'education', 'politics']
+    form_fields = ['age', 'gender', 'education', 'politics', 'state', 'zipcode']
 
 class ResultsWaitPage(WaitPage):
     pass
 
 class Results(Page):
     pass
+
+class AttentionPage(Page):
+    form_model = 'player'
+    form_fields = [
+        'attention_personal_behaviors',
+        'attention_personal_motivations',
+        'attention_social_motivations',
+        'attention_social_behaviors',
+        'attention_meat_eating'
+    ]
 
 ### classes for question pages ###
 class Question1(Page):
@@ -558,7 +631,6 @@ class BeliefAccuracyRating(Page):
     def before_next_page(player, timeout_happened):
         pass
 
-
 class LLMReviewRevise(Page):
     form_model = 'player'
 
@@ -794,7 +866,7 @@ class PolicyQuestionnaire(Page):
 
 class MeatScale(Page):
     form_model = 'player'
-    form_fields = ['meat_consumption']
+    form_fields = ['meat_consumption_present', 'meat_consumption_past', 'meat_consumption_future']
 
 # Asking about attention to meat eating behaviors # 
 # Asking about attention in the interview # 
@@ -843,13 +915,15 @@ class MotivationBehaviorMapping(Page):
 # page sequence 
 page_sequence = [
     SocialCircleDistribution,
+    AttentionPage,
     Introduction, 
+    MeatScale,
+    Demographics,
     # QUESTIONS 
     Question1, 
     Question2, 
     Question3, 
     Question4,
-    MeatScale,
     # GENERATE + SELECT BELIEFS 
     LLMGenerate,
     #RatePersonalBehavior,

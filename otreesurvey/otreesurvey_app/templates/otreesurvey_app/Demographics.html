@@ -1,12 +1,11 @@
-{{ block title }}
+{% block title %}
 Some questions about yourself
-{{ endblock }}
-{{ block content }}
+{% endblock %}
 
-In this final part, we would like you to answer the following questions about yourself.
+{% block content %}
+<p>In this final part, we would like you to answer the following questions about yourself.</p>
 
 {{ formfields }}
 
-{{next_button}}
-
-{{endblock}}
+{{ next_button }}
+{% endblock %}
