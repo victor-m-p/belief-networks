@@ -779,6 +779,32 @@ class MapNodePlacement(Page):
         final_nodes = json.loads(player.final_nodes or '[]')
         belief_texts = [item['text'] for item in final_nodes if item.get('text')]
 
+        # Just send the labels, layout happens in template
+        belief_points = [{"label": label} for label in belief_texts]
+
+        mode = 'all'
+        label_display = 'always'
+
+        return dict(
+            belief_points=belief_points,
+            mode=mode,
+            label_display=label_display
+        )
+
+    @staticmethod
+    def before_next_page(player, timeout_happened):
+        pass
+
+'''
+class MapNodePlacement(Page):
+    form_model = 'player'
+    form_fields = ['positions_1']
+
+    @staticmethod
+    def vars_for_template(player):
+        final_nodes = json.loads(player.final_nodes or '[]')
+        belief_texts = [item['text'] for item in final_nodes if item.get('text')]
+
         belief_points = [
             {"label": label, "x": 750, "y": 40 + i * 60, "radius": 20}
             for i, label in enumerate(belief_texts)
@@ -797,6 +823,7 @@ class MapNodePlacement(Page):
     @staticmethod
     def before_next_page(player, timeout_happened):
         pass
+'''
 
 class MapEdgeCreation(Page):
     form_model = 'player'

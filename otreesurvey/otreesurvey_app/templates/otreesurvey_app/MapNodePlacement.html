@@ -1,57 +1,119 @@
 {% extends "global/Page.html" %}
+{% block styles %}
+<style>
+    #node-container {
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .belief-node {
+        display: inline-block;
+        padding: 10px 20px;
+        background-color: orange;
+        color: black;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 18px;
+        user-select: none;
+        cursor: grab;
+    }
+
+    canvas {
+        border: 2px solid black;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <h2>Move Each Statement Into the Box</h2>
-<p style="margin-bottom: 0.5em;">Please drag each item into the black square.</p>
-<p style="margin-bottom: 0.5em;"><strong>Place things that are more related closer to each other.</strong></p>
-<p style="margin-bottom: 0.5em;">You cannot continue until you have placed all items inside of the square.</p>
+<p>Please drag each item one at a time into the square. After all items are placed, you can continue to move them around.</p>
 
-<canvas id="dragCanvas" width="900" height="600" style="border:1px solid black;"></canvas>
+<div id="node-container">
+    <div id="current-node" class="belief-node" draggable="true"></div>
+</div>
+
+<canvas id="dragCanvas" width="900" height="600"></canvas>
+
 <input type="hidden" name="positions_1" id="positions_1">
-
 {{ next_button }}
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const canvas = document.getElementById("dragCanvas");
-    const ctx = canvas.getContext("2d");
-
-    const mode = "{{ mode }}";
-    const labelDisplay = "{{ label_display }}";
-
-    const points = [
+    const beliefLabels = [
         {% for point in belief_points %}
-            { label: "{{ point.label }}", x: {{ point.x }}, y: {{ point.y }}, radius: {{ point.radius }} },
+            "{{ point.label }}",
         {% endfor %}
     ];
 
+    let currentIndex = 0;
+    const canvas = document.getElementById("dragCanvas");
+    const ctx = canvas.getContext("2d");
+    let pointsOnCanvas = [];
+
+    // Add the fixed central node
+    const centralNode = { label: "Meat Eating Behavior", x: 300, y: 300, fixed: true };
+    pointsOnCanvas.push(centralNode);
+
+    
     let draggingPoint = null;
-    let hoveredPoint = null;
+    let offsetX, offsetY;
+
+    function showNextNode() {
+        const nodeDiv = document.getElementById("current-node");
+        if (currentIndex < beliefLabels.length) {
+            nodeDiv.textContent = beliefLabels[currentIndex];
+            nodeDiv.style.visibility = "visible";
+        } else {
+            nodeDiv.style.visibility = "hidden";
+        }
+    }
+
+    showNextNode();
+
+    document.getElementById("current-node").addEventListener("dragstart", function (e) {
+        e.dataTransfer.setData("text/plain", e.target.textContent);
+    });
+
+    canvas.addEventListener("dragover", function (e) {
+        e.preventDefault();
+    });
+
+    canvas.addEventListener("drop", function (e) {
+        e.preventDefault();
+        const label = e.dataTransfer.getData("text/plain");
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        if (!pointsOnCanvas.find(p => p.label === label)) {
+            pointsOnCanvas.push({ label, x, y });
+            currentIndex++;
+            showNextNode();
+            drawCanvas();
+        }
+    });
+
 
     function drawCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
         ctx.strokeStyle = "black";
         ctx.lineWidth = 3;
         ctx.strokeRect(0, 0, 600, 600);
 
-        points.forEach(p => {
+        pointsOnCanvas.forEach(p => {
             ctx.beginPath();
-            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-            ctx.fillStyle = "orange";
+            ctx.arc(p.x, p.y, 20, 0, Math.PI * 2);
+            ctx.fillStyle = p.fixed ? "#999999" : "orange";  // Gray for fixed node
             ctx.fill();
             ctx.strokeStyle = "black";
             ctx.stroke();
-
-            if (labelDisplay === "always" || p === hoveredPoint) {
-                ctx.fillStyle = "black";
-                ctx.font = "16px sans-serif";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "bottom";
-                ctx.fillText(p.label, p.x, p.y - 22);
-            }
+            ctx.fillStyle = "black";
+            ctx.font = "14px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(p.label, p.x, p.y - 25);
         });
     }
+
 
     function getMousePos(evt) {
         const rect = canvas.getBoundingClientRect();
@@ -62,33 +124,37 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function findPoint(pos) {
-        return points.find(p => Math.hypot(p.x - pos.x, p.y - pos.y) <= p.radius);
+        return pointsOnCanvas.find(p => 
+            Math.hypot(p.x - pos.x, p.y - pos.y) <= 20 && !p.fixed
+        );
     }
 
+
+    // Enable repositioning after placement
     canvas.addEventListener("mousedown", function (e) {
         const pos = getMousePos(e);
         draggingPoint = findPoint(pos);
+        if (draggingPoint) {
+            offsetX = pos.x - draggingPoint.x;
+            offsetY = pos.y - draggingPoint.y;
+        }
     });
 
     canvas.addEventListener("mousemove", function (e) {
-        const pos = getMousePos(e);
-        hoveredPoint = findPoint(pos);
-
         if (draggingPoint) {
-            draggingPoint.x = pos.x;
-            draggingPoint.y = pos.y;
+            const pos = getMousePos(e);
+            draggingPoint.x = pos.x - offsetX;
+            draggingPoint.y = pos.y - offsetY;
+            drawCanvas();
         }
-        drawCanvas();
     });
 
     canvas.addEventListener("mouseup", function () {
         draggingPoint = null;
     });
 
-    drawCanvas();
-
     function allPointsInsideBox() {
-        return points.every(p => p.x >= 0 && p.x <= 600 && p.y >= 0 && p.y <= 600);
+        return pointsOnCanvas.every(p => p.x >= 0 && p.x <= 600 && p.y >= 0 && p.y <= 600);
     }
 
     const form = document.querySelector("form");
@@ -97,14 +163,21 @@ document.addEventListener("DOMContentLoaded", function () {
     nextButton.addEventListener("click", function (e) {
         e.preventDefault();
 
+        if (pointsOnCanvas.length - 1 !== beliefLabels.length) {
+            alert("Please place all beliefs into the square before continuing.");
+            return;
+        }
+
         if (!allPointsInsideBox()) {
             alert("Please place all beliefs inside the box before continuing.");
             return;
         }
 
-        document.getElementById("positions_1").value = JSON.stringify(points);
+        document.getElementById("positions_1").value = JSON.stringify(pointsOnCanvas);
         form.submit();
     });
+
+    drawCanvas();
 });
 </script>
 {% endblock %}
