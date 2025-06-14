@@ -10,7 +10,6 @@
     <button id="selectPositive" type="button" style="background-color: green; color: white; padding: 10px 20px; font-size: 16px; margin-right: 10px;">Positive</button>
     <button id="selectNegative" type="button" style="background-color: red; color: white; padding: 10px 20px; font-size: 16px;">Negative</button>
 </div>
-
 <input type="hidden" id="positions_3" name="positions_3">
 <input type="hidden" id="edges_3" name="edges_3">
 
@@ -26,16 +25,14 @@ document.addEventListener("DOMContentLoaded", function () {
     const labelDisplay = "always";
 
     const points = [
-        // Remove `fixed: true` entirely:
         {% for point in belief_points %}
             { label: "{{ point.label }}", x: {{ point.x }}, y: {{ point.y }}, radius: {{ point.radius }} },
         {% endfor %}
     ];
 
-
     const edges = [
         {% for edge in belief_edges %}
-            { fromLabel: "{{ edge.from }}", toLabel: "{{ edge.to }}", polarity: "{{ edge.polarity }}", strength: {{ edge.strength }} },
+            { fromLabel: "{{ edge.from }}", toLabel: "{{ edge.to }}", polarity: "{{ edge.polarity }}" },
         {% endfor %}
     ];
 
@@ -50,7 +47,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return edges.map(edge => {
             const from = points.find(p => p.label === edge.fromLabel);
             const to = points.find(p => p.label === edge.toLabel);
-            return { from, to, polarity: edge.polarity, strength: edge.strength };
+            return { from, to, polarity: edge.polarity };
         }).filter(e => e.from && e.to);
     }
 
@@ -65,8 +62,7 @@ document.addEventListener("DOMContentLoaded", function () {
             ctx.moveTo(edge.from.x, edge.from.y);
             ctx.lineTo(edge.to.x, edge.to.y);
             ctx.strokeStyle = edge.polarity === "positive" ? "green" : "red";
-            const strength = edge.strength || 50;
-            ctx.lineWidth = 1 + (strength / 100) * 9;
+            ctx.lineWidth = 2;
             ctx.stroke();
         });
 
@@ -76,7 +72,6 @@ document.addEventListener("DOMContentLoaded", function () {
             ctx.fillStyle = p === selectedPoint ? "yellow" : "orange";
             ctx.fill();
             ctx.strokeStyle = "black";
-            ctx.lineWidth = 2;
             ctx.stroke();
 
             if (labelDisplay === "always" || p === hoveredPoint) {
@@ -170,7 +165,6 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("selectPositive").addEventListener("click", function () {
         if (pendingEdge) {
             pendingEdge.polarity = "positive";
-            pendingEdge.strength = 50;
             edges.push(pendingEdge);
             pendingEdge = null;
             document.getElementById("edgeSelectionPanel").style.display = "none";
@@ -181,7 +175,6 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("selectNegative").addEventListener("click", function () {
         if (pendingEdge) {
             pendingEdge.polarity = "negative";
-            pendingEdge.strength = 50;
             edges.push(pendingEdge);
             pendingEdge = null;
             document.getElementById("edgeSelectionPanel").style.display = "none";

@@ -761,7 +761,6 @@ class LLMAddBeliefs(Page):
         player.final_nodes = json.dumps(accepted)
 '''
 
-# splitting network part up # 
 class MapNodePlacement(Page):
     form_model = 'player'
     form_fields = ['positions_1']
@@ -831,10 +830,15 @@ class MapEdgeCreation(Page):
 
         belief_points = []
         for i, item in enumerate(final_nodes):
-            x = positions[i]['x'] if i < len(positions) else 750
-            y = positions[i]['y'] if i < len(positions) else 100 + i * 80
-            radius = positions[i].get('radius', 20) if i < len(positions) else 20
+            pos_idx = i + 1
+            x = positions[pos_idx]['x']
+            y = positions[pos_idx]['y']
+            radius = 20
             belief_points.append({"label": item['text'], "x": x, "y": y, "radius": radius})
+            #x = positions[i]['x'] if i < len(positions) else 750
+            #y = positions[i]['y'] if i < len(positions) else 100 + i * 80
+            #radius = positions[i].get('radius', 20) if i < len(positions) else 20
+            #belief_points.append({"label": item['text'], "x": x, "y": y, "radius": radius})
 
         return dict(
             belief_points=belief_points,
