@@ -637,6 +637,7 @@ class LLMReviewRevise(Page):
         generated_nodes = json.loads(player.generated_nodes or '[]')
         revised = json.loads(player.field_maybe_none('revised_beliefs') or '[]')
 
+        # Initialize revised if not already done
         if not revised:
             revised = [
                 {"belief": node['stance'], "user_action": "", "text_field": ""}
@@ -655,7 +656,7 @@ class LLMReviewRevise(Page):
     def vars_for_template(player):
         generated_nodes = json.loads(player.generated_nodes or '[]')
 
-        # Initialize revised if needed
+        # Load or initialize revised beliefs
         try:
             revised = json.loads(player.revised_beliefs)
         except (TypeError, json.JSONDecodeError):
@@ -665,6 +666,7 @@ class LLMReviewRevise(Page):
             ]
             player.revised_beliefs = json.dumps(revised)
 
+        # Transcript (unchanged)
         qa_pairs = []
         for i, question in enumerate(C.QUESTIONS):
             fieldname = f'answer{i+1}'
@@ -680,6 +682,7 @@ class LLMReviewRevise(Page):
     @staticmethod
     def error_message(player, values):
         revised = json.loads(player.revised_beliefs)
+
         for i, item in enumerate(revised):
             choice = values.get(f"node_choice_{i}", "")
             reason = values.get(f"node_reject_reason_{i}", "")
@@ -695,6 +698,7 @@ class LLMReviewRevise(Page):
 
         player.revised_beliefs = json.dumps(revised)
 
+        # Validation:
         for item in revised:
             if not item['user_action']:
                 return "Please evaluate all beliefs before continuing."
@@ -705,14 +709,16 @@ class LLMReviewRevise(Page):
     def before_next_page(player, timeout_happened):
         revised = json.loads(player.revised_beliefs)
         filtered = []
+
         for item in revised:
             if item['user_action'] == 'ACCEPT':
-                filtered.append({'text': item['belief']})
-            elif item['user_action'] == 'MODIFY' and item['text_field'].strip():
-                filtered.append({'text': item['text_field'].strip()})
+                filtered.append({'text': item['belief'].strip()})
+            elif item['user_action'] == 'MODIFY':
+                modified = item['text_field'].strip()
+                if modified:
+                    filtered.append({'text': modified})
+
         player.final_nodes = json.dumps(filtered)
-
-
 
 '''
 class LLMAddBeliefs(Page):
