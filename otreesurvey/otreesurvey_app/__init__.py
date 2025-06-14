@@ -185,6 +185,7 @@ class Player(BasePlayer):
     revised_beliefs = models.LongStringField(blank=True)
     user_nodes = models.LongStringField(blank=True)
     final_nodes = models.LongStringField(blank=True)
+    generated_nodes_ratings = models.LongStringField(blank=True)
 
     # For new way of doing belief codings (humans)
     # Currently we are not doing these human labels.
@@ -304,7 +305,6 @@ class Player(BasePlayer):
     
     social_circle_distribution = models.LongStringField(blank=True)
     #belief_accuracy_ratings = models.LongStringField(blank=True)
-    generated_nodes_ratings = models.LongStringField(blank=True)
 
 for i in range(C.MAX_NODES):
     setattr(Player, f"belief_rating_{i}", models.StringField(blank=True))
@@ -649,8 +649,16 @@ class LLMReviewRevise(Page):
 
     @staticmethod
     def get_form_fields(player):
-        revised_raw = player.field_maybe_none('final_nodes') or '[]'
-        revised = json.loads(revised_raw)
+        beliefs = json.loads(player.generated_nodes)
+        revised = json.loads(player.field_maybe_none('revised_beliefs') or '[]')
+
+        if not revised:
+            revised = [
+                {"belief": b, "user_action": "", "text_field": ""}
+                for b in beliefs
+            ]
+            player.revised_beliefs = json.dumps(revised)
+
         fields = []
         for i in range(len(revised)):
             fields.append(f"node_choice_{i}")
@@ -662,15 +670,15 @@ class LLMReviewRevise(Page):
     def vars_for_template(player):
         beliefs = json.loads(player.generated_nodes)
         try:
-            revised = json.loads(player.final_nodes)
+            revised = json.loads(player.revised_beliefs)
         except (TypeError, json.JSONDecodeError):
             revised = [
                 {"belief": b, "user_action": "", "text_field": ""}
                 for b in beliefs
             ]
-            player.final_nodes = json.dumps(revised)
+            player.revised_beliefs = json.dumps(revised)
 
-        # Build interview transcript (Q&A pairs)
+        # Build interview transcript
         qa_pairs = []
         for i, question in enumerate(C.QUESTIONS):
             fieldname = f'answer{i+1}'
@@ -679,13 +687,13 @@ class LLMReviewRevise(Page):
 
         return dict(
             belief_items=revised,
-            transcript=qa_pairs,  # <-- we add this
+            transcript=qa_pairs,
             C=C
         )
 
     @staticmethod
     def error_message(player, values):
-        revised = json.loads(player.final_nodes)
+        revised = json.loads(player.revised_beliefs)
         for i, item in enumerate(revised):
             choice = values.get(f"node_choice_{i}", "")
             reason = values.get(f"node_reject_reason_{i}", "")
@@ -699,7 +707,7 @@ class LLMReviewRevise(Page):
             else:
                 item['text_field'] = ""
 
-        player.final_nodes = json.dumps(revised)
+        player.revised_beliefs = json.dumps(revised)
 
         for item in revised:
             if not item['user_action']:
@@ -709,7 +717,16 @@ class LLMReviewRevise(Page):
 
     @staticmethod
     def before_next_page(player, timeout_happened):
-        pass
+        # Create final_nodes automatically after revision complete
+        revised = json.loads(player.revised_beliefs)
+        filtered = []
+        for item in revised:
+            if item['user_action'] == 'ACCEPT':
+                filtered.append({'text': item['belief']})
+            elif item['user_action'] == 'MODIFY' and item['text_field'].strip():
+                filtered.append({'text': item['text_field'].strip()})
+        player.final_nodes = json.dumps(filtered)
+
 
 '''
 class LLMAddBeliefs(Page):
