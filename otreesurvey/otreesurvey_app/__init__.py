@@ -304,6 +304,7 @@ class Player(BasePlayer):
     
     social_circle_distribution = models.LongStringField(blank=True)
     #belief_accuracy_ratings = models.LongStringField(blank=True)
+    generated_nodes_ratings = models.LongStringField(blank=True)
 
 for i in range(C.MAX_NODES):
     setattr(Player, f"belief_rating_{i}", models.StringField(blank=True))
@@ -568,43 +569,48 @@ class AccuracySocialMotivation(AccuracyRatingPage):
     category_filter = "MOTIVATION"
 '''
 
-# new version of above.
 class BeliefAccuracyRating(Page):
     form_model = 'player'
 
     @staticmethod
     def get_form_fields(player):
-        revised_raw = player.field_maybe_none('final_nodes') or '[]'
-        revised = json.loads(revised_raw)
+        # Always load from generated_nodes
+        generated_raw = player.generated_nodes or '[]'
+        generated = json.loads(generated_raw)
         fields = []
-        for i in range(len(revised)):
+        for i in range(len(generated)):
             fields.append(f"belief_rating_{i}")
         return fields
 
     @staticmethod
     def vars_for_template(player):
-        beliefs = json.loads(player.generated_nodes)
-        try:
-            revised = json.loads(player.final_nodes)
-        except (TypeError, json.JSONDecodeError):
-            revised = [
-                {"belief": b, "user_action": "", "text_field": ""}
-                for b in beliefs
-            ]
-            player.final_nodes = json.dumps(revised)
+        generated_raw = player.generated_nodes or '[]'
+        generated = json.loads(generated_raw)
 
+        # Build interview transcript (unchanged)
         qa_pairs = []
         for i, question in enumerate(C.QUESTIONS):
             fieldname = f'answer{i+1}'
             answer = getattr(player, fieldname, '')
             qa_pairs.append({'question': question, 'answer': answer})
 
+        # Build rating items
         rating_items = []
-        for i, belief in enumerate(revised):
-            rating = player.field_maybe_none(f"belief_rating_{i}") or ""
+        for i, belief in enumerate(generated):
+            # Try to load previous ratings if available
+            stored_ratings_raw = player.field_maybe_none('generated_nodes_ratings') or '[]'
+            try:
+                stored_ratings = json.loads(stored_ratings_raw)
+            except (TypeError, json.JSONDecodeError):
+                stored_ratings = []
+
+            rating = ''
+            if i < len(stored_ratings):
+                rating = stored_ratings[i].get("rating", "")
+
             rating_items.append({
                 "index": i,
-                "belief": belief['belief'],
+                "belief": belief,
                 "rating": str(rating)
             })
 
@@ -617,15 +623,22 @@ class BeliefAccuracyRating(Page):
 
     @staticmethod
     def error_message(player, values):
-        revised = json.loads(player.final_nodes)
-        for i, item in enumerate(revised):
-            rating = values.get(f"belief_rating_{i}", "")
-            item['rating'] = rating
-        player.final_nodes = json.dumps(revised)
+        generated_raw = player.generated_nodes or '[]'
+        generated = json.loads(generated_raw)
 
-        for item in revised:
-            if not item['rating']:
+        ratings_to_store = []
+
+        for i, belief in enumerate(generated):
+            rating = values.get(f"belief_rating_{i}", "")
+            if not rating:
                 return "Please rate all beliefs before continuing."
+            ratings_to_store.append({
+                "belief": belief,
+                "rating": rating
+            })
+
+        # Store ratings as JSON
+        player.generated_nodes_ratings = json.dumps(ratings_to_store)
 
     @staticmethod
     def before_next_page(player, timeout_happened):
@@ -914,11 +927,11 @@ class MotivationBehaviorMapping(Page):
 
 # page sequence 
 page_sequence = [
-    SocialCircleDistribution,
-    AttentionPage,
-    Introduction, 
-    MeatScale,
-    Demographics,
+    # SocialCircleDistribution,--> put in again
+    # AttentionPage, --> put in again
+    # Introduction, --> put in again
+    # MeatScale, --> put in again
+    # Demographics, --> put in again
     # QUESTIONS 
     Question1, 
     Question2, 
@@ -929,8 +942,8 @@ page_sequence = [
     #RatePersonalBehavior,
     #AccuracyPersonalBehavior, # I mean of course looks terrible right now
     #MotivationBehaviorMapping,
-    LLMReviewRevise,
     BeliefAccuracyRating,
+    LLMReviewRevise,
     #LLMReviewRevise,
     #LLMAddBeliefs, # Need to figure out whether this would be on each page 
     # PLACEMENT 

@@ -58,7 +58,34 @@
 
 {% block content %}
 <h2>Evaluate Summaries of Meat Eating Behaviors and Motivations</h2>
-<p>Please rate how accurately each statement reflects what you wrote in the interview:</p>
+<p>Please rate how accurately each statement reflects what you wrote in the interview on a scale from 1 (Not accurate at all) to 7 (Very accurate). You can toggle the blue button below to check what you answered in the interview.</p>
+
+
+<!-- Transcript toggle button -->
+<button type="button" id="toggle-transcript" style="
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 1rem;">
+    Show transcript
+</button>
+
+<div id="transcript-container" style="display: none; margin-bottom: 1rem; border: 1px solid #ccc; padding: 1rem; border-radius: 5px; background-color: #f9f9f9;">
+    <h3>Interview transcript</h3>
+    <ul style="list-style-type: none; padding: 0;">
+    {% for pair in transcript %}
+        <li style="margin-bottom: 1rem;">
+            <strong>Q:</strong> {{ pair.question }}<br>
+            <strong>A:</strong> {{ pair.answer }}
+        </li>
+    {% endfor %}
+    </ul>
+</div>
+
 
 <!-- Scale legend above buttons -->
 <div class="scale-header">
@@ -112,5 +139,23 @@
             }
         });
     });
+
+    // Transcript toggle (runs immediately)
+    (function () {
+        const toggleButton = document.getElementById('toggle-transcript');
+        const transcript = document.getElementById('transcript-container');
+
+        if (!toggleButton || !transcript) {
+            console.warn("Transcript toggle elements not found.");
+            return;
+        }
+
+        toggleButton.addEventListener('click', function () {
+            const isHidden = transcript.style.display === 'none' || transcript.style.display === '';
+            transcript.style.display = isHidden ? 'block' : 'none';
+            toggleButton.textContent = isHidden ? 'Hide transcript' : 'Show transcript';
+        });
+    })();
+
 </script>
 {% endblock %}
