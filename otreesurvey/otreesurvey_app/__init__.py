@@ -450,14 +450,14 @@ class LLMGenerate(Page):
 
             llm_nodes = json.loads(llm_nodes.model_dump_json(indent=2))
             llm_nodes = llm_nodes['results']
-            
-            # save this here 
             player.llm_result = json.dumps(llm_nodes)
-
-            # here only the nodes
-            generated_nodes = [x['stance'] for x in llm_nodes]
-            #generated_nodes = [s.replace("I agree with the following: ", "", 1).strip() for s in generated_nodes]
-            player.generated_nodes = json.dumps(generated_nodes)
+            
+            filtered_nodes = [
+                node for node in llm_nodes 
+                if not (node['type'] == 'PERSONAL' and node['category'] == 'BEHAVIOR')
+            ]
+            
+            player.generated_nodes = json.dumps(filtered_nodes)
 
 '''
 class RatePersonalBehavior(Page):
@@ -574,43 +574,30 @@ class BeliefAccuracyRating(Page):
 
     @staticmethod
     def get_form_fields(player):
-        # Always load from generated_nodes
-        generated_raw = player.generated_nodes or '[]'
-        generated = json.loads(generated_raw)
-        fields = []
-        for i in range(len(generated)):
-            fields.append(f"belief_rating_{i}")
-        return fields
+        generated_nodes = json.loads(player.generated_nodes or '[]')
+        return [f"belief_rating_{i}" for i in range(len(generated_nodes))]
 
     @staticmethod
     def vars_for_template(player):
-        generated_raw = player.generated_nodes or '[]'
-        generated = json.loads(generated_raw)
+        generated_nodes = json.loads(player.generated_nodes or '[]')
 
-        # Build interview transcript (unchanged)
         qa_pairs = []
         for i, question in enumerate(C.QUESTIONS):
             fieldname = f'answer{i+1}'
             answer = getattr(player, fieldname, '')
             qa_pairs.append({'question': question, 'answer': answer})
 
-        # Build rating items
-        rating_items = []
-        for i, belief in enumerate(generated):
-            # Try to load previous ratings if available
-            stored_ratings_raw = player.field_maybe_none('generated_nodes_ratings') or '[]'
-            try:
-                stored_ratings = json.loads(stored_ratings_raw)
-            except (TypeError, json.JSONDecodeError):
-                stored_ratings = []
+        stored_ratings = json.loads(player.field_maybe_none('generated_nodes_ratings') or '[]')
 
+        rating_items = []
+        for i, node in enumerate(generated_nodes):
+            stance = node.get("stance", "")
             rating = ''
             if i < len(stored_ratings):
                 rating = stored_ratings[i].get("rating", "")
-
             rating_items.append({
                 "index": i,
-                "belief": belief,
+                "belief": stance,
                 "rating": str(rating)
             })
 
@@ -623,21 +610,19 @@ class BeliefAccuracyRating(Page):
 
     @staticmethod
     def error_message(player, values):
-        generated_raw = player.generated_nodes or '[]'
-        generated = json.loads(generated_raw)
-
+        generated_nodes = json.loads(player.generated_nodes or '[]')
         ratings_to_store = []
 
-        for i, belief in enumerate(generated):
+        for i, node in enumerate(generated_nodes):
+            stance = node.get("stance", "")
             rating = values.get(f"belief_rating_{i}", "")
             if not rating:
                 return "Please rate all beliefs before continuing."
             ratings_to_store.append({
-                "belief": belief,
+                "belief": stance,
                 "rating": rating
             })
 
-        # Store ratings as JSON
         player.generated_nodes_ratings = json.dumps(ratings_to_store)
 
     @staticmethod
@@ -649,13 +634,13 @@ class LLMReviewRevise(Page):
 
     @staticmethod
     def get_form_fields(player):
-        beliefs = json.loads(player.generated_nodes)
+        generated_nodes = json.loads(player.generated_nodes or '[]')
         revised = json.loads(player.field_maybe_none('revised_beliefs') or '[]')
 
         if not revised:
             revised = [
-                {"belief": b, "user_action": "", "text_field": ""}
-                for b in beliefs
+                {"belief": node['stance'], "user_action": "", "text_field": ""}
+                for node in generated_nodes
             ]
             player.revised_beliefs = json.dumps(revised)
 
@@ -668,17 +653,18 @@ class LLMReviewRevise(Page):
 
     @staticmethod
     def vars_for_template(player):
-        beliefs = json.loads(player.generated_nodes)
+        generated_nodes = json.loads(player.generated_nodes or '[]')
+
+        # Initialize revised if needed
         try:
             revised = json.loads(player.revised_beliefs)
         except (TypeError, json.JSONDecodeError):
             revised = [
-                {"belief": b, "user_action": "", "text_field": ""}
-                for b in beliefs
+                {"belief": node['stance'], "user_action": "", "text_field": ""}
+                for node in generated_nodes
             ]
             player.revised_beliefs = json.dumps(revised)
 
-        # Build interview transcript
         qa_pairs = []
         for i, question in enumerate(C.QUESTIONS):
             fieldname = f'answer{i+1}'
@@ -717,7 +703,6 @@ class LLMReviewRevise(Page):
 
     @staticmethod
     def before_next_page(player, timeout_happened):
-        # Create final_nodes automatically after revision complete
         revised = json.loads(player.revised_beliefs)
         filtered = []
         for item in revised:
@@ -726,6 +711,7 @@ class LLMReviewRevise(Page):
             elif item['user_action'] == 'MODIFY' and item['text_field'].strip():
                 filtered.append({'text': item['text_field'].strip()})
         player.final_nodes = json.dumps(filtered)
+
 
 
 '''
