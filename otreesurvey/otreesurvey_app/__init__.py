@@ -38,8 +38,8 @@ class C(BaseConstants):
     QUESTIONS = [
         "Please describe your dietary pattern, specifically your meat eating habits. Think about what you would consume in a typical week",
         "Are there any personal motivations that you have to eat or not to eat meat? Feel free to write about anything that comes to mind",
-        "Think about the people you interact with on a regular basis and whose opinions are important to you. What are their meat eating habits?",
-        "Think about the people you interact with on a regular basis and whose opinions are important to you. What are their motivations to eat or to avoid eating meat?"
+        "Think about the people you interact with on a regular basis and whose opinions and meat eating habits are important to you. What are their meat eating habits?",
+        "Think about the people you interact with on a regular basis and whose opinions and meat eating habits are important to you. What are their motivations to eat or to avoid eating meat?"
         #"What are some things that come to mind when you think about meat eating? What are your thoughts, feelings, or concerns about meat consumption?",
         #"Are there any personal motivations that you have to eat or not eat meat? Feel free to write about anything that comes to mind",
         #"Think about the people you interact with on a regular basis and whose opinions are important to you. What are their motivations to eat or avoid meat?",
@@ -254,7 +254,6 @@ class Player(BasePlayer):
     )
     
     # attention
-
     attention_personal_behaviors = models.IntegerField(
         label="How much attention do you pay to your own meat eating habits?",
         choices=[1, 2, 3, 4, 5, 6, 7],
@@ -281,37 +280,13 @@ class Player(BasePlayer):
         widget=widgets.RadioSelectHorizontal
     )
     
-    '''
-    ## rate personal behavior, personal motivations, social behavior, social motivations? ## 
-    personal_behavior_accurate = models.IntegerField(
-        label="How accurately do the following statements summarize the personal behaviors you described in the interview?",
-        choices=[[1, "Not at all"], [2, "Slightly"], [3, "Moderately"], [4, "Very well"], [5, "Extremely well"]],
-        widget=widgets.RadioSelectHorizontal
-    )
-
-    personal_behavior_describe = models.IntegerField(
-        label="How well overall do you feel that the following statements describe your meat eating habits?",
-        choices=[[1, "Not at all"], [2, "Slightly"], [3, "Moderately"], [4, "Very well"], [5, "Extremely well"]],
-        widget=widgets.RadioSelectHorizontal
-    )
-
-    personal_behavior_comments = models.LongStringField(
-        blank=True,
-        label="If there is anything you feel is not accurately captured in these statements, please describe it here (optional):"
-    )
-    
-    node_accuracy_ratings = models.LongStringField(blank=True)
-    '''
-    
     social_circle_distribution = models.LongStringField(blank=True)
-    #belief_accuracy_ratings = models.LongStringField(blank=True)
 
 for i in range(C.MAX_NODES):
     setattr(Player, f"belief_rating_{i}", models.StringField(blank=True))
     setattr(Player, f"node_choice_{i}", models.StringField(blank=True))
     setattr(Player, f"node_modify_text_{i}", models.StringField(blank=True))
     setattr(Player, f"node_reject_reason_{i}", models.StringField(blank=True))
-    #setattr(Player, f"LLM_proposed_{i}", models.StringField(blank=True))
     setattr(Player, f"LLM_codings_{i}", models.StringField(blank=True))
     setattr(Player, f"LLM_accepted_{i}", models.StringField(blank=True))
     setattr(Player, f"Human_nodes_{i}", models.StringField(blank=True))
@@ -967,16 +942,15 @@ class MotivationBehaviorMapping(Page):
 
 # page sequence 
 page_sequence = [
-    # SocialCircleDistribution,--> put in again
-    # AttentionPage, --> put in again
-    # Introduction, --> put in again
-    # MeatScale, --> put in again
-    # Demographics, --> put in again
+    Introduction,
     # QUESTIONS 
     Question1, 
     Question2, 
     Question3, 
     Question4,
+    # WEIRD THAT THESE ARE BEFORE LLM THINGS?
+    MeatScale,
+    SocialCircleDistribution,
     # GENERATE + SELECT BELIEFS 
     LLMGenerate,
     #RatePersonalBehavior,
@@ -998,6 +972,8 @@ page_sequence = [
     # FaceValidity, 
     # DEMOGRAPHICS 
     NetworkReflection,
+    #SocialCircleDistribution,
+    AttentionPage,
     # PolicyQuestionnaire,
     Demographics, 
     Results
