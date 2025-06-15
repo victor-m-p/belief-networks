@@ -1,0 +1,77 @@
+{% extends "global/Page.html" %}
+
+{% block content %}
+<h2>Evaluate Influence Between Pairs of Statements</h2>
+
+<p>Please evaluate whether there is an influence between the following statement pairs. 
+If you indicate an influence, also judge the strength of this influence.</p>
+
+<!-- Pair 1 -->
+<p><strong>Pair 1:</strong></p>
+
+<div style="display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+    <div style="width: 200px; text-align: center;">
+        {{ pair_1.0 }}
+    </div>
+
+    <div style="width: 200px; text-align: center;">
+        {{ pair_1.1 }}
+    </div>
+</div>
+
+<p><strong>Influence type:</strong></p>
+{{ formfield 'edge_influence_type_1' }}
+
+<div id="strength_section_1" style="display:none; margin-top:10px;">
+    <p><strong>Influence strength (0-100):</strong></p>
+    {{ formfield 'edge_influence_strength_1' }}
+</div>
+
+<hr>
+
+<!-- Pair 2 -->
+<p><strong>Pair 2:</strong></p>
+
+<div style="display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+    <div style="width: 200px; text-align: center;">
+        {{ pair_2.0 }}
+    </div>
+
+    <div style="width: 200px; text-align: center;">
+        {{ pair_2.1 }}
+    </div>
+</div>
+
+<p><strong>Influence type:</strong></p>
+{{ formfield 'edge_influence_type_2' }}
+
+<div id="strength_section_2" style="display:none; margin-top:10px;">
+    <p><strong>Influence strength (0-100):</strong></p>
+    {{ formfield 'edge_influence_strength_2' }}
+</div>
+
+{{ next_button }}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    function toggleStrength(sectionId, inputName) {
+        const radios = document.getElementsByName(inputName);
+        radios.forEach(radio => {
+            radio.addEventListener("change", function() {
+                if (this.value === "1" || this.value === "2") {
+                    document.getElementById(sectionId).style.display = "block";
+                } else {
+                    document.getElementById(sectionId).style.display = "none";
+                    document.querySelector(`#${sectionId} input`).value = "";
+                }
+            });
+        });
+    }
+
+    toggleStrength("strength_section_1", "edge_influence_type_1");
+    toggleStrength("strength_section_2", "edge_influence_type_2");
+});
+</script>
+{% endblock %}

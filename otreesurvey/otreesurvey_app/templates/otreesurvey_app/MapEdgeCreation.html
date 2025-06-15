@@ -2,14 +2,15 @@
 
 {% block content %}
 <h2>Create Connections Between Items</h2>
-<p style="margin-bottom: 0.5em;">You can now draw connections between items. Click one circle, then another, to toggle a connection.</p>
-<p style="margin-bottom: 0.5em;"><strong>Draw arrows between things that you feel are either positively or negatively connected to each other.</strong></p>
+<p style="margin-bottom: 0.5em;">You can now draw connections between the statements. Click one circle, then another, to toggle a connection.</p>
+<p style="margin-bottom: 0.5em;">Your task is to draw connections betweens all things that influence each other, either positively or negatively</p>
+<p style="margin-bottom: 0.5em;">Some things might influence each other strongly or not so strongly. Think: "if one of these things changed how much would it affect the other thing" when choosing the connecting strength.</p>
 <p style="margin-bottom: 0.5em;">If you create a connection by mistake, you can remove it again by clicking one circle and then the other.</p>
-<p style="margin-bottom: 0.5em;">You are still allowed to drag circles to reposition them.</p>
+<p style="margin-bottom: 0.5em;">You are still allowed to drag circles around the square to reposition them.</p>
 
 <canvas id="dragCanvas" width="900" height="600" style="border:1px solid black;"></canvas>
 
-<div id="edgeSelectionPanel" style="display:none; position: absolute; left: 965px; top: 280px; background: #f9f9f9; border: 1px solid #ccc; padding: 20px;">
+<div id="edgeSelectionPanel" style="display:none; position: absolute; left: 965px; top: 330px; background: #f9f9f9; border: 1px solid #ccc; padding: 20px;">
     <p style="font-weight: bold; margin-bottom: 10px;">Choose edge type:</p>
     <button id="selectPositive" type="button" style="background-color: green; color: white; padding: 10px 20px; font-size: 16px; margin-right: 10px;">Positive</button>
     <button id="selectNegative" type="button" style="background-color: red; color: white; padding: 10px 20px; font-size: 16px;">Negative</button>

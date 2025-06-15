@@ -1,13 +1,43 @@
 {{ block content }}
-<h3>Please evaluate the following pairs of beliefs in terms of importance.</h3>
+<h2>Evaluate Pairs of Statements</h2>
 
+<p>Please evaluate the following statement pairs and judge the relative influence on your meat eating behavior. The influence can be either positive or negative.</p>
+
+<p>Use the scale below where 1 means the statement on the left has all the influence, 4 means equal influence, and 7 means the statement on the right has all the influence.</p>
+
+<!-- Pair 1 -->
 <p><strong>Pair 1:</strong></p>
-<p>{{ pair_1.0 }} <span style="padding: 0 20px;">vs</span> {{ pair_1.1 }}</p>
-{{ formfield 'importance_pair_1' }}
 
+<div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+    <div style="width: 200px; text-align: center;">
+        {{ pair_1.0 }}<br><small>(all influence)</small>
+    </div>
+
+    <div style="margin: 0 20px;">
+        {{ formfield 'importance_pair_1' }}
+    </div>
+
+    <div style="width: 200px; text-align: center;">
+        {{ pair_1.1 }}<br><small>(all influence)</small>
+    </div>
+</div>
+
+<!-- Pair 2 -->
 <p><strong>Pair 2:</strong></p>
-<p>{{ pair_2.0 }} <span style="padding: 0 20px;">vs</span> {{ pair_2.1 }}</p>
-{{ formfield 'importance_pair_2' }}
+
+<div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+    <div style="width: 200px; text-align: center;">
+        {{ pair_2.0 }}<br><small>(all influence)</small>
+    </div>
+
+    <div style="margin: 0 20px;">
+        {{ formfield 'importance_pair_2' }}
+    </div>
+
+    <div style="width: 200px; text-align: center;">
+        {{ pair_2.1 }}<br><small>(all influence)</small>
+    </div>
+</div>
 
 {{ next_button }}
 {{ endblock }}

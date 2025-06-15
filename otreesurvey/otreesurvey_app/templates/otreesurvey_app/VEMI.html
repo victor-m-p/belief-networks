@@ -1,0 +1,27 @@
+{% extends "global/Page.html" %}
+
+{% block content %}
+<h2>Vegetarian Motives Inventory (VEMI)</h2>
+
+<p>Please rate the importance of each of the following reasons for you to eat less meat or animal products. Please rate these items even if you don’t intend to change your diet.</p>
+
+<p><strong>Scale:</strong> 1 = Not important, 4 = Moderately important, 7 = Very important</p>
+
+{{ formfield 'vemi_1' }}
+{{ formfield 'vemi_2' }}
+{{ formfield 'vemi_3' }}
+{{ formfield 'vemi_4' }}
+{{ formfield 'vemi_5' }}
+{{ formfield 'vemi_6' }}
+{{ formfield 'vemi_7' }}
+{{ formfield 'vemi_8' }}
+{{ formfield 'vemi_9' }}
+{{ formfield 'vemi_10' }}
+{{ formfield 'vemi_11' }}
+{{ formfield 'vemi_12' }}
+{{ formfield 'vemi_13' }}
+{{ formfield 'vemi_14' }}
+{{ formfield 'vemi_15' }}
+
+{{ next_button }}
+{% endblock %}

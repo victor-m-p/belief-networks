@@ -55,7 +55,7 @@ class Subsession(BaseSubsession):
 class Group(BaseGroup):
     pass
 
-
+'''
 def make_field(label):
     return models.StringField(
         choices=C.LIKERT5_string,
@@ -69,10 +69,7 @@ def make_slider(label):
         label=label,
         widget=widgets.RadioSelectHorizontal,
     )
-
-def define_friend(label):
-    return  models.LongStringField(label=label)
-
+'''
 
 # helper function
 def get_filtered_nodes(player, type_filter, category_filter):
@@ -209,9 +206,9 @@ class Player(BasePlayer):
     
     # Plausibility check (not implemented yet)
     importance_pair_1 = models.IntegerField(
-    label="",
-    choices=[1, 2, 3, 4, 5, 6, 7],
-    widget=widgets.RadioSelectHorizontal
+        label="",
+        choices=[1, 2, 3, 4, 5, 6, 7],
+        widget=widgets.RadioSelectHorizontal
     )
     importance_pair_2 = models.IntegerField(
         label="",
@@ -249,7 +246,7 @@ class Player(BasePlayer):
     )
 
     network_reflection_text = models.LongStringField(
-        label="Please share your thoughts about the network representation of your beliefs above. Does it make sense for you to think about your beliefs in this way or does it feel weird? Are there any connections or beliefs that feel especially meaningful or maybe surprising?",
+        label="Please share your thoughts about the network representation above. Does it make sense for you to think about your motivations and habits in this way or does it feel weird? Are there any connections, motivations, or habits that feel especially meaningful or maybe surprising?",
         blank=True
     )
     
@@ -281,6 +278,59 @@ class Player(BasePlayer):
     )
     
     social_circle_distribution = models.LongStringField(blank=True)
+    
+    ### plausibility edges ### 
+    # Pair data storage (assuming you generate pairs like before)
+    plausibility_edge_pairs_data = models.LongStringField()
+
+    # For Pair 1:
+    edge_influence_type_1 = models.IntegerField(
+        choices=[
+            (0, 'No influence'),
+            (1, 'Positive influence'),
+            (2, 'Negative influence')
+        ],
+        label="",
+        widget=widgets.RadioSelect
+    )
+    edge_influence_strength_1 = models.IntegerField(
+        min=0, max=100,
+        label="Influence strength (0-100)",
+        blank=True
+    )
+
+    # For Pair 2:
+    edge_influence_type_2 = models.IntegerField(
+        choices=[
+            (0, 'No influence'),
+            (1, 'Positive influence'),
+            (2, 'Negative influence')
+        ],
+        label="",
+        widget=widgets.RadioSelect
+    )
+    edge_influence_strength_2 = models.IntegerField(
+        min=0, max=100,
+        label="Influence strength (0-100)",
+        blank=True
+    )
+    
+    ### VEMI ### 
+    vemi_1 = models.IntegerField(label="I want to be healthy", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_2 = models.IntegerField(label="Plant-based diets are better for the environment", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_3 = models.IntegerField(label="Animals do not have to suffer", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_4 = models.IntegerField(label="Animals’ rights are respected", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_5 = models.IntegerField(label="I want to live a long time", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_6 = models.IntegerField(label="Plant-based diets are more sustainable", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_7 = models.IntegerField(label="I care about my body", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_8 = models.IntegerField(label="Eating meat is bad for the planet", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_9 = models.IntegerField(label="Animal rights are important to me", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_10 = models.IntegerField(label="Plant-based diets are environmentally-friendly", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_11 = models.IntegerField(label="It does not seem right to exploit animals", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_12 = models.IntegerField(label="Plants have less of an impact on the environment than animal products", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_13 = models.IntegerField(label="I am concerned about animal rights", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_14 = models.IntegerField(label="My health is important to me", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_15 = models.IntegerField(label="I don’t want animals to suffer", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
 
 for i in range(C.MAX_NODES):
     setattr(Player, f"belief_rating_{i}", models.StringField(blank=True))
@@ -888,6 +938,40 @@ class PlausibilityImportance(Page):
 
         return dict(pair_1=pair_1, pair_2=pair_2)
 
+class PlausibilityEdges(Page):
+    form_model = 'player'
+    form_fields = [
+        'edge_influence_type_1', 'edge_influence_strength_1',
+        'edge_influence_type_2', 'edge_influence_strength_2'
+    ]
+
+    @staticmethod
+    def vars_for_template(player):
+        # You can adapt this depending on how you store nodes
+        all_nodes = json.loads(player.positions_3)
+        labels = [node['label'] for node in all_nodes]
+        random.shuffle(labels)
+        chosen = labels[:4]
+
+        pair_1 = (chosen[0], chosen[1])
+        pair_2 = (chosen[2], chosen[3])
+
+        # Save for record keeping
+        player.plausibility_edge_pairs_data = json.dumps({
+            "pair_1": pair_1,
+            "pair_2": pair_2
+        })
+
+        return dict(pair_1=pair_1, pair_2=pair_2)
+
+class VEMI(Page):
+    form_model = 'player'
+    form_fields = [
+        'vemi_1', 'vemi_2', 'vemi_3', 'vemi_4', 'vemi_5',
+        'vemi_6', 'vemi_7', 'vemi_8', 'vemi_9', 'vemi_10',
+        'vemi_11', 'vemi_12', 'vemi_13', 'vemi_14', 'vemi_15'
+    ]
+
 class PolicyQuestionnaire(Page):
     form_model = 'player'
     form_fields = ['policy_1', 'policy_2', 'policy_3']
@@ -953,28 +1037,21 @@ page_sequence = [
     SocialCircleDistribution,
     # GENERATE + SELECT BELIEFS 
     LLMGenerate,
-    #RatePersonalBehavior,
-    #AccuracyPersonalBehavior, # I mean of course looks terrible right now
-    #MotivationBehaviorMapping,
     BeliefAccuracyRating,
     LLMReviewRevise,
-    #LLMReviewRevise,
-    #LLMAddBeliefs, # Need to figure out whether this would be on each page 
-    # PLACEMENT 
+    # PLACEMENT + EDGES + IMPORTANCE
     MapNodePlacement,
     MapEdgeCreation,
     MapImportance,
-    # PLAUSIBILITY 
-    # PlausibilityImportance,
-    # PlausibilityPosition, 
-    # PlausibilityEdges
-    # Face Validity 
-    # FaceValidity, 
-    # DEMOGRAPHICS 
     NetworkReflection,
-    #SocialCircleDistribution,
+    # PLAUSIBILITY
+    PlausibilityImportance,
+    PlausibilityEdges,
+    # OTHER 
+    # Policy Questionnaire 
+    VEMI,
     AttentionPage,
-    # PolicyQuestionnaire,
     Demographics, 
+    # The page with social influence on personal beliefs # 
     Results
 ]
