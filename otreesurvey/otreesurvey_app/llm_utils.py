@@ -73,7 +73,7 @@ Analyze the interview transcript provided and clearly extract attitudes (beliefs
 For each category the following rules apply:
 - Each attitude or behavior must be concise and MAXIMUM 8 words.
 - Each attitude or behavior must be a complete sentence.
-- Each attitide or behavior must be a single thing, not a list of things (avoid "and" or "or").
+- Each attitude or behavior must be a single thing, not a list of things (avoid "and" or "or").
 - EXAMPLES: "I am concerned about animal welfare and climate change" is not allowed, but "I am concerned about animal welfare" and "I am concerned about climate change" are allowed.
 
 5. Rate importance for each node:
