@@ -1,5 +1,13 @@
 {% extends "global/Page.html" %}
 
+{% block styles %}
+<style>
+    canvas {
+        border: 2px solid black;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <h2>Reflection on Your Network of Meat Eating Motivations and Habits</h2>
 <p>This is the final version of your meat eating network. We would appreciate it if you took a second to consider how well this captures the most reasons for your current meat eating habits.</p>
@@ -9,63 +17,72 @@
 <hr>
 
 {{ formfields }}
-
 {{ next_button }}
 
 <script>
+const beliefPoints = {{ belief_points|safe }};
+const beliefEdges = {{ belief_edges|safe }};
+
 document.addEventListener("DOMContentLoaded", function () {
     const canvas = document.getElementById("dragCanvas");
     const ctx = canvas.getContext("2d");
-    const labelDisplay = "always";
 
+    // Reconstruct points: central node + belief nodes
     const points = [
-        {% for point in belief_points %}
-            { label: "{{ point.label }}", x: {{ point.x }}, y: {{ point.y }}, radius: {{ point.radius }} },
-        {% endfor %}
+        { label: "Meat Eating", x: canvas.width/2, y: canvas.height/2, radius: 20, fixed: true },
+        ...beliefPoints.filter(p => p.label !== "Meat Eating").map(p => ({
+            label: p.label, x: p.x, y: p.y, radius: p.radius
+        }))
     ];
 
-    const edges = [
-        {% for edge in belief_edges %}
-            { fromLabel: "{{ edge.from }}", toLabel: "{{ edge.to }}", polarity: "{{ edge.polarity }}" },
-        {% endfor %}
-    ];
-
-    function resolveEdges() {
-        return edges.map(edge => {
-            const from = points.find(p => p.label === edge.fromLabel);
-            const to = points.find(p => p.label === edge.toLabel);
-            return { from, to, polarity: edge.polarity };
-        }).filter(e => e.from && e.to);
-    }
+    // Reconstruct edges:
+    const edges = beliefEdges.map(e => {
+        const from = points.find(p => p.label === e.from);
+        const to = points.find(p => p.label === e.to);
+        return { from, to, polarity: e.polarity, strength: e.strength };
+    }).filter(e => e.from && e.to);
 
     function drawCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.strokeStyle = "black";
         ctx.lineWidth = 3;
-        //ctx.strokeRect(0, 0, 600, 600);
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
-        resolveEdges().forEach(edge => {
+        // Draw edges
+        edges.forEach(edge => {
             ctx.beginPath();
             ctx.moveTo(edge.from.x, edge.from.y);
             ctx.lineTo(edge.to.x, edge.to.y);
             ctx.strokeStyle = edge.polarity === "positive" ? "green" : "red";
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1 + (edge.strength / 100) * 9;
             ctx.stroke();
         });
 
+        // Draw nodes
         points.forEach(p => {
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.radius, 0, 2 * Math.PI);
-            ctx.fillStyle = "orange";
+            if (p.label === "Meat Eating") {
+                ctx.fillStyle = "#999999";
+            } else {
+                ctx.fillStyle = "orange";
+            }
             ctx.fill();
             ctx.strokeStyle = "black";
+            ctx.lineWidth = 2;
             ctx.stroke();
 
+            // Draw labels
             ctx.fillStyle = "black";
-            ctx.font = "16px sans-serif";
+            ctx.font = "14px sans-serif";
             ctx.textAlign = "center";
-            ctx.textBaseline = "bottom";
-            ctx.fillText(p.label, p.x, p.y - 22);
+            const lines = p.label.split('\n');
+            const lineHeight = 16;
+            const baseY = p.y - 28;
+            lines.forEach((line, index) => {
+                const y = baseY - (lines.length - index - 1) * lineHeight;
+                ctx.fillText(line, p.x, y);
+            });
         });
     }
 

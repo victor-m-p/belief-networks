@@ -702,24 +702,29 @@ class NetworkReflection(Page):
     form_fields = ['network_reflection_rating', 'network_reflection_text']
 
     @staticmethod
-    def vars_for_template(player):
-        positions = json.loads(player.positions_3 or '[]')
-        raw_edges = json.loads(player.edges_3 or '[]')
+    def vars_for_template(player: Player):
+        final_nodes = json.loads(player.final_nodes or '[]')
+        try:
+            positions = json.loads(player.positions_5 or '[]')
+            prior_edges = json.loads(player.edges_5 or '[]')
+        except (TypeError, json.JSONDecodeError):
+            positions = []
+            prior_edges = []
 
-        # rename (could make this clearner.)
-        edges = []
-        for edge in raw_edges:
-            edges.append({
-                "from": edge["fromLabel"],
-                "to": edge["toLabel"],
-                "polarity": edge["polarity"]
-            })
+        belief_points = []
+        labels = [item['text'] for item in final_nodes]
+        for i, item in enumerate(final_nodes):
+            pos_idx = i + 1
+            x = positions[pos_idx]['x']
+            y = positions[pos_idx]['y']
+            radius = positions[pos_idx]['radius']
+            belief_points.append({"label": item['text'], "x": x, "y": y, "radius": radius})
 
         return dict(
-            belief_points=positions,
-            belief_edges=edges,
-            label_display='always'
+            belief_points=belief_points,
+            belief_edges=prior_edges
         )
+
 
 class PlausibilityImportance(Page):
     form_model = 'player'
@@ -811,7 +816,6 @@ page_sequence = [
     # GENERATE + SELECT BELIEFS 
     LLMGenerate,
     BeliefAccuracyRating,
-    # LLMReviewRevise, --> cut out now.
     # PLACEMENT + EDGES + IMPORTANCE
     MapNodePlacement,
     MapEdgeCreation1,
