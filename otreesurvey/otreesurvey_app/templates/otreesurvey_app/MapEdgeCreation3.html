@@ -1,0 +1,248 @@
+{% extends "global/Page.html" %}
+
+{% block styles %}
+<style>
+    canvas {
+        border: 2px solid black;
+    }
+    .selected-polarity {
+        border: 3px solid black;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>Create Connections Between Items</h2>
+<p>You can now draw connections between the statements. Click one circle, then another, to toggle a connection.</p>
+<p>Your task is to draw connections between all things that influence each other, either positively or negatively.</p>
+<p>Some things might influence each other strongly or not so strongly. Think: "if one of these things changed how much would it affect the other thing" when choosing the connecting strength."</p>
+
+<div id="canvasContainer" style="position: relative; width: 900px; height: 600px;">
+    <canvas id="dragCanvas" width="900" height="600"></canvas>
+
+    <div id="edgeSelectionPanel" style="
+        display: none;
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        background: #f9f9f9;
+        border: 1px solid #ccc;
+        padding: 20px;
+        z-index: 10;
+    ">
+        <p style="font-weight: bold; margin-bottom: 10px;">Choose edge type:</p>
+        <button id="selectPositive" type="button" style="background-color: green; color: white; padding: 10px 20px;">Positive</button>
+        <button id="selectNegative" type="button" style="background-color: red; color: white; padding: 10px 20px;">Negative</button>
+
+        <p style="font-weight: bold; margin-top: 15px;">Select strength:</p>
+        <input id="strengthSlider" type="range" min="1" max="100" value="50" style="width: 100%;">
+        <p id="strengthValue" style="text-align: center;">Strength: 50</p>
+
+        <button id="confirmEdge" type="button" style="background-color: blue; color: white; padding: 10px 20px;">Confirm Edge</button>
+    </div>
+</div>
+
+<input type="hidden" id="positions" name="positions_4">
+<input type="hidden" id="edges" name="edges_4">
+
+{{ next_button }}
+
+<script>
+const beliefLabels = {{ belief_labels_json|safe }};
+const beliefEdges = {{ belief_edges|safe }};
+
+document.addEventListener("DOMContentLoaded", function () {
+    const canvas = document.getElementById("dragCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const points = [
+        { label: "Meat Eating", x: canvas.width/2, y: canvas.height/2, radius: 20, fixed: true },
+        ...beliefLabels.map((label, i) => {
+            const p = {{ belief_points|safe }}[i];
+            return { label: label, x: p.x, y: p.y, radius: p.radius };
+        })
+    ];
+
+    let edges = [...beliefEdges.map(e => ({
+        fromLabel: e.from,
+        toLabel: e.to,
+        polarity: e.polarity,
+        strength: e.strength
+    }))];
+
+    let draggingPoint = null;
+    let maybeDragPoint = null;
+    let selectedPoint = null;
+    let pendingEdge = null;
+    let hoveredPoint = null;
+    let wasDragging = false;
+
+    const strengthSlider = document.getElementById("strengthSlider");
+    const strengthValue = document.getElementById("strengthValue");
+
+    strengthSlider.addEventListener("input", function() {
+        strengthValue.textContent = "Strength: " + strengthSlider.value;
+    });
+
+    function resolveEdges() {
+        return edges.map(edge => {
+            const from = points.find(p => p.label === edge.fromLabel);
+            const to = points.find(p => p.label === edge.toLabel);
+            return { from, to, polarity: edge.polarity, strength: edge.strength };
+        }).filter(e => e.from && e.to);
+    }
+
+    function drawCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+        resolveEdges().forEach(edge => {
+            ctx.beginPath();
+            ctx.moveTo(edge.from.x, edge.from.y);
+            ctx.lineTo(edge.to.x, edge.to.y);
+            ctx.strokeStyle = edge.polarity === "positive" ? "green" : "red";
+            ctx.lineWidth = 1 + (edge.strength / 100) * 9;
+            ctx.stroke();
+        });
+
+        points.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, 2 * Math.PI);
+            if (p.label === "Meat Eating") {
+                ctx.fillStyle = (p === selectedPoint) ? "#777777" : "#999999";
+            } else {
+                ctx.fillStyle = (p === selectedPoint) ? "yellow" : "orange";
+            }
+            ctx.fill();
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = "black";
+            ctx.font = "14px sans-serif";
+            ctx.textAlign = "center";
+            const lines = p.label.split('\n');
+            const lineHeight = 16;
+            const baseY = p.y - 28;
+            lines.forEach((line, index) => {
+                const y = baseY - (lines.length - index - 1) * lineHeight;
+                ctx.fillText(line, p.x, y);
+            });
+        });
+    }
+
+    function getMousePos(evt) {
+        const rect = canvas.getBoundingClientRect();
+        return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
+    }
+
+    function findPoint(pos) {
+        return points.find(p => Math.hypot(p.x - pos.x, p.y - pos.y) <= p.radius);
+    }
+
+    canvas.addEventListener("mousedown", function (evt) {
+        const pos = getMousePos(evt);
+        const hit = findPoint(pos);
+        maybeDragPoint = hit && !hit.fixed ? hit : null;
+        wasDragging = false;
+    });
+
+    canvas.addEventListener("mousemove", function (evt) {
+        const pos = getMousePos(evt);
+        hoveredPoint = findPoint(pos);
+        if (!draggingPoint && maybeDragPoint) {
+            draggingPoint = maybeDragPoint;
+        }
+        if (draggingPoint) {
+            draggingPoint.x = pos.x;
+            draggingPoint.y = pos.y;
+            wasDragging = true;
+        }
+        drawCanvas();
+    });
+
+    canvas.addEventListener("mouseup", function (evt) {
+        const pos = getMousePos(evt);
+        const hit = findPoint(pos);
+        if (!wasDragging && hit) {
+            if (!selectedPoint) {
+                selectedPoint = hit;
+            } else if (selectedPoint !== hit) {
+                const exists = resolveEdges().find(e =>
+                    (e.from === selectedPoint && e.to === hit) || (e.from === hit && e.to === selectedPoint));
+                if (exists) {
+                    edges.splice(edges.findIndex(e =>
+                        (e.fromLabel === exists.from.label && e.toLabel === exists.to.label) ||
+                        (e.fromLabel === exists.to.label && e.toLabel === exists.from.label)
+                    ), 1);
+                } else {
+                    pendingEdge = { fromLabel: selectedPoint.label, toLabel: hit.label };
+                    document.getElementById("edgeSelectionPanel").style.display = "block";
+                    strengthSlider.value = 50;
+                    strengthValue.textContent = "Strength: 50";
+                    document.getElementById("selectPositive").classList.remove("selected-polarity");
+                    document.getElementById("selectNegative").classList.remove("selected-polarity");
+                }
+                selectedPoint = null;
+            } else {
+                selectedPoint = null;
+            }
+        }
+        draggingPoint = null;
+        maybeDragPoint = null;
+        wasDragging = false;
+    });
+
+    document.getElementById("selectPositive").addEventListener("click", () => {
+        if (pendingEdge) {
+            pendingEdge.polarity = "positive";
+            document.getElementById("selectPositive").classList.add("selected-polarity");
+            document.getElementById("selectNegative").classList.remove("selected-polarity");
+        }
+    });
+
+    document.getElementById("selectNegative").addEventListener("click", () => {
+        if (pendingEdge) {
+            pendingEdge.polarity = "negative";
+            document.getElementById("selectNegative").classList.add("selected-polarity");
+            document.getElementById("selectPositive").classList.remove("selected-polarity");
+        }
+    });
+
+    document.getElementById("confirmEdge").addEventListener("click", () => {
+        if (pendingEdge && pendingEdge.polarity) {
+            pendingEdge.strength = parseInt(strengthSlider.value);
+            edges.push(pendingEdge);
+            pendingEdge = null;
+            document.getElementById("edgeSelectionPanel").style.display = "none";
+            document.getElementById("selectPositive").classList.remove("selected-polarity");
+            document.getElementById("selectNegative").classList.remove("selected-polarity");
+            drawCanvas();
+        } else {
+            alert("Please select polarity before confirming.");
+        }
+    });
+
+    function allInsideBox() {
+        return points.every(p => p.x >= 0 && p.x <= canvas.width && p.y >= 0 && p.y <= canvas.height);
+    }
+
+    document.querySelector("button[type=submit], .otree-btn-next").addEventListener("click", function (e) {
+        e.preventDefault();
+
+        if (!allInsideBox()) {
+            alert("Please drag all beliefs into the square before continuing.");
+            return;
+        }
+
+        document.getElementById("positions").value = JSON.stringify(points);
+        document.getElementById("edges").value = JSON.stringify(edges);
+        document.querySelector("form").submit();
+    });
+
+    drawCanvas();
+});
+</script>
+{% endblock %}

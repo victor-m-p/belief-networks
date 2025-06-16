@@ -1,51 +1,67 @@
 {% extends "global/Page.html" %}
 
+{% block styles %}
+<style>
+    canvas {
+        border: 2px solid black;
+    }
+    .selected-polarity {
+        border: 3px solid black;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <h2>Create Connections Between Items</h2>
-<p style="margin-bottom: 0.5em;">You can now draw connections between the statements. Click one circle, then another, to toggle a connection.</p>
-<p style="margin-bottom: 0.5em;">Your task is to draw connections betweens all things that influence each other, either positively or negatively</p>
-<p style="margin-bottom: 0.5em;">Some things might influence each other strongly or not so strongly. Think: "if one of these things changed how much would it affect the other thing" when choosing the connecting strength.</p>
-<p style="margin-bottom: 0.5em;">If you create a connection by mistake, you can remove it again by clicking one circle and then the other.</p>
-<p style="margin-bottom: 0.5em;">You are still allowed to drag circles around the square to reposition them.</p>
+<p>You can now draw connections between the statements. Click one circle, then another, to toggle a connection.</p>
+<p>Your task is to draw connections between all things that influence each other, either positively or negatively.</p>
+<p>Some things might influence each other strongly or not so strongly. Think: "if one of these things changed how much would it affect the other thing" when choosing the connecting strength.</p>
+<p>If you create a connection by mistake, you can remove it again by clicking one circle and then the other.</p>
+<p>You are still allowed to drag circles around the square to reposition them.</p>
 
-<canvas id="dragCanvas" width="900" height="600" style="border:1px solid black;"></canvas>
+<div id="canvasContainer" style="position: relative; width: 900px; height: 600px;">
+    <canvas id="dragCanvas" width="900" height="600"></canvas>
 
-<div id="edgeSelectionPanel" style="display:none; position: absolute; left: 965px; top: 330px; background: #f9f9f9; border: 1px solid #ccc; padding: 20px;">
-    <p style="font-weight: bold; margin-bottom: 10px;">Choose edge type:</p>
-    <button id="selectPositive" type="button" style="background-color: green; color: white; padding: 10px 20px; font-size: 16px; margin-right: 10px;">Positive</button>
-    <button id="selectNegative" type="button" style="background-color: red; color: white; padding: 10px 20px; font-size: 16px;">Negative</button>
+    <div id="edgeSelectionPanel" style="
+        display: none;
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        background: #f9f9f9;
+        border: 1px solid #ccc;
+        padding: 20px;
+        z-index: 10;
+    ">
+        <p style="font-weight: bold; margin-bottom: 10px;">Choose edge type:</p>
+        <button id="selectPositive" type="button" style="background-color: green; color: white; padding: 10px 20px;">Positive</button>
+        <button id="selectNegative" type="button" style="background-color: red; color: white; padding: 10px 20px;">Negative</button>
 
-    <p style="font-weight: bold; margin-top: 15px; margin-bottom: 5px;">Select strength:</p>
-    <input id="strengthSlider" type="range" min="1" max="100" value="50" style="width: 100%;">
-    <p id="strengthValue" style="text-align: center; margin: 5px 0;">Strength: 50</p>
+        <p style="font-weight: bold; margin-top: 15px;">Select strength:</p>
+        <input id="strengthSlider" type="range" min="1" max="100" value="50" style="width: 100%;">
+        <p id="strengthValue" style="text-align: center;">Strength: 50</p>
 
-    <button id="confirmEdge" type="button" style="background-color: blue; color: white; padding: 10px 20px; font-size: 16px; margin-top: 10px;">Confirm Edge</button>
+        <button id="confirmEdge" type="button" style="background-color: blue; color: white; padding: 10px 20px;">Confirm Edge</button>
+    </div>
 </div>
 
 <input type="hidden" id="positions" name="positions_2">
 <input type="hidden" id="edges" name="edges_2">
 
-{{ formfield_errors 'positions_2' }}
-{{ formfield_errors 'edges_2' }}
 {{ next_button }}
 
-<style>
-.selected-polarity {
-    border: 3px solid black;
-}
-</style>
-
 <script>
+const beliefLabels = {{ belief_labels_json|safe }};
+
 document.addEventListener("DOMContentLoaded", function () {
     const canvas = document.getElementById("dragCanvas");
     const ctx = canvas.getContext("2d");
-    const labelDisplay = "{{ label_display }}";
 
     const points = [
-        { label: "Meat Eating Behavior", x: 300, y: 300, radius: 20, fixed: true },
-        {% for point in belief_points %}
-            { label: "{{ point.label }}", x: {{ point.x }}, y: {{ point.y }}, radius: {{ point.radius }} },
-        {% endfor %}
+        { label: "Meat Eating", x: canvas.width/2, y: canvas.height/2, radius: 20, fixed: true },
+        ...beliefLabels.map((label, i) => {
+            const p = {{ belief_points|safe }}[i];
+            return { label: label, x: p.x, y: p.y, radius: p.radius };
+        })
     ];
 
     let draggingPoint = null;
@@ -66,15 +82,13 @@ document.addEventListener("DOMContentLoaded", function () {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.strokeStyle = "black";
         ctx.lineWidth = 3;
-        ctx.strokeRect(0, 0, 600, 600);
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
         edges.forEach(edge => {
             ctx.beginPath();
             ctx.moveTo(edge.from.x, edge.from.y);
             ctx.lineTo(edge.to.x, edge.to.y);
             ctx.strokeStyle = edge.polarity === "positive" ? "green" : "red";
-
-            // Map strength 1-100 to line width between 1 and 10 pixels
             ctx.lineWidth = 1 + (edge.strength / 100) * 9;
             ctx.stroke();
         });
@@ -82,64 +96,81 @@ document.addEventListener("DOMContentLoaded", function () {
         points.forEach(p => {
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.radius, 0, 2 * Math.PI);
-            ctx.fillStyle = p === selectedPoint ? "yellow" : "orange";
+
+            if (p.label === "Meat Eating") {
+                ctx.fillStyle = (p === selectedPoint) ? "#777777" : "#999999";
+            } else {
+                ctx.fillStyle = (p === selectedPoint) ? "yellow" : "orange";
+            }
+
             ctx.fill();
             ctx.strokeStyle = "black";
-            ctx.lineWidth = 2;  // reset line width for nodes
+            ctx.lineWidth = 2;
             ctx.stroke();
 
-            if (labelDisplay === "always" || p === hoveredPoint) {
-                ctx.fillStyle = "black";
-                ctx.font = "16px sans-serif";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "bottom";
-                ctx.fillText(p.label, p.x, p.y - 22);
-            }
+            ctx.fillStyle = "black";
+            ctx.font = "14px sans-serif";
+            ctx.textAlign = "center";
+            const lines = p.label.split('\n');
+            const lineHeight = 16;
+            const baseY = p.y - 28;
+            lines.forEach((line, index) => {
+                const y = baseY - (lines.length - index - 1) * lineHeight;
+                ctx.fillText(line, p.x, y);
+            });
         });
     }
 
     function getMousePos(evt) {
         const rect = canvas.getBoundingClientRect();
-        return {
-            x: evt.clientX - rect.left,
-            y: evt.clientY - rect.top
-        };
+        return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
     }
 
     function findPoint(pos) {
         return points.find(p => Math.hypot(p.x - pos.x, p.y - pos.y) <= p.radius);
     }
 
+    let maybeDragPoint = null;
+
     canvas.addEventListener("mousedown", function (evt) {
-        const mousePos = getMousePos(evt);
-        const hit = findPoint(mousePos);
-        if (hit && !hit.fixed) draggingPoint = hit;
+        const pos = getMousePos(evt);
+        const hit = findPoint(pos);
+        maybeDragPoint = hit && !hit.fixed ? hit : null;
         wasDragging = false;
     });
 
     canvas.addEventListener("mousemove", function (evt) {
-        const mousePos = getMousePos(evt);
-        hoveredPoint = findPoint(mousePos);
+        const pos = getMousePos(evt);
+        hoveredPoint = findPoint(pos);
+        if (!draggingPoint && maybeDragPoint) {
+            draggingPoint = maybeDragPoint;  // assign only when movement starts
+        }
         if (draggingPoint) {
-            draggingPoint.x = mousePos.x;
-            draggingPoint.y = mousePos.y;
+            draggingPoint.x = pos.x;
+            draggingPoint.y = pos.y;
             wasDragging = true;
         }
         drawCanvas();
     });
 
     canvas.addEventListener("mouseup", function (evt) {
-        const mousePos = getMousePos(evt);
-        const hit = findPoint(mousePos);
-    
+        const pos = getMousePos(evt);
+        const hit = findPoint(pos);
+
         if (!wasDragging && hit) {
             if (!selectedPoint) {
                 selectedPoint = hit;
             } else if (selectedPoint !== hit) {
-                const exists = edges.find(edge =>
-                    (edge.from === selectedPoint && edge.to === hit) ||
-                    (edge.from === hit && edge.to === selectedPoint)
-                );
+                const centralNodeLabel = "Meat Eating";
+                const isCentralInvolved = (selectedPoint.label === centralNodeLabel || hit.label === centralNodeLabel);
+                if (!isCentralInvolved) {
+                    selectedPoint = null;
+                    maybeDragPoint = null;   // <=== THIS IS THE MISSING LINE
+                    return;
+                }
+
+                const exists = edges.find(e =>
+                    (e.from === selectedPoint && e.to === hit) || (e.from === hit && e.to === selectedPoint));
                 if (exists) {
                     edges.splice(edges.indexOf(exists), 1);
                 } else {
@@ -147,8 +178,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     document.getElementById("edgeSelectionPanel").style.display = "block";
                     strengthSlider.value = 50;
                     strengthValue.textContent = "Strength: 50";
-
-                    // Clear previous polarity selection
                     document.getElementById("selectPositive").classList.remove("selected-polarity");
                     document.getElementById("selectNegative").classList.remove("selected-polarity");
                 }
@@ -157,12 +186,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 selectedPoint = null;
             }
         }
-    
+
         draggingPoint = null;
+        maybeDragPoint = null;
         wasDragging = false;
     });
 
-    document.getElementById("selectPositive").addEventListener("click", function () {
+
+
+    document.getElementById("selectPositive").addEventListener("click", () => {
         if (pendingEdge) {
             pendingEdge.polarity = "positive";
             document.getElementById("selectPositive").classList.add("selected-polarity");
@@ -170,7 +202,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    document.getElementById("selectNegative").addEventListener("click", function () {
+    document.getElementById("selectNegative").addEventListener("click", () => {
         if (pendingEdge) {
             pendingEdge.polarity = "negative";
             document.getElementById("selectNegative").classList.add("selected-polarity");
@@ -178,16 +210,14 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    document.getElementById("confirmEdge").addEventListener("click", function () {
+    document.getElementById("confirmEdge").addEventListener("click", () => {
         if (pendingEdge && pendingEdge.polarity) {
             pendingEdge.strength = parseInt(strengthSlider.value);
             edges.push(pendingEdge);
             pendingEdge = null;
             document.getElementById("edgeSelectionPanel").style.display = "none";
-
             document.getElementById("selectPositive").classList.remove("selected-polarity");
             document.getElementById("selectNegative").classList.remove("selected-polarity");
-
             drawCanvas();
         } else {
             alert("Please select polarity before confirming.");
@@ -195,25 +225,22 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     function allInsideBox() {
-        return points.every(p => p.x >= 0 && p.x <= 600 && p.y >= 0 && p.y <= 600);
+        return points.every(p => p.x >= 0 && p.x <= canvas.width && p.y >= 0 && p.y <= canvas.height);
     }
 
-    const form = document.querySelector("form");
-    const nextButton = document.querySelector("button[type=submit], .otree-btn-next");
-
-    nextButton.addEventListener("click", function (e) {
+    document.querySelector("button[type=submit], .otree-btn-next").addEventListener("click", function (e) {
         e.preventDefault();
-    
+
         if (!allInsideBox()) {
             alert("Please drag all beliefs into the square before continuing.");
             return;
         }
-    
+
         if (edges.length < 1) {
-            alert("Please create at least one connection between beliefs before continuing.");
+            alert("Please create at least one connection before continuing.");
             return;
         }
-    
+
         document.getElementById("positions").value = JSON.stringify(points);
         document.getElementById("edges").value = JSON.stringify(edges.map(edge => ({
             from: edge.from.label,
@@ -221,7 +248,7 @@ document.addEventListener("DOMContentLoaded", function () {
             polarity: edge.polarity,
             strength: edge.strength
         })));
-        form.submit();
+        document.querySelector("form").submit();
     });
 
     drawCanvas();

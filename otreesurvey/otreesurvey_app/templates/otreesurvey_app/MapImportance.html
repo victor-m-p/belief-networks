@@ -208,14 +208,14 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        document.getElementById("positions_3").value = JSON.stringify(points.map(p => ({
+        document.getElementById("positions_5").value = JSON.stringify(points.map(p => ({
             label: p.label,
             x: p.x,
             y: p.y,
             radius: p.radius
         })));
 
-        document.getElementById("edges_3").value = JSON.stringify(edges);
+        document.getElementById("edges_5").value = JSON.stringify(edges);
         form.submit();
     });
 

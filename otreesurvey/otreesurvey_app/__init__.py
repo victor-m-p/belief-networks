@@ -23,6 +23,30 @@ US_STATES = [
     'Utah', 'Virginia', 'Vermont', 'Washington',
     'Wisconsin', 'West Virginia', 'Wyoming']
 
+def smart_linebreak(text, threshold=15):
+    if len(text) <= threshold:
+        return text
+
+    # Find middle point
+    mid = len(text) // 2
+
+    # Search for nearest space to the middle (first to the right, then to the left)
+    right = text.find(' ', mid)
+    left = text.rfind(' ', 0, mid)
+
+    # Pick the best split point
+    if right == -1 and left == -1:
+        split_point = mid  # no spaces found, just split at middle
+    elif right == -1:
+        split_point = left
+    elif left == -1:
+        split_point = right
+    else:
+        # pick the closer one to mid
+        split_point = left if (mid - left) <= (right - mid) else right
+
+    # Insert line break
+    return text[:split_point] + '\n' + text[split_point+1:]
 
 
 class C(BaseConstants): 
@@ -121,7 +145,7 @@ class Player(BasePlayer):
             'five or six days a week',
             'every day',
         ],
-        label="Approximately, how often, if at all, do you eat any meat in an average week?",
+        label="How often do you eat any meat in an average week?",
         widget=widgets.RadioSelect
     )
     meat_consumption_past = models.StringField(
@@ -133,7 +157,7 @@ class Player(BasePlayer):
             'five or six days a week',
             'every day',
         ],
-        label="Try to recall your meat eating habits 5 years ago. Approximately, how often, if at all, did you eat any meat in an average week?",
+        label="Try to recall your meat eating habits 5 years ago. How often did you eat any meat in an average week?",
         widget=widgets.RadioSelect
     )
     meat_consumption_future = models.StringField(
@@ -145,7 +169,7 @@ class Player(BasePlayer):
             'five or six days a week',
             'every day',
         ],
-        label="Try to imagine how your meat eating habits might look 5 years from now. Approximately, how often, if at all, do you think you will eat any meat in an average week?",
+        label="Try to imagine how your meat eating habits might look 5 years from now. How often do you think you will eat any meat in an average week?",
         widget=widgets.RadioSelect
     )
 
@@ -176,14 +200,20 @@ class Player(BasePlayer):
     label_snapshots = models.LongStringField(initial='[]')  # list of lists
 
     # Position/NETWORK 
-    ## Stage 1.
+    ## MapNodePlacement
     positions_1 = models.LongStringField(blank=True)
-    ## Stage 2.
+    ## MapEdgeCreation1
     edges_2 = models.LongStringField(blank=True)
     positions_2 = models.LongStringField(blank=True)
-    ## stage 3 (what about size here??)
+    ## MapEdgeCreation2
     edges_3 = models.LongStringField(blank=True)
     positions_3 = models.LongStringField(blank=True)
+    ## MapEdgeCreation3
+    edges_4 = models.LongStringField(blank=True)
+    positions_4 = models.LongStringField(blank=True)
+    ## MapImportance
+    edge_5 = models.LongStringField(blank=True)
+    positions_5 = models.LongStringField(blank=True)
     
     # Plausibility check (not implemented yet)
     importance_pair_1 = models.IntegerField(
@@ -320,9 +350,10 @@ class Question1(Page):
 
     @staticmethod
     def error_message(player, values):
-        if len(values['answer1']) < 40:
-            return 'Please write at least 40 characters.'
-    
+        if len(values['answer1']) < 100:
+            return 'Please write at least 100 characters.'
+
+# implement check.
 class Question2(Page):
     form_model = 'player'
     form_fields = ['answer2']
@@ -333,6 +364,10 @@ class Question2(Page):
             meat=C.MEAT_DEFINITION,
             prompt=C.QUESTIONS[1])
 
+    @staticmethod
+    def error_message(player, values):
+        if len(values['answer2']) < 100:
+            return 'Please write at least 100 characters.'
 
 class Question3(Page):
     form_model = 'player'
@@ -343,6 +378,11 @@ class Question3(Page):
         return dict(
             meat=C.MEAT_DEFINITION,
             prompt=C.QUESTIONS[2])
+    
+    @staticmethod
+    def error_message(player, values):
+        if len(values['answer3']) < 100:
+            return 'Please write at least 100 characters.'
 
 class Question4(Page):
     form_model = 'player'
@@ -353,6 +393,11 @@ class Question4(Page):
         return dict(
             meat=C.MEAT_DEFINITION,
             prompt=C.QUESTIONS[3])
+        
+    @staticmethod
+    def error_message(player, values):
+        if len(values['answer4']) < 100:
+            return 'Please write at least 100 characters.'
 
 class MeatScale(Page):
     form_model = 'player'
@@ -480,10 +525,12 @@ class BeliefAccuracyRating(Page):
         for i, node in enumerate(generated_nodes):
             stance = node.get("stance", "")
             rating = values.get(f"belief_rating_{i}", "")
+            text = smart_linebreak(stance)
             if not rating:
                 return "Please rate all items before continuing."
             ratings_to_store.append({
-                "text": stance,
+                "text": text,
+                "belief": stance,
                 "rating": rating # not used right now
             })
 
@@ -501,99 +548,6 @@ class BeliefAccuracyRating(Page):
     def before_next_page(player, timeout_happened):
         pass
 
-'''
-class LLMReviewRevise(Page):
-    form_model = 'player'
-
-    @staticmethod
-    def get_form_fields(player):
-        generated_nodes = json.loads(player.generated_nodes or '[]')
-        revised = json.loads(player.field_maybe_none('revised_beliefs') or '[]')
-
-        # Initialize revised if not already done
-        if not revised:
-            revised = [
-                {"belief": node['stance'], "user_action": "", "text_field": ""}
-                for node in generated_nodes
-            ]
-            player.revised_beliefs = json.dumps(revised)
-
-        fields = []
-        for i in range(len(revised)):
-            fields.append(f"node_choice_{i}")
-            fields.append(f"node_reject_reason_{i}")
-            fields.append(f"node_modify_text_{i}")
-        return fields
-
-    @staticmethod
-    def vars_for_template(player):
-        generated_nodes = json.loads(player.generated_nodes or '[]')
-
-        # Load or initialize revised beliefs
-        try:
-            revised = json.loads(player.revised_beliefs)
-        except (TypeError, json.JSONDecodeError):
-            revised = [
-                {"belief": node['stance'], "user_action": "", "text_field": ""}
-                for node in generated_nodes
-            ]
-            player.revised_beliefs = json.dumps(revised)
-
-        # Transcript (unchanged)
-        qa_pairs = []
-        for i, question in enumerate(C.QUESTIONS):
-            fieldname = f'answer{i+1}'
-            answer = getattr(player, fieldname, '')
-            qa_pairs.append({'question': question, 'answer': answer})
-
-        return dict(
-            belief_items=revised,
-            transcript=qa_pairs,
-            C=C
-        )
-
-    @staticmethod
-    def error_message(player, values):
-        revised = json.loads(player.revised_beliefs)
-
-        for i, item in enumerate(revised):
-            choice = values.get(f"node_choice_{i}", "")
-            reason = values.get(f"node_reject_reason_{i}", "")
-            mod = values.get(f"node_modify_text_{i}", "")
-
-            item['user_action'] = choice
-            if choice == 'REJECT':
-                item['text_field'] = reason
-            elif choice == 'MODIFY':
-                item['text_field'] = mod
-            else:
-                item['text_field'] = ""
-
-        player.revised_beliefs = json.dumps(revised)
-
-        # Validation:
-        for item in revised:
-            if not item['user_action']:
-                return "Please evaluate all beliefs before continuing."
-            if item['user_action'] == 'MODIFY' and not item['text_field'].strip():
-                return "Please provide modified text for all items marked as MODIFY."
-
-    @staticmethod
-    def before_next_page(player, timeout_happened):
-        revised = json.loads(player.revised_beliefs)
-        filtered = []
-
-        for item in revised:
-            if item['user_action'] == 'ACCEPT':
-                filtered.append({'text': item['belief'].strip()})
-            elif item['user_action'] == 'MODIFY':
-                modified = item['text_field'].strip()
-                if modified:
-                    filtered.append({'text': modified})
-
-        player.final_nodes = json.dumps(filtered)
-'''
-
 class MapNodePlacement(Page):
     form_model = 'player'
     form_fields = ['positions_1']
@@ -606,20 +560,15 @@ class MapNodePlacement(Page):
         # Just send the labels, layout happens in template
         belief_points = [{"label": label} for label in belief_texts]
 
-        mode = 'all'
-        label_display = 'always'
-
         return dict(
-            belief_points=belief_points,
-            mode=mode,
-            label_display=label_display
+            belief_labels_json=json.dumps([point['label'] for point in belief_points]),
         )
 
     @staticmethod
     def before_next_page(player, timeout_happened):
         pass
 
-class MapEdgeCreation(Page):
+class MapEdgeCreation1(Page):
     form_model = 'player'
     form_fields = ['positions_2', 'edges_2']
 
@@ -632,37 +581,97 @@ class MapEdgeCreation(Page):
             positions = []
 
         belief_points = []
+        labels = [item['text'] for item in final_nodes]
         for i, item in enumerate(final_nodes):
             pos_idx = i + 1
             x = positions[pos_idx]['x']
             y = positions[pos_idx]['y']
             radius = 20
             belief_points.append({"label": item['text'], "x": x, "y": y, "radius": radius})
-            #x = positions[i]['x'] if i < len(positions) else 750
-            #y = positions[i]['y'] if i < len(positions) else 100 + i * 80
-            #radius = positions[i].get('radius', 20) if i < len(positions) else 20
-            #belief_points.append({"label": item['text'], "x": x, "y": y, "radius": radius})
 
         return dict(
             belief_points=belief_points,
-            mode='all',
-            label_display='always',
-            all_labels_json=json.dumps([b['text'] for b in final_nodes])
+            belief_labels_json=json.dumps(labels)  # only pass labels_json for JS
         )
 
     @staticmethod
     def before_next_page(player: Player, timeout_happened):
         pass
 
-
-class MapImportance(Page):
+class MapEdgeCreation2(Page):
     form_model = 'player'
     form_fields = ['positions_3', 'edges_3']
 
     @staticmethod
+    def vars_for_template(player: Player):
+        final_nodes = json.loads(player.final_nodes or '[]')
+        try:
+            positions = json.loads(player.positions_2 or '[]')
+            prior_edges = json.loads(player.edges_2 or '[]')
+        except (TypeError, json.JSONDecodeError):
+            positions = []
+            prior_edges = []
+
+        belief_points = []
+        labels = [item['text'] for item in final_nodes]
+        for i, item in enumerate(final_nodes):
+            pos_idx = i + 1
+            x = positions[pos_idx]['x']
+            y = positions[pos_idx]['y']
+            radius = 20
+            belief_points.append({"label": item['text'], "x": x, "y": y, "radius": radius})
+
+        return dict(
+            belief_points=belief_points,
+            belief_labels_json=json.dumps(labels),
+            belief_edges=prior_edges  # <-- pass existing edges
+        )
+
+    @staticmethod
+    def before_next_page(player: Player, timeout_happened):
+        pass
+
+class MapEdgeCreation3(Page):
+    form_model = 'player'
+    form_fields = ['positions_4', 'edges_4']
+
+    @staticmethod
+    def vars_for_template(player: Player):
+        final_nodes = json.loads(player.final_nodes or '[]')
+        try:
+            positions = json.loads(player.positions_3 or '[]')
+            prior_edges = json.loads(player.edges_3 or '[]')
+        except (TypeError, json.JSONDecodeError):
+            positions = []
+            prior_edges = []
+
+        belief_points = []
+        labels = [item['text'] for item in final_nodes]
+        for i, item in enumerate(final_nodes):
+            pos_idx = i + 1
+            x = positions[pos_idx]['x']
+            y = positions[pos_idx]['y']
+            radius = 20
+            belief_points.append({"label": item['text'], "x": x, "y": y, "radius": radius})
+
+        return dict(
+            belief_points=belief_points,
+            belief_labels_json=json.dumps(labels),
+            belief_edges=prior_edges  # <-- pass existing edges
+        )
+
+    @staticmethod
+    def before_next_page(player: Player, timeout_happened):
+        pass
+
+class MapImportance(Page):
+    form_model = 'player'
+    form_fields = ['positions_5', 'edges_5']
+
+    @staticmethod
     def vars_for_template(player):
-        prev_positions = json.loads(player.positions_2 or '[]')
-        prior_edges = json.loads(player.edges_2 or '[]')
+        prev_positions = json.loads(player.positions_4 or '[]')
+        prior_edges = json.loads(player.edges_4 or '[]')
 
         return dict(
             belief_points=prev_positions,
@@ -787,7 +796,9 @@ page_sequence = [
     # LLMReviewRevise, --> cut out now.
     # PLACEMENT + EDGES + IMPORTANCE
     MapNodePlacement,
-    MapEdgeCreation,
+    MapEdgeCreation1,
+    MapEdgeCreation2,
+    MapEdgeCreation3,
     MapImportance,
     NetworkReflection,
     # PLAUSIBILITY
