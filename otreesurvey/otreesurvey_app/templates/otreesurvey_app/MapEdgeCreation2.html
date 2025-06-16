@@ -63,12 +63,12 @@ document.addEventListener("DOMContentLoaded", function () {
         })
     ];
 
-    let edges = [...beliefEdges.map(e => ({
-        fromLabel: e.from,
-        toLabel: e.to,
-        polarity: e.polarity,
-        strength: e.strength
-    }))];
+    // convert loaded edges (stored with string labels) into object references:
+    let edges = beliefEdges.map(e => {
+        const from = points.find(p => p.label === e.from);
+        const to = points.find(p => p.label === e.to);
+        return { from, to, polarity: e.polarity, strength: e.strength };
+    }).filter(e => e.from && e.to);
 
     let draggingPoint = null;
     let maybeDragPoint = null;
@@ -84,21 +84,13 @@ document.addEventListener("DOMContentLoaded", function () {
         strengthValue.textContent = "Strength: " + strengthSlider.value;
     });
 
-    function resolveEdges() {
-        return edges.map(edge => {
-            const from = points.find(p => p.label === edge.fromLabel);
-            const to = points.find(p => p.label === edge.toLabel);
-            return { from, to, polarity: edge.polarity, strength: edge.strength };
-        }).filter(e => e.from && e.to);
-    }
-
     function drawCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.strokeStyle = "black";
         ctx.lineWidth = 3;
         ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
-        resolveEdges().forEach(edge => {
+        edges.forEach(edge => {
             ctx.beginPath();
             ctx.moveTo(edge.from.x, edge.from.y);
             ctx.lineTo(edge.to.x, edge.to.y);
@@ -170,15 +162,12 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!selectedPoint) {
                 selectedPoint = hit;
             } else if (selectedPoint !== hit) {
-                const exists = resolveEdges().find(e =>
+                const exists = edges.find(e =>
                     (e.from === selectedPoint && e.to === hit) || (e.from === hit && e.to === selectedPoint));
                 if (exists) {
-                    edges.splice(edges.findIndex(e =>
-                        (e.fromLabel === exists.from.label && e.toLabel === exists.to.label) ||
-                        (e.fromLabel === exists.to.label && e.toLabel === exists.from.label)
-                    ), 1);
+                    edges.splice(edges.indexOf(exists), 1);
                 } else {
-                    pendingEdge = { fromLabel: selectedPoint.label, toLabel: hit.label };
+                    pendingEdge = { from: selectedPoint, to: hit };
                     document.getElementById("edgeSelectionPanel").style.display = "block";
                     strengthSlider.value = 50;
                     strengthValue.textContent = "Strength: 50";
@@ -225,20 +214,16 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    function allInsideBox() {
-        return points.every(p => p.x >= 0 && p.x <= canvas.width && p.y >= 0 && p.y <= canvas.height);
-    }
-
     document.querySelector("button[type=submit], .otree-btn-next").addEventListener("click", function (e) {
         e.preventDefault();
 
-        if (!allInsideBox()) {
-            alert("Please drag all beliefs into the square before continuing.");
-            return;
-        }
-
         document.getElementById("positions").value = JSON.stringify(points);
-        document.getElementById("edges").value = JSON.stringify(edges);
+        document.getElementById("edges").value = JSON.stringify(edges.map(edge => ({
+            from: edge.from.label,
+            to: edge.to.label,
+            polarity: edge.polarity,
+            strength: edge.strength
+        })));
         document.querySelector("form").submit();
     });
 

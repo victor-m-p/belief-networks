@@ -5,39 +5,40 @@
 <p>You can now resize the circles to indicate importance. <strong>Larger circles represent items that are more important to your personal meat eating behavior</strong>. You do so by hovering over the edge of the circles, clicking and then dragging. You can make the circles both smaller or larger. You can still reposition and connect them as before.</p>
 
 <canvas id="dragCanvas" width="900" height="600" style="border:1px solid black;"></canvas>
+
 <div id="edgeSelectionPanel" style="display:none; position: absolute; left: 620px; top: 100px; background: #f9f9f9; border: 1px solid #ccc; padding: 20px;">
     <p style="font-weight: bold; margin-bottom: 10px;">Choose edge type:</p>
-    <button id="selectPositive" type="button" style="background-color: green; color: white; padding: 10px 20px; font-size: 16px; margin-right: 10px;">Positive</button>
-    <button id="selectNegative" type="button" style="background-color: red; color: white; padding: 10px 20px; font-size: 16px;">Negative</button>
+    <button id="selectPositive" type="button" style="background-color: green; color: white; padding: 10px 20px;">Positive</button>
+    <button id="selectNegative" type="button" style="background-color: red; color: white; padding: 10px 20px;">Negative</button>
 </div>
 
-<input type="hidden" id="positions_3" name="positions_3">
-<input type="hidden" id="edges_3" name="edges_3">
+<input type="hidden" id="positions_5" name="positions_5">
+<input type="hidden" id="edges_5" name="edges_5">
 
-{{ formfield_errors 'positions_3' }}
-{{ formfield_errors 'edges_3' }}
+{{ formfield_errors 'positions_5' }}
+{{ formfield_errors 'edges_5' }}
 {{ next_button }}
 
 <script>
+const beliefLabels = {{ belief_labels_json|safe }};
+const beliefPoints = {{ belief_points|safe }};
+const beliefEdges = {{ belief_edges|safe }};
+
 document.addEventListener("DOMContentLoaded", function () {
     const canvas = document.getElementById("dragCanvas");
     const ctx = canvas.getContext("2d");
     const resizeMargin = 4;
-    const labelDisplay = "always";
 
     const points = [
-        // Remove `fixed: true` entirely:
-        {% for point in belief_points %}
-            { label: "{{ point.label }}", x: {{ point.x }}, y: {{ point.y }}, radius: {{ point.radius }} },
-        {% endfor %}
+        { label: "Meat Eating", x: canvas.width/2, y: canvas.height/2, radius: 20, fixed: true },
+        ...beliefPoints.map(p => ({ label: p.label, x: p.x, y: p.y, radius: p.radius }))
     ];
 
-
-    const edges = [
-        {% for edge in belief_edges %}
-            { fromLabel: "{{ edge.from }}", toLabel: "{{ edge.to }}", polarity: "{{ edge.polarity }}", strength: {{ edge.strength }} },
-        {% endfor %}
-    ];
+    let edges = beliefEdges.map(e => {
+        const from = points.find(p => p.label === e.from);
+        const to = points.find(p => p.label === e.to);
+        return { from, to, polarity: e.polarity, strength: e.strength };
+    }).filter(e => e.from && e.to);
 
     let draggingPoint = null;
     let resizingPoint = null;
@@ -46,27 +47,18 @@ document.addEventListener("DOMContentLoaded", function () {
     let wasDragging = false;
     let pendingEdge = null;
 
-    function resolveEdges() {
-        return edges.map(edge => {
-            const from = points.find(p => p.label === edge.fromLabel);
-            const to = points.find(p => p.label === edge.toLabel);
-            return { from, to, polarity: edge.polarity, strength: edge.strength };
-        }).filter(e => e.from && e.to);
-    }
-
     function drawCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.strokeStyle = "black";
         ctx.lineWidth = 3;
-        ctx.strokeRect(0, 0, 600, 600);
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
-        resolveEdges().forEach(edge => {
+        edges.forEach(edge => {
             ctx.beginPath();
             ctx.moveTo(edge.from.x, edge.from.y);
             ctx.lineTo(edge.to.x, edge.to.y);
             ctx.strokeStyle = edge.polarity === "positive" ? "green" : "red";
-            const strength = edge.strength || 50;
-            ctx.lineWidth = 1 + (strength / 100) * 9;
+            ctx.lineWidth = 1 + (edge.strength / 100) * 9;
             ctx.stroke();
         });
 
@@ -79,13 +71,11 @@ document.addEventListener("DOMContentLoaded", function () {
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            if (labelDisplay === "always" || p === hoveredPoint) {
-                ctx.fillStyle = "black";
-                ctx.font = "16px sans-serif";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "bottom";
-                ctx.fillText(p.label, p.x, p.y - 22);
-            }
+            ctx.fillStyle = "black";
+            ctx.font = "14px sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "bottom";
+            ctx.fillText(p.label, p.x, p.y - 22);
         });
     }
 
@@ -99,63 +89,53 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     canvas.addEventListener("mousedown", function (evt) {
-        const mousePos = getMousePos(evt);
-        const found = findPoint(mousePos);
-        if (found) {
-            const dist = Math.hypot(found.x - mousePos.x, found.y - mousePos.y);
-            if (dist > found.radius - resizeMargin && dist <= found.radius + resizeMargin) {
-                resizingPoint = found;
+        const pos = getMousePos(evt);
+        const hit = findPoint(pos);
+        if (hit) {
+            const dist = Math.hypot(hit.x - pos.x, hit.y - pos.y);
+            if (dist > hit.radius - resizeMargin && dist <= hit.radius + resizeMargin) {
+                resizingPoint = hit;
             } else {
-                draggingPoint = found;
+                draggingPoint = hit;
             }
         }
         wasDragging = false;
     });
 
     canvas.addEventListener("mousemove", function (evt) {
-        const mousePos = getMousePos(evt);
-        hoveredPoint = findPoint(mousePos);
+        const pos = getMousePos(evt);
+        hoveredPoint = findPoint(pos);
 
         if (draggingPoint) {
-            draggingPoint.x = mousePos.x;
-            draggingPoint.y = mousePos.y;
+            draggingPoint.x = pos.x;
+            draggingPoint.y = pos.y;
             wasDragging = true;
         }
 
         if (resizingPoint) {
-            const dx = mousePos.x - resizingPoint.x;
-            const dy = mousePos.y - resizingPoint.y;
+            const dx = pos.x - resizingPoint.x;
+            const dy = pos.y - resizingPoint.y;
             resizingPoint.radius = Math.max(8, Math.min(80, Math.hypot(dx, dy)));
             wasDragging = true;
-        }
-
-        if (hoveredPoint) {
-            const d = Math.hypot(hoveredPoint.x - mousePos.x, hoveredPoint.y - mousePos.y);
-            if (d > hoveredPoint.radius - resizeMargin && d <= hoveredPoint.radius + resizeMargin) {
-                canvas.style.cursor = "nwse-resize";
-            } else {
-                canvas.style.cursor = "grab";
-            }
-        } else {
-            canvas.style.cursor = "default";
         }
 
         drawCanvas();
     });
 
     canvas.addEventListener("mouseup", function (evt) {
-        const mousePos = getMousePos(evt);
-        const hit = findPoint(mousePos);
+        const pos = getMousePos(evt);
+        const hit = findPoint(pos);
 
         if (!wasDragging && hit) {
             if (!selectedPoint) {
                 selectedPoint = hit;
             } else if (selectedPoint !== hit) {
-                const exists = resolveEdges().find(e => (e.from === selectedPoint && e.to === hit) || (e.from === hit && e.to === selectedPoint));
+                const exists = edges.find(e =>
+                    (e.from === selectedPoint && e.to === hit) || (e.from === hit && e.to === selectedPoint));
                 if (exists) {
-                    edges.splice(edges.findIndex(e => (e.fromLabel === exists.from.label && e.toLabel === exists.to.label) || (e.fromLabel === exists.to.label && e.toLabel === exists.from.label)), 1);
+                    edges.splice(edges.indexOf(exists), 1);
                 } else {
-                    pendingEdge = { fromLabel: selectedPoint.label, toLabel: hit.label };
+                    pendingEdge = { from: selectedPoint, to: hit };
                     document.getElementById("edgeSelectionPanel").style.display = "block";
                 }
                 selectedPoint = null;
@@ -189,13 +169,10 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    const form = document.querySelector("form");
-    const nextButton = document.querySelector("button[type=submit], .otree-btn-next");
-
-    nextButton.addEventListener("click", function (e) {
+    document.querySelector("button[type=submit], .otree-btn-next").addEventListener("click", function (e) {
         e.preventDefault();
 
-        const allInside = points.every(p => p.x >= 0 && p.x <= 600 && p.y >= 0 && p.y <= 600);
+        const allInside = points.every(p => p.x >= 0 && p.x <= 900 && p.y >= 0 && p.y <= 600);
         const anyResized = points.some(p => p.radius !== 20);
 
         if (!allInside) {
@@ -215,8 +192,14 @@ document.addEventListener("DOMContentLoaded", function () {
             radius: p.radius
         })));
 
-        document.getElementById("edges_5").value = JSON.stringify(edges);
-        form.submit();
+        document.getElementById("edges_5").value = JSON.stringify(edges.map(e => ({
+            from: e.from.label,
+            to: e.to.label,
+            polarity: e.polarity,
+            strength: e.strength
+        })));
+
+        document.querySelector("form").submit();
     });
 
     drawCanvas();

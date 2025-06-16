@@ -212,7 +212,7 @@ class Player(BasePlayer):
     edges_4 = models.LongStringField(blank=True)
     positions_4 = models.LongStringField(blank=True)
     ## MapImportance
-    edge_5 = models.LongStringField(blank=True)
+    edges_5 = models.LongStringField(blank=True)
     positions_5 = models.LongStringField(blank=True)
     
     # Plausibility check (not implemented yet)
@@ -669,15 +669,33 @@ class MapImportance(Page):
     form_fields = ['positions_5', 'edges_5']
 
     @staticmethod
-    def vars_for_template(player):
-        prev_positions = json.loads(player.positions_4 or '[]')
-        prior_edges = json.loads(player.edges_4 or '[]')
+    def vars_for_template(player: Player):
+        final_nodes = json.loads(player.final_nodes or '[]')
+        try:
+            positions = json.loads(player.positions_4 or '[]')
+            prior_edges = json.loads(player.edges_4 or '[]')
+        except (TypeError, json.JSONDecodeError):
+            positions = []
+            prior_edges = []
+
+        belief_points = []
+        labels = [item['text'] for item in final_nodes]
+        for i, item in enumerate(final_nodes):
+            pos_idx = i + 1
+            x = positions[pos_idx]['x']
+            y = positions[pos_idx]['y']
+            radius = 20
+            belief_points.append({"label": item['text'], "x": x, "y": y, "radius": radius})
 
         return dict(
-            belief_points=prev_positions,
-            belief_edges=prior_edges,
-            label_display='always'
+            belief_points=belief_points,
+            belief_labels_json=json.dumps(labels),
+            belief_edges=prior_edges  # <-- pass existing edges
         )
+        
+    @staticmethod
+    def before_next_page(player: Player, timeout_happened):
+        pass
 
 class NetworkReflection(Page):
     form_model = 'player'
