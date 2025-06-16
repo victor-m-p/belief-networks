@@ -28,38 +28,38 @@
         min-width: 40px;
         border-radius: 6px;
         cursor: pointer;
-        background-color: #ffffff;
         border: 1px solid #ccc;
         color: black;
         font-weight: bold;
         user-select: none;
-        transition: background-color 0.2s ease;
+        transition: all 0.2s ease;
     }
 
     .choice-buttons input {
         display: none;
     }
 
+    /* Custom selected state */
     .choice-buttons input:checked + label {
-        background-color: #cce5ff;
-        border: 2px solid #007BFF;
+        border: 3px solid black;
+        box-shadow: 0 0 3px rgba(0,0,0,0.5);
     }
+
     .scale-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 1rem;
-    font-weight: bold;
-    font-size: 0.95rem;
-    padding-left: 30rem;
-    padding-right: 1rem;
-}
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        font-weight: bold;
+        font-size: 0.95rem;
+        padding-left: 30rem;
+        padding-right: 1rem;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <h2>Evaluate Summaries of Meat Eating Behaviors and Motivations</h2>
-<p>Please rate how accurately each statement reflects what you wrote in the interview on a scale from 1 (Not accurate at all) to 7 (Very accurate). You can toggle the blue button below to check what you answered in the interview.</p>
-
+<p>Here is the summary we created of your meat eating motivations and habits. We would like to know how accurate you think this is. Please rate how accurately each statement reflects the written answers you just gave, on a scale from 1 (Not accurate at all | ACCEPT) to 7 (Very accurate | REJECT). You can toggle the blue button to see the transcript of your answers.
 
 <!-- Transcript toggle button -->
 <button type="button" id="toggle-transcript" style="
@@ -86,11 +86,10 @@
     </ul>
 </div>
 
-
 <!-- Scale legend above buttons -->
 <div class="scale-header">
-    <span>1 = Not accurate at all</span>
-    <span>7 = Very accurate</span>
+    <span>REJECT</span>
+    <span>ACCEPT</span>
 </div>
 
 <form method="post" id="belief-form" novalidate>
@@ -101,7 +100,16 @@
                 {% for i in rating_options %}
                     <input type="radio" name="belief_rating_{{ item.index }}" id="belief_rating_{{ item.index }}_{{ i }}" value="{{ i }}"
                         {% if item.rating == i %}checked{% endif %}>
-                    <label for="belief_rating_{{ item.index }}_{{ i }}">{{ i }}</label>
+                    <label for="belief_rating_{{ item.index }}_{{ i }}"
+                        {% if i == 1 %} style="background-color: #ff4d4d;" {% endif %}
+                        {% if i == 2 %} style="background-color: #ff944d;" {% endif %}
+                        {% if i == 3 %} style="background-color: #ffb84d;" {% endif %}
+                        {% if i == 4 %} style="background-color: #ffd24d;" {% endif %}
+                        {% if i == 5 %} style="background-color: #b3e673;" {% endif %}
+                        {% if i == 6 %} style="background-color: #80e27e;" {% endif %}
+                        {% if i == 7 %} style="background-color: #33cc33;" {% endif %}>
+                        {{ i }}
+                    </label>
                 {% endfor %}
             </div>
         </div>
@@ -140,7 +148,7 @@
         });
     });
 
-    // Transcript toggle (runs immediately)
+    // Transcript toggle
     (function () {
         const toggleButton = document.getElementById('toggle-transcript');
         const transcript = document.getElementById('transcript-container');
@@ -156,6 +164,5 @@
             toggleButton.textContent = isHidden ? 'Hide transcript' : 'Show transcript';
         });
     })();
-
 </script>
 {% endblock %}

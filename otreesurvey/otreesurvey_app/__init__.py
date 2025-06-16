@@ -429,7 +429,9 @@ class LLMGenerate(Page):
                 if not (node['type'] == 'PERSONAL' and node['category'] == 'BEHAVIOR')
             ]
             
+            random.shuffle(filtered_nodes)
             player.generated_nodes = json.dumps(filtered_nodes)
+            
 
 class BeliefAccuracyRating(Page):
     form_model = 'player'
@@ -460,14 +462,14 @@ class BeliefAccuracyRating(Page):
             rating_items.append({
                 "index": i,
                 "belief": stance,
-                "rating": str(rating)
+                "rating": str(rating),
             })
 
         return dict(
             belief_items=rating_items,
             transcript=qa_pairs,
             C=C,
-            rating_options=[str(n) for n in range(1, 8)]
+            rating_options=list(range(1, 8))
         )
 
     @staticmethod
@@ -479,18 +481,27 @@ class BeliefAccuracyRating(Page):
             stance = node.get("stance", "")
             rating = values.get(f"belief_rating_{i}", "")
             if not rating:
-                return "Please rate all beliefs before continuing."
+                return "Please rate all items before continuing."
             ratings_to_store.append({
-                "belief": stance,
-                "rating": rating
+                "text": stance,
+                "rating": rating # not used right now
             })
 
         player.generated_nodes_ratings = json.dumps(ratings_to_store)
+
+        # for revised beliefs - maybe we can do this in a more smooth way 
+        final_nodes = [
+            entry for entry in ratings_to_store 
+            if int(entry["rating"]) >= 4
+        ]
+        
+        player.final_nodes = json.dumps(final_nodes)
 
     @staticmethod
     def before_next_page(player, timeout_happened):
         pass
 
+'''
 class LLMReviewRevise(Page):
     form_model = 'player'
 
@@ -581,6 +592,7 @@ class LLMReviewRevise(Page):
                     filtered.append({'text': modified})
 
         player.final_nodes = json.dumps(filtered)
+'''
 
 class MapNodePlacement(Page):
     form_model = 'player'
@@ -772,7 +784,7 @@ page_sequence = [
     # GENERATE + SELECT BELIEFS 
     LLMGenerate,
     BeliefAccuracyRating,
-    LLMReviewRevise,
+    # LLMReviewRevise, --> cut out now.
     # PLACEMENT + EDGES + IMPORTANCE
     MapNodePlacement,
     MapEdgeCreation,
