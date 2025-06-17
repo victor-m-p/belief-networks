@@ -440,7 +440,7 @@ class SocialCircleDistribution(Page):
             return "The total must sum to exactly 100."
 
 class LLMGenerate(Page):
-    timeout_seconds = 300
+    timeout_seconds = 120
     auto_submit = True
 
     @staticmethod
