@@ -14,16 +14,18 @@
 {% block content %}
 <h2>Create Connections to Meat Eating Frequency</h2>
 <p><b>Your task is to draw connections between the orange circles and the grey circle.</b></p>
-<p>Draw a connection between a motivation or habit if it directly influences your personal meat eating frequency (grey circle). To draw a connection follow this approach:</p>
+<p>Draw a connection between a motivation or habit if it directly influences your personal meat eating frequency (grey circle). The influence can be towards less frequent meat eating or towards more frequent meat eating. To draw a connection follow this approach:</p>
 
 <ol>
     <li>Click on a circle to "activate" it. Your click will highlight the circle</li>
     <li>Click on another circle to create a connection</li>
-    <li>A box will now appear. Answer whether the motivation or habit influences you to eat less meat (NEGATIVE) or more meat (POSITIVE) and how strongly. Click the blue button to finalize the connection</li>
-    <li>If you create a connection by mistake or regret a connection you can remove it again by clicking first on one of the circles and then on the other</li>
+    <li>A box will now appear. Answer whether the motivation or habit influences you to eat less meat (RED) or more meat (GREEN) and how important the motivation is. Press ESC or click outside to abort if needed. Use the blue button to confirm the connection.</li>
 </ol>
 
+<p>If you create a connection by mistake or regret a connection you can remove it again by clicking first on one of the circles and then on the other</p>
 <p>You can still drag circles around the square to reposition them if you wish</p>
+
+<p><em>Think of connections and their importance like: "if one of these things changed how much would it affect the other thing".</em></p>
 
 <div id="canvasContainer" style="position: relative; width: 900px; height: 600px;">
     <canvas id="dragCanvas" width="900" height="600"></canvas>
@@ -39,14 +41,16 @@
         z-index: 10;
     ">
         <p style="font-weight: bold; margin-bottom: 10px;">Influences me to eat:</p>
-        <button id="selectPositive" type="button" style="background-color: green; color: white; padding: 10px 20px;">More Meat</button>
         <button id="selectNegative" type="button" style="background-color: red; color: white; padding: 10px 20px;">Less Meat</button>
+        <button id="selectPositive" type="button" style="background-color: green; color: white; padding: 10px 20px;">More Meat</button>
 
         <p style="font-weight: bold; margin-top: 15px;">Select Importance:</p>
         <input id="strengthSlider" type="range" min="1" max="100" value="50" style="width: 100%;">
         <p id="strengthValue" style="text-align: center;">Importance: 50</p>
 
-        <button id="confirmEdge" type="button" style="background-color: blue; color: white; padding: 10px 20px;">Confirm Connection</button>
+        <div style="margin-top: 10px;">
+            <button id="confirmEdge" type="button" style="background-color: blue; color: white; padding: 10px 20px; width: 100%;">Confirm Connection</button>
+        </div>
     </div>
 </div>
 
@@ -149,7 +153,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const pos = getMousePos(evt);
         hoveredPoint = findPoint(pos);
         if (!draggingPoint && maybeDragPoint) {
-            draggingPoint = maybeDragPoint;  // assign only when movement starts
+            draggingPoint = maybeDragPoint;
         }
         if (draggingPoint) {
             draggingPoint.x = pos.x;
@@ -171,7 +175,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const isCentralInvolved = (selectedPoint.label === centralNodeLabel || hit.label === centralNodeLabel);
                 if (!isCentralInvolved) {
                     selectedPoint = null;
-                    maybeDragPoint = null;   // <=== THIS IS THE MISSING LINE
+                    maybeDragPoint = null;
                     return;
                 }
 
@@ -191,6 +195,13 @@ document.addEventListener("DOMContentLoaded", function () {
             } else {
                 selectedPoint = null;
             }
+        }
+
+        if (!wasDragging && !hit && pendingEdge) {
+            pendingEdge = null;
+            document.getElementById("edgeSelectionPanel").style.display = "none";
+            document.getElementById("selectPositive").classList.remove("selected-polarity");
+            document.getElementById("selectNegative").classList.remove("selected-polarity");
         }
 
         draggingPoint = null;
@@ -225,6 +236,15 @@ document.addEventListener("DOMContentLoaded", function () {
             drawCanvas();
         } else {
             alert("Please select polarity before confirming.");
+        }
+    });
+
+    document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape" && pendingEdge) {
+            pendingEdge = null;
+            document.getElementById("edgeSelectionPanel").style.display = "none";
+            document.getElementById("selectPositive").classList.remove("selected-polarity");
+            document.getElementById("selectNegative").classList.remove("selected-polarity");
         }
     });
 

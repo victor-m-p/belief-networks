@@ -12,10 +12,9 @@
 {% endblock %}
 
 {% block content %}
-<h2>Create Connections Between Items</h2>
-<p>You can now draw connections between the statements. Click one circle, then another, to toggle a connection.</p>
-<p>Your task is to draw connections between all things that influence each other, either positively or negatively.</p>
-<p>Some things might influence each other strongly or not so strongly. Think: "if one of these things changed how much would it affect the other thing" when choosing the connecting strength."</p>
+<h2>Final Chance to Change or Add Connections</h2>
+<p><b>Please take a last look at the network...</b></p>
+<p>Are there any connections that you have missed? If so, please create these connections before you proceed to the next stage</p>
 
 <div id="canvasContainer" style="position: relative; width: 900px; height: 600px;">
     <canvas id="dragCanvas" width="900" height="600"></canvas>
@@ -37,8 +36,8 @@
         <p style="font-weight: bold; margin-top: 15px;">Select strength:</p>
         <input id="strengthSlider" type="range" min="1" max="100" value="50" style="width: 100%;">
         <p id="strengthValue" style="text-align: center;">Strength: 50</p>
-
-        <button id="confirmEdge" type="button" style="background-color: blue; color: white; padding: 10px 20px;">Confirm Edge</button>
+        
+        <button id="confirmEdge" type="button" style="background-color: blue; color: white; padding: 10px 20px; width: 100%;">Confirm Connection</button>
     </div>
 </div>
 
@@ -155,9 +154,18 @@ document.addEventListener("DOMContentLoaded", function () {
         drawCanvas();
     });
 
+    document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape" && pendingEdge) {
+            pendingEdge = null;
+            document.getElementById("edgeSelectionPanel").style.display = "none";
+            document.getElementById("selectPositive").classList.remove("selected-polarity");
+            document.getElementById("selectNegative").classList.remove("selected-polarity");
+        }
+    });
     canvas.addEventListener("mouseup", function (evt) {
         const pos = getMousePos(evt);
         const hit = findPoint(pos);
+
         if (!wasDragging && hit) {
             if (!selectedPoint) {
                 selectedPoint = hit;
@@ -170,7 +178,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     pendingEdge = { from: selectedPoint, to: hit };
                     document.getElementById("edgeSelectionPanel").style.display = "block";
                     strengthSlider.value = 50;
-                    strengthValue.textContent = "Strength: 50";
+                    strengthValue.textContent = "Importance: 50";
                     document.getElementById("selectPositive").classList.remove("selected-polarity");
                     document.getElementById("selectNegative").classList.remove("selected-polarity");
                 }
@@ -179,10 +187,21 @@ document.addEventListener("DOMContentLoaded", function () {
                 selectedPoint = null;
             }
         }
+
+        // <<< INSERT THIS RIGHT HERE >>>
+
+        if (!wasDragging && !hit && pendingEdge) {
+            pendingEdge = null;
+            document.getElementById("edgeSelectionPanel").style.display = "none";
+            document.getElementById("selectPositive").classList.remove("selected-polarity");
+            document.getElementById("selectNegative").classList.remove("selected-polarity");
+        }
+
         draggingPoint = null;
         maybeDragPoint = null;
         wasDragging = false;
     });
+
 
     document.getElementById("selectPositive").addEventListener("click", () => {
         if (pendingEdge) {
