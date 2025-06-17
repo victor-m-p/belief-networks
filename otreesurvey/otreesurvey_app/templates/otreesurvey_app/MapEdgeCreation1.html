@@ -12,12 +12,18 @@
 {% endblock %}
 
 {% block content %}
-<h2>Create Connections Between Items</h2>
-<p>You can now draw connections between the statements. Click one circle, then another, to toggle a connection.</p>
-<p>Your task is to draw connections between all things that influence each other, either positively or negatively.</p>
-<p>Some things might influence each other strongly or not so strongly. Think: "if one of these things changed how much would it affect the other thing" when choosing the connecting strength.</p>
-<p>If you create a connection by mistake, you can remove it again by clicking one circle and then the other.</p>
-<p>You are still allowed to drag circles around the square to reposition them.</p>
+<h2>Create Connections to Meat Eating Frequency</h2>
+<p><b>Your task is to draw connections between the orange circles and the grey circle.</b></p>
+<p>Draw a connection between a motivation or habit if it directly influences your personal meat eating frequency (grey circle). To draw a connection follow this approach:</p>
+
+<ol>
+    <li>Click on a circle to "activate" it. Your click will highlight the circle</li>
+    <li>Click on another circle to create a connection</li>
+    <li>A box will now appear. Answer whether the motivation or habit influences you to eat less meat (NEGATIVE) or more meat (POSITIVE) and how strongly. Click the blue button to finalize the connection</li>
+    <li>If you create a connection by mistake or regret a connection you can remove it again by clicking first on one of the circles and then on the other</li>
+</ol>
+
+<p>You can still drag circles around the square to reposition them if you wish</p>
 
 <div id="canvasContainer" style="position: relative; width: 900px; height: 600px;">
     <canvas id="dragCanvas" width="900" height="600"></canvas>
@@ -32,15 +38,15 @@
         padding: 20px;
         z-index: 10;
     ">
-        <p style="font-weight: bold; margin-bottom: 10px;">Choose edge type:</p>
-        <button id="selectPositive" type="button" style="background-color: green; color: white; padding: 10px 20px;">Positive</button>
-        <button id="selectNegative" type="button" style="background-color: red; color: white; padding: 10px 20px;">Negative</button>
+        <p style="font-weight: bold; margin-bottom: 10px;">Influences me to eat:</p>
+        <button id="selectPositive" type="button" style="background-color: green; color: white; padding: 10px 20px;">More Meat</button>
+        <button id="selectNegative" type="button" style="background-color: red; color: white; padding: 10px 20px;">Less Meat</button>
 
-        <p style="font-weight: bold; margin-top: 15px;">Select strength:</p>
+        <p style="font-weight: bold; margin-top: 15px;">Select Importance:</p>
         <input id="strengthSlider" type="range" min="1" max="100" value="50" style="width: 100%;">
-        <p id="strengthValue" style="text-align: center;">Strength: 50</p>
+        <p id="strengthValue" style="text-align: center;">Importance: 50</p>
 
-        <button id="confirmEdge" type="button" style="background-color: blue; color: white; padding: 10px 20px;">Confirm Edge</button>
+        <button id="confirmEdge" type="button" style="background-color: blue; color: white; padding: 10px 20px;">Confirm Connection</button>
     </div>
 </div>
 
@@ -75,7 +81,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const strengthValue = document.getElementById("strengthValue");
 
     strengthSlider.addEventListener("input", function() {
-        strengthValue.textContent = "Strength: " + strengthSlider.value;
+        strengthValue.textContent = "Importance: " + strengthSlider.value;
     });
 
     function drawCanvas() {
@@ -177,7 +183,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     pendingEdge = { from: selectedPoint, to: hit };
                     document.getElementById("edgeSelectionPanel").style.display = "block";
                     strengthSlider.value = 50;
-                    strengthValue.textContent = "Strength: 50";
+                    strengthValue.textContent = "Importance: 50";
                     document.getElementById("selectPositive").classList.remove("selected-polarity");
                     document.getElementById("selectNegative").classList.remove("selected-polarity");
                 }
