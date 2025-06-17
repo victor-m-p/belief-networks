@@ -1,0 +1,112 @@
+{% extends "global/Page.html" %}
+
+{% block content %}
+<h2>Social Pressure on Motivations</h2>
+
+<p>For each of the following statements, please estimate how many of your social contacts would:</p>
+<ul>
+    <li>Strongly agree</li>
+    <li>Strongly disagree</li>
+    <li>Not care</li>
+</ul>
+<p>The values for each statement must sum to 100%.</p>
+
+<form method="post" id="pressureForm">
+
+    {% for belief in belief_items %}
+        {% with belief_index=forloop.counter0 %}
+        <div style="margin-bottom: 30px; border: 1px solid #ddd; padding: 10px;">
+            <strong>{{ belief.label }}</strong>
+
+            <table style="border-collapse: collapse; margin-top: 10px;">
+                {% for category in categories %}
+                <tr>
+                    <td style="padding: 0.5rem;">{{ category }}</td>
+                    <td style="padding: 0.5rem;">
+                        <input type="range" min="0" max="100" value="0"
+                               style="width: 300px;"
+                               data-belief="{{ belief_index }}"
+                               data-category="{{ category }}">
+                        <span id="value_display_{{ belief_index }}_{{ category }}">0%</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+
+            <p>Total: <span id="total_display_{{ belief_index }}">0</span> / 100</p>
+        </div>
+        {% endwith %}
+    {% endfor %}
+
+    <input type="hidden" name="social_pressure_personal_beliefs" id="hidden_field">
+
+    {{ next_button }}
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const sliders = document.querySelectorAll('input[type="range"]');
+    const hiddenField = document.getElementById('hidden_field');
+    const TOTAL_MAX = 100;
+
+    function getSlidersForBelief(beliefIndex) {
+        return Array.from(sliders).filter(slider => parseInt(slider.dataset.belief) === beliefIndex);
+    }
+
+    function getTotalForBelief(beliefIndex, excludeSlider=null) {
+        let total = 0;
+        getSlidersForBelief(beliefIndex).forEach(slider => {
+            if (slider !== excludeSlider) {
+                total += parseInt(slider.value);
+            }
+        });
+        return total;
+    }
+
+    function updateDisplays() {
+        const beliefs = new Set();
+        sliders.forEach(slider => beliefs.add(parseInt(slider.dataset.belief)));
+
+        const result = {};
+
+        beliefs.forEach(beliefIndex => {
+            const slidersForBelief = getSlidersForBelief(beliefIndex);
+            let beliefTotal = 0;
+            const beliefResult = {};
+
+            slidersForBelief.forEach(slider => {
+                const category = slider.dataset.category;
+                const value = parseInt(slider.value);
+                document.getElementById(`value_display_${beliefIndex}_${category}`).textContent = `${value}%`;
+                beliefResult[category] = value;
+                beliefTotal += value;
+            });
+
+            document.getElementById(`total_display_${beliefIndex}`).textContent = beliefTotal;
+            result[beliefIndex] = {
+                belief_label: document.querySelector(`strong:nth-of-type(${beliefIndex + 1})`).innerText,
+                values: beliefResult
+            };
+        });
+
+        hiddenField.value = JSON.stringify(result);
+    }
+
+    sliders.forEach(slider => {
+        slider.addEventListener('input', function () {
+            const beliefIndex = parseInt(slider.dataset.belief);
+            const otherTotal = getTotalForBelief(beliefIndex, slider);
+            const remaining = TOTAL_MAX - otherTotal;
+
+            if (parseInt(slider.value) > remaining) {
+                slider.value = remaining;
+            }
+            updateDisplays();
+        });
+    });
+
+    updateDisplays();
+});
+</script>
+
+{% endblock %}

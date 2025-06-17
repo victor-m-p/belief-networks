@@ -1,7 +1,6 @@
 from otree.api import *
 import json
 from .llm_utils import *
-import json
 import random
 
 doc = """
@@ -9,7 +8,7 @@ Your app description
 """
 
 US_STATES = [
-    'Alaska', 'Alabama', 'Arkansas', 'Arizona',
+    'Not Applicable', 'Alaska', 'Alabama', 'Arkansas', 'Arizona',
     'California', 'Colorado', 'Connecticut', 'District of Columbia',
     'Delaware', 'Florida', 'Georgia', 'Hawaii',
     'Iowa', 'Idaho', 'Illinois', 'Indiana',
@@ -216,27 +215,27 @@ class Player(BasePlayer):
     positions_5 = models.LongStringField(blank=True)
     
     # Plausibility check (not implemented yet)
-    importance_pair_1 = models.IntegerField(
-        label="",
-        choices=[1, 2, 3, 4, 5, 6, 7],
-        widget=widgets.RadioSelectHorizontal
-    )
-    importance_pair_2 = models.IntegerField(
-        label="",
-        choices=[1, 2, 3, 4, 5, 6, 7],
-        widget=widgets.RadioSelectHorizontal
-    )
-    importance_pairs_data = models.LongStringField()
+    importance_ratings = models.LongStringField(blank=True)
     
     ## judge network ## 
     network_reflection_rating = models.IntegerField(
-        label="How well do you feel that this representation captures your political beliefs?",
+        label="How well do you feel that this representation captures the most important influences on your meat eating habits?",
         choices=[[1, "Not at all"], [2, "Slightly"], [3, "Moderately"], [4, "Very well"], [5, "Extremely well"]],
         widget=widgets.RadioSelectHorizontal
     )
 
     network_reflection_text = models.LongStringField(
-        label="Please share your thoughts about the network representation above. Does it make sense for you to think about your motivations and habits in this way or does it feel weird? Are there any connections, motivations, or habits that feel especially meaningful or maybe surprising?",
+        label="Was there anything that was difficult or unclear?",
+        blank=True
+    )
+    
+    network_surprise_text = models.LongStringField(
+        label="Do you feel that something is missing from the network?",
+        blank=True
+    )
+    
+    network_learn_text = models.LongStringField(
+        label="Did you learn anything about your motivations or habits?",
         blank=True
     )
     
@@ -270,40 +269,25 @@ class Player(BasePlayer):
     social_circle_distribution = models.LongStringField(blank=True)
     
     ### plausibility edges ### 
-    # Pair data storage (assuming you generate pairs like before)
     plausibility_edge_pairs_data = models.LongStringField()
 
-    # For Pair 1:
-    edge_influence_type_1 = models.IntegerField(
-        choices=[
-            (0, 'No influence'),
-            (1, 'Positive influence'),
-            (2, 'Negative influence')
-        ],
-        label="",
-        widget=widgets.RadioSelect
+    plausibility_edge_1_type = models.IntegerField(
+        choices=[(0, 'No Influence'), (1, 'Positive Influence'), (2, 'Negative Influence')],
+        label="Influence type for pair 1"
     )
-    edge_influence_strength_1 = models.IntegerField(
-        min=0, max=100,
-        label="Influence strength (0-100)",
-        blank=True
-    )
+    plausibility_edge_1_strength = models.IntegerField(blank=True)
 
-    # For Pair 2:
-    edge_influence_type_2 = models.IntegerField(
-        choices=[
-            (0, 'No influence'),
-            (1, 'Positive influence'),
-            (2, 'Negative influence')
-        ],
-        label="",
-        widget=widgets.RadioSelect
+    plausibility_edge_2_type = models.IntegerField(
+        choices=[(0, 'No Influence'), (1, 'Positive Influence'), (2, 'Negative Influence')],
+        label="Influence type for pair 2"
     )
-    edge_influence_strength_2 = models.IntegerField(
-        min=0, max=100,
-        label="Influence strength (0-100)",
-        blank=True
+    plausibility_edge_2_strength = models.IntegerField(blank=True)
+
+    plausibility_edge_3_type = models.IntegerField(
+        choices=[(0, 'No Influence'), (1, 'Positive Influence'), (2, 'Negative Influence')],
+        label="Influence type for pair 3"
     )
+    plausibility_edge_3_strength = models.IntegerField(blank=True)
     
     ### VEMI ### 
     vemi_1 = models.IntegerField(label="I want to be healthy", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
@@ -321,6 +305,8 @@ class Player(BasePlayer):
     vemi_13 = models.IntegerField(label="I am concerned about animal rights", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
     vemi_14 = models.IntegerField(label="My health is important to me", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
     vemi_15 = models.IntegerField(label="I don’t want animals to suffer", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+
+    social_pressure_personal_beliefs = models.LongStringField(blank=True)
 
 for i in range(C.MAX_NODES):
     setattr(Player, f"belief_rating_{i}", models.StringField(blank=True))
@@ -428,7 +414,6 @@ class SocialCircleDistribution(Page):
 
     @staticmethod
     def error_message(player, values):
-        import json
 
         try:
             data = json.loads(values['social_circle_distribution'])
@@ -699,7 +684,11 @@ class MapImportance(Page):
 
 class NetworkReflection(Page):
     form_model = 'player'
-    form_fields = ['network_reflection_rating', 'network_reflection_text']
+    form_fields = [
+        'network_reflection_rating', 
+        'network_reflection_text',
+        'network_surprise_text',
+        'network_learn_text']
 
     @staticmethod
     def vars_for_template(player: Player):
@@ -720,59 +709,119 @@ class NetworkReflection(Page):
             radius = positions[pos_idx]['radius']
             belief_points.append({"label": item['text'], "x": x, "y": y, "radius": radius})
 
+        # a bit hacky
+        focal_node = positions[0]
+        focal_radius = focal_node['radius']
+
         return dict(
             belief_points=belief_points,
-            belief_edges=prior_edges
+            belief_edges=prior_edges,
+            focal_radius=focal_radius
         )
-
 
 class PlausibilityImportance(Page):
     form_model = 'player'
-    form_fields = ['importance_pair_1', 'importance_pair_2']
+    form_fields = ['importance_ratings']  # this will be a JSON field to hold the answers
 
     @staticmethod
     def vars_for_template(player):
-        all_nodes = json.loads(player.positions_3)
-        labels = [node['label'] for node in all_nodes]
-        random.shuffle(labels)
-        chosen = labels[:4]
+        positions = json.loads(player.positions_5)
+        labels = [node['label'] for node in positions]
+        labels = [label for label in labels if label != 'Meat Eating']  # optionally skip the focal node
 
-        pair_1 = (chosen[0], chosen[1])
-        pair_2 = (chosen[2], chosen[3])
-
-        # Save pairs for display in HTML and record-keeping
-        player.importance_pairs_data = json.dumps({
-            "pair_1": pair_1,
-            "pair_2": pair_2
-        })
-
-        return dict(pair_1=pair_1, pair_2=pair_2)
+        return dict(labels=labels)
 
 class PlausibilityEdges(Page):
     form_model = 'player'
     form_fields = [
-        'edge_influence_type_1', 'edge_influence_strength_1',
-        'edge_influence_type_2', 'edge_influence_strength_2'
+        'plausibility_edge_1_type', 'plausibility_edge_1_strength',
+        'plausibility_edge_2_type', 'plausibility_edge_2_strength',
+        'plausibility_edge_3_type', 'plausibility_edge_3_strength'
     ]
 
     @staticmethod
     def vars_for_template(player):
-        # You can adapt this depending on how you store nodes
-        all_nodes = json.loads(player.positions_3)
+        all_nodes = json.loads(player.positions_5)
+        all_edges = json.loads(player.edges_5)
+
         labels = [node['label'] for node in all_nodes]
-        random.shuffle(labels)
-        chosen = labels[:4]
 
-        pair_1 = (chosen[0], chosen[1])
-        pair_2 = (chosen[2], chosen[3])
+        edge_lookup = {}
+        for edge in all_edges:
+            key = tuple(sorted([edge['from'], edge['to']]))
+            edge_lookup[key] = edge['polarity']
 
-        # Save for record keeping
+        all_pairs = []
+        for i in range(len(labels)):
+            for j in range(i + 1, len(labels)):
+                pair = (labels[i], labels[j])
+                all_pairs.append(pair)
+
+        positive_pairs, negative_pairs, none_pairs = [], [], []
+        for pair in all_pairs:
+            key = tuple(sorted(pair))
+            polarity = edge_lookup.get(key)
+            if polarity == 'positive':
+                positive_pairs.append(pair)
+            elif polarity == 'negative':
+                negative_pairs.append(pair)
+            else:
+                none_pairs.append(pair)
+
+        def pick_or_fallback(primary_list):
+            return random.choice(primary_list) if primary_list else random.choice(all_pairs)
+
+        pos_pair = pick_or_fallback(positive_pairs)
+        neg_pair = pick_or_fallback(negative_pairs)
+        none_pair = pick_or_fallback(none_pairs)
+
+        # store for later
         player.plausibility_edge_pairs_data = json.dumps({
-            "pair_1": pair_1,
-            "pair_2": pair_2
+            "positive": pos_pair,
+            "negative": neg_pair,
+            "none": none_pair
         })
 
-        return dict(pair_1=pair_1, pair_2=pair_2)
+        # here comes the key: we pass one list of tuples
+        return dict(
+            all_pairs=[
+                (1, pos_pair),
+                (2, neg_pair),
+                (3, none_pair)
+            ]
+        )
+
+class SocialPressureMotivations(Page):
+    form_model = 'player'
+    form_fields = ['social_pressure_personal_beliefs']
+
+    @staticmethod
+    def vars_for_template(player):
+
+        # Load data
+        positions = json.loads(player.positions_5)
+        llm_nodes = json.loads(player.llm_result)
+
+        # Normalization helper
+        def normalize(text):
+            return text.replace('\n', ' ').strip()
+
+        # Build lookup table
+        node_lookup = {normalize(node['stance']): node for node in llm_nodes}
+
+        # Filter nodes (PERSONAL + MOTIVATION only)
+        filtered_nodes = []
+        for pos in positions:
+            label_norm = normalize(pos['label'])
+            node = node_lookup.get(label_norm)
+            if node and node['type'] == 'PERSONAL' and node['category'] == 'MOTIVATION':
+                filtered_nodes.append(pos)
+
+        return dict(
+            belief_items=filtered_nodes,
+            categories=['Strongly agree', 'Strongly disagree', 'Not care']
+        )
+
 
 class VEMI(Page):
     form_model = 'player'
@@ -826,6 +875,7 @@ page_sequence = [
     # PLAUSIBILITY
     PlausibilityImportance,
     PlausibilityEdges,
+    SocialPressureMotivations,
     # OTHER 
     VEMI,
     AttentionPage,

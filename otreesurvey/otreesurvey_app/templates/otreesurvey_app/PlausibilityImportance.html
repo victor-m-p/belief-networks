@@ -1,43 +1,67 @@
-{{ block content }}
-<h2>Evaluate Pairs of Statements</h2>
+{% block content %}
+<h2>Importance Ratings</h2>
+<p>Please indicate how important each motivation or habit is for your meat eating frequency. For each question 1 means "not important at all" and 100 means "extremely important"</p>
+<form method="post" id="importanceForm">
 
-<p>Please evaluate the following statement pairs and judge the relative influence on your meat eating behavior. The influence can be either positive or negative.</p>
+    <table style="border-collapse: collapse;">
+        {% for label in labels %}
+            <tr>
+                <td style="padding: 0.5rem;">
+                    {{ label }}
+                </td>
+                <td style="padding: 0.5rem;">
+                    <input type="range" min="1" max="100" value="1" 
+                           style="width: 300px;" 
+                           data-label="{{ label }}"
+                           class="importance-slider"
+                           data-touched="false">
+                    <span id="value_display_{{ forloop.counter0 }}">—</span>
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
 
-<p>Use the scale below where 1 means the statement on the left has all the influence, 4 means equal influence, and 7 means the statement on the right has all the influence.</p>
+    <input type="hidden" name="importance_ratings" value="">
+    {{ next_button }}
+</form>
 
-<!-- Pair 1 -->
-<p><strong>Pair 1:</strong></p>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const sliders = document.querySelectorAll('.importance-slider');
+    const hiddenField = document.querySelector('input[name="importance_ratings"]');
+    const nextButton = document.querySelector('button[type="submit"], .otree-btn-next');
 
-<div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
-    <div style="width: 200px; text-align: center;">
-        {{ pair_1.0 }}<br><small>(all influence)</small>
-    </div>
+    function updateDisplays() {
+        sliders.forEach((slider, index) => {
+            const display = document.getElementById(`value_display_${index}`);
+            display.textContent = slider.dataset.touched === "true" ? slider.value : "—";
+        });
 
-    <div style="margin: 0 20px;">
-        {{ formfield 'importance_pair_1' }}
-    </div>
+        const result = {};
+        sliders.forEach(slider => {
+            const label = slider.dataset.label;
+            result[label] = slider.dataset.touched === "true" ? parseInt(slider.value) : null;
+        });
 
-    <div style="width: 200px; text-align: center;">
-        {{ pair_1.1 }}<br><small>(all influence)</small>
-    </div>
-</div>
+        hiddenField.value = JSON.stringify(result);
+    }
 
-<!-- Pair 2 -->
-<p><strong>Pair 2:</strong></p>
+    sliders.forEach(slider => {
+        slider.addEventListener('input', function () {
+            slider.dataset.touched = "true";
+            updateDisplays();
+        });
+    });
 
-<div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
-    <div style="width: 200px; text-align: center;">
-        {{ pair_2.0 }}<br><small>(all influence)</small>
-    </div>
+    nextButton.addEventListener('click', function (e) {
+        const allTouched = Array.from(sliders).every(s => s.dataset.touched === "true");
+        if (!allTouched) {
+            e.preventDefault();
+            alert("Please provide an importance rating for all items.");
+        }
+    });
 
-    <div style="margin: 0 20px;">
-        {{ formfield 'importance_pair_2' }}
-    </div>
-
-    <div style="width: 200px; text-align: center;">
-        {{ pair_2.1 }}<br><small>(all influence)</small>
-    </div>
-</div>
-
-{{ next_button }}
-{{ endblock }}
+    updateDisplays();
+});
+</script>
+{% endblock %}

@@ -1,27 +1,40 @@
 {% extends "global/Page.html" %}
 
 {% block styles %}
-<style>
-    canvas {
-        border: 2px solid black;
-    }
-</style>
+    <link rel="stylesheet" href="{{ static 'global.css' }}">
+    <style>
+        canvas {
+            border: 2px solid black;
+        }
+    </style>
 {% endblock %}
 
+
 {% block content %}
-<h2>Reflection on Your Network of Meat Eating Motivations and Habits</h2>
-<p>This is the final version of your meat eating network. We would appreciate it if you took a second to consider how well this captures the most reasons for your current meat eating habits.</p>
+<h2>Reflection on your Network of Meat Eating Motivations and Habits</h2>
+<p>This is the final version of your meat eating network. We would appreciate it if you took a second to reflect on this representation and your experience creating it</p>
 
 <canvas id="dragCanvas" width="900" height="600" style="border:1px solid black;"></canvas>
 
+{{ formfield 'network_reflection_rating' }}
+
 <hr>
 
-{{ formfields }}
+{{ formfield 'network_reflection_text' }}
+
+<hr>
+
+{{ formfield 'network_surprise_text' }}
+
+<hr> 
+
+{{ formfield 'network_learn_text' }}
 {{ next_button }}
 
 <script>
 const beliefPoints = {{ belief_points|safe }};
 const beliefEdges = {{ belief_edges|safe }};
+const focalRadius = {{ focal_radius|safe }};
 
 document.addEventListener("DOMContentLoaded", function () {
     const canvas = document.getElementById("dragCanvas");
@@ -29,7 +42,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Reconstruct points: central node + belief nodes
     const points = [
-        { label: "Meat Eating", x: canvas.width/2, y: canvas.height/2, radius: 20, fixed: true },
+        { label: "Meat Eating", x: canvas.width/2, y: canvas.height/2, radius: focalRadius, fixed: true },
         ...beliefPoints.filter(p => p.label !== "Meat Eating").map(p => ({
             label: p.label, x: p.x, y: p.y, radius: p.radius
         }))

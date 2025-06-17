@@ -111,11 +111,11 @@ document.addEventListener("DOMContentLoaded", function () {
     canvas.addEventListener("mousedown", function (evt) {
         const pos = getMousePos(evt);
         const hit = findPoint(pos);
-        if (hit && !hit.fixed) {
+        if (hit) {
             const dist = Math.hypot(hit.x - pos.x, hit.y - pos.y);
             if (dist > hit.radius - resizeMargin && dist <= hit.radius + resizeMargin) {
                 resizingPoint = hit;
-            } else {
+            } else if (!hit.fixed) {
                 draggingPoint = hit;
             }
         }
@@ -139,16 +139,19 @@ document.addEventListener("DOMContentLoaded", function () {
             wasDragging = true;
         }
 
-        if (hoveredPoint && !hoveredPoint.fixed) {
+        if (hoveredPoint) {
             const d = Math.hypot(hoveredPoint.x - pos.x, hoveredPoint.y - pos.y);
             if (d > hoveredPoint.radius - resizeMargin && d <= hoveredPoint.radius + resizeMargin) {
                 canvas.style.cursor = "nwse-resize";
-            } else {
+            } else if (!hoveredPoint.fixed) {
                 canvas.style.cursor = "grab";
+            } else {
+                canvas.style.cursor = "default";
             }
         } else {
             canvas.style.cursor = "default";
         }
+
 
         drawCanvas();
     });

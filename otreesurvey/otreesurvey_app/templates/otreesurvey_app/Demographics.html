@@ -5,7 +5,20 @@ Some questions about yourself
 {% block content %}
 <p>In this final part, we would like you to answer the following questions about yourself.</p>
 
-{{ formfields }}
+{{ formfield 'age' }}
+{{ formfield 'gender' }}
+{{ formfield 'education' }}
+{{ formfield 'politics' }}
+
+{{ formfield 'state' }}
+<p style="font-style: italic; margin-top: 0.2em;">
+If this is not applicable to you or you prefer not to answer please choose the option "Not Applicable" from the dropdown menu.
+</p>
+
+{{ formfield 'zipcode' }}
+<p style="font-style: italic; margin-top: 0.2em;">
+If this is not applicable to you or you prefer not to answer please write "ABCDE" in the text field.
+</p>
 
 {{ next_button }}
 {% endblock %}

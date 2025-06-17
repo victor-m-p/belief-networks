@@ -1,54 +1,52 @@
 {% extends "global/Page.html" %}
 
+{% block styles %}
+<style>
+    .influence-button {
+        padding: 10px 20px;
+        margin: 5px;
+        border: none;
+        color: white;
+        font-weight: bold;
+        font-size: 16px;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+    .positive { background-color: green; }
+    .negative { background-color: red; }
+    .none { background-color: grey; }
+    .selected { border: 3px solid black; }
+</style>
+{% endblock %}
+
 {% block content %}
 <h2>Evaluate Influence Between Pairs of Statements</h2>
 
-<p>Please evaluate whether there is an influence between the following statement pairs. 
-If you indicate an influence, also judge the strength of this influence.</p>
+<p>Please indicate whether one statement influences the other. If there is an influence, also rate how strong it is.</p>
 
-<!-- Pair 1 -->
-<p><strong>Pair 1:</strong></p>
-
-<div style="display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
-    <div style="width: 200px; text-align: center;">
-        {{ pair_1.0 }}
+{% for pair_num, pair in all_pairs %}
+<div style="margin-bottom: 30px;">
+    <div style="display: flex; justify-content: center; margin-bottom: 10px;">
+        <div style="width: 200px; text-align: center;">{{ pair.0 }}</div>
+        <div style="width: 200px; text-align: center;">{{ pair.1 }}</div>
     </div>
 
-    <div style="width: 200px; text-align: center;">
-        {{ pair_1.1 }}
-    </div>
-</div>
-
-<p><strong>Influence type:</strong></p>
-{{ formfield 'edge_influence_type_1' }}
-
-<div id="strength_section_1" style="display:none; margin-top:10px;">
-    <p><strong>Influence strength (0-100):</strong></p>
-    {{ formfield 'edge_influence_strength_1' }}
-</div>
-
-<hr>
-
-<!-- Pair 2 -->
-<p><strong>Pair 2:</strong></p>
-
-<div style="display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
-    <div style="width: 200px; text-align: center;">
-        {{ pair_2.0 }}
+    <div style="text-align: center;">
+        <button type="button" class="influence-button positive" data-pair="{{ pair_num }}" data-value="1">Positive</button>
+        <button type="button" class="influence-button negative" data-pair="{{ pair_num }}" data-value="2">Negative</button>
+        <button type="button" class="influence-button none" data-pair="{{ pair_num }}" data-value="0">No Influence</button>
     </div>
 
-    <div style="width: 200px; text-align: center;">
-        {{ pair_2.1 }}
+    <div id="strength_section_{{ pair_num }}" style="display:none; margin-top:10px; text-align: center;">
+        <p>Influence strength (1-100):</p>
+        <input type="range" id="strength_slider_{{ pair_num }}" min="1" max="100" style="width:300px;" data-touched="false">
+        <span id="strength_value_{{ pair_num }}">—</span>
     </div>
-</div>
 
-<p><strong>Influence type:</strong></p>
-{{ formfield 'edge_influence_type_2' }}
-
-<div id="strength_section_2" style="display:none; margin-top:10px;">
-    <p><strong>Influence strength (0-100):</strong></p>
-    {{ formfield 'edge_influence_strength_2' }}
+    <input type="hidden" name="plausibility_edge_{{ pair_num }}_type" id="type_input_{{ pair_num }}">
+    <input type="hidden" name="plausibility_edge_{{ pair_num }}_strength" id="strength_input_{{ pair_num }}">
 </div>
+{% endfor %}
 
 {{ next_button }}
 {% endblock %}
@@ -56,22 +54,62 @@ If you indicate an influence, also judge the strength of this influence.</p>
 {% block scripts %}
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    function toggleStrength(sectionId, inputName) {
-        const radios = document.getElementsByName(inputName);
-        radios.forEach(radio => {
-            radio.addEventListener("change", function() {
-                if (this.value === "1" || this.value === "2") {
-                    document.getElementById(sectionId).style.display = "block";
-                } else {
-                    document.getElementById(sectionId).style.display = "none";
-                    document.querySelector(`#${sectionId} input`).value = "";
-                }
-            });
+
+    function handleSelection(pair, value) {
+        document.getElementById(`type_input_${pair}`).value = value;
+
+        document.querySelectorAll(`[data-pair="${pair}"]`).forEach(btn => {
+            btn.classList.remove("selected");
         });
+        document.querySelector(`[data-pair="${pair}"][data-value="${value}"]`).classList.add("selected");
+
+        if (value === "1" || value === "2") {
+            document.getElementById(`strength_section_${pair}`).style.display = "block";
+            document.getElementById(`strength_input_${pair}`).value = "";
+        } else {
+            document.getElementById(`strength_section_${pair}`).style.display = "none";
+            document.getElementById(`strength_input_${pair}`).value = "";
+        }
     }
 
-    toggleStrength("strength_section_1", "edge_influence_type_1");
-    toggleStrength("strength_section_2", "edge_influence_type_2");
+    document.querySelectorAll(".influence-button").forEach(btn => {
+        btn.addEventListener("click", function() {
+            const pair = this.dataset.pair;
+            const value = this.dataset.value;
+            handleSelection(pair, value);
+        });
+    });
+
+    [1, 2, 3].forEach(pair => {
+        const slider = document.getElementById(`strength_slider_${pair}`);
+        const output = document.getElementById(`strength_value_${pair}`);
+
+        slider.addEventListener("input", () => {
+            slider.dataset.touched = "true";
+            output.textContent = slider.value;
+            document.getElementById(`strength_input_${pair}`).value = slider.value;
+        });
+    });
+
+    document.querySelector("button[type=submit], .otree-btn-next").addEventListener("click", function(e) {
+        let valid = true;
+        [1, 2, 3].forEach(pair => {
+            const typeVal = document.getElementById(`type_input_${pair}`).value;
+            if (typeVal === "") {
+                valid = false;
+            } else if (typeVal === "1" || typeVal === "2") {
+                const touched = document.getElementById(`strength_slider_${pair}`).dataset.touched === "true";
+                if (!touched) {
+                    valid = false;
+                }
+            }
+        });
+
+        if (!valid) {
+            e.preventDefault();
+            alert("Please complete all inputs before continuing.");
+        }
+    });
 });
 </script>
 {% endblock %}
