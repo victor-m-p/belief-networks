@@ -880,6 +880,5 @@ page_sequence = [
     VEMI,
     AttentionPage,
     Demographics, 
-    # The page with social influence on personal beliefs # 
     Results
 ]
