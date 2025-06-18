@@ -18,7 +18,7 @@ def position_to_dict(
         'age': df[f"{base_str}.age"].iloc[position],
         'gender': df[f"{base_str}.gender"].iloc[position],
         'education': df[f"{base_str}.education"].iloc[position],
-        'politics': df[f"{base_str}.education"].iloc[position],
+        'politics': df[f"{base_str}.politics"].iloc[position],
         'questionnaire': [df[f"{base_str}.policy_{i+1}"].iloc[position] for i in range(n_questionnaire)],
         
         # writing 

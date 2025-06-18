@@ -25,69 +25,161 @@ US_STATES = [
 def smart_linebreak(text, threshold=15):
     if len(text) <= threshold:
         return text
-
-    # Find middle point
     mid = len(text) // 2
-
-    # Search for nearest space to the middle (first to the right, then to the left)
     right = text.find(' ', mid)
     left = text.rfind(' ', 0, mid)
-
-    # Pick the best split point
     if right == -1 and left == -1:
-        split_point = mid  # no spaces found, just split at middle
+        split_point = mid  
     elif right == -1:
         split_point = left
     elif left == -1:
         split_point = right
     else:
-        # pick the closer one to mid
         split_point = left if (mid - left) <= (right - mid) else right
-
-    # Insert line break
     return text[:split_point] + '\n' + text[split_point+1:]
 
 
 class C(BaseConstants): 
-    
-    # not sure we need this 
     NAME_IN_URL = 'survey'
     PLAYERS_PER_GROUP = None
     NUM_ROUNDS = 1
-    MAX_NODES=20
-    MAX_CHAR=60
-    MAX_USER_NODES=3
-    
+    MIN_LEN_ANS = 100
     QUESTIONS = [
         "Please describe your dietary pattern, specifically your meat eating habits. Think about what you would consume in a typical week",
         "Are there any personal motivations that you have to eat or not to eat meat? Feel free to write about anything that comes to mind",
         "Think about the people you interact with on a regular basis and whose opinions and meat eating habits are important to you. What are their meat eating habits?",
         "Think about the people you interact with on a regular basis and whose opinions and meat eating habits are important to you. What are their motivations to eat or to avoid eating meat?"
     ]
-
     MEAT_DEFINITION = "Even if you did not think much about these issues please write whatever comes to mind at this moment. Please try to write at least a few sentences."
-
-    N_QUESTIONS = len(QUESTIONS)
-
+    MEAT_FREQ_CATEGORIES = [
+        "never",
+        "less than once a week",
+        "one or two days a week",
+        "three or four days a week",
+        "five or six days a week",
+        "every day"
+    ]
 class Subsession(BaseSubsession):
     pass
 
 class Group(BaseGroup):
     pass
 
-# helper function
-def get_filtered_nodes(player, type_filter, category_filter):
-    try:
-        llm_data = json.loads(player.llm_result)
-    except (TypeError, json.JSONDecodeError):
-        llm_data = []
-    return [
-        node for node in llm_data
-        if node.get('type') == type_filter and node.get('category') == category_filter
-    ]
-
 class Player(BasePlayer):
-    # demography page 
+    # --- QUESTIONS ---
+    answer1 = models.LongStringField(label="", blank=False)  
+    answer2 = models.LongStringField(label="", blank=False)
+    answer3 = models.LongStringField(label="", blank=False)
+    answer4 = models.LongStringField(label="", blank=False)
+    
+    # --- MEAT SCALE ---
+    meat_consumption_present = models.StringField(
+        choices=C.MEAT_FREQ_CATEGORIES,
+        label="How often do you eat any meat in an average week?",
+        widget=widgets.RadioSelect
+    )
+    meat_consumption_past = models.StringField(
+        choices=C.MEAT_FREQ_CATEGORIES,
+        label="Try to recall your meat eating habits 5 years ago. How often did you eat any meat in an average week?",
+        widget=widgets.RadioSelect
+    )
+    meat_consumption_future = models.StringField(
+        choices=C.MEAT_FREQ_CATEGORIES,
+        label="Try to imagine how your meat eating habits might look 5 years from now. How often do you think you will eat any meat in an average week?",
+        widget=widgets.RadioSelect
+    )
+    
+    # --- SOCIAL CIRCLE ---
+    social_circle_distribution = models.LongStringField(blank=True)
+    
+    # --- LLM --- 
+    prompt_used = models.LongStringField(blank=True)
+    llm_result = models.LongStringField(blank=True)
+    generated_nodes = models.LongStringField(blank=True)
+    final_nodes = models.LongStringField(blank=True)
+    generated_nodes_ratings = models.LongStringField(blank=True) 
+
+    # --- MAPPING: PLACEMENT + EDGES ---
+    positions_1 = models.LongStringField(blank=True)
+    positions_2 = models.LongStringField(blank=True)
+    positions_3 = models.LongStringField(blank=True)
+    positions_4 = models.LongStringField(blank=True)
+    positions_5 = models.LongStringField(blank=True)
+
+    edges_2 = models.LongStringField(blank=True)
+    edges_3 = models.LongStringField(blank=True)
+    edges_4 = models.LongStringField(blank=True)
+    edges_5 = models.LongStringField(blank=True)
+    
+    # --- NETWORK REFLECTION ---
+    network_reflection_rating = models.IntegerField(
+        label="How well do you feel that this representation captures the most important influences on your meat eating habits?",
+        choices=[[1, "Not at all"], [2, "Slightly"], [3, "Moderately"], [4, "Very well"], [5, "Extremely well"]],
+        widget=widgets.RadioSelectHorizontal
+    )
+    network_reflection_text = models.LongStringField(
+        label="Was there anything that was difficult or unclear?",
+        blank=True
+    )
+    network_surprise_text = models.LongStringField(
+        label="Do you feel that something is missing from the network?",
+        blank=True
+    )
+    network_learn_text = models.LongStringField(
+        label="Did you learn anything about your motivations or habits?",
+        blank=True
+    )
+    
+    ### --- PLAUSIBILITY ---
+    importance_ratings = models.LongStringField(blank=True)
+    plausibility_edge_pairs_data = models.LongStringField()
+    plausibility_edge_1_type = models.IntegerField(
+        choices=[(0, 'No Influence'), (1, 'Positive Influence'), (2, 'Negative Influence')],
+        label="Influence type for pair 1"
+    )
+    plausibility_edge_1_strength = models.IntegerField(blank=True)
+    plausibility_edge_2_type = models.IntegerField(
+        choices=[(0, 'No Influence'), (1, 'Positive Influence'), (2, 'Negative Influence')],
+        label="Influence type for pair 2"
+    )
+    plausibility_edge_2_strength = models.IntegerField(blank=True)
+    plausibility_edge_3_type = models.IntegerField(
+        choices=[(0, 'No Influence'), (1, 'Positive Influence'), (2, 'Negative Influence')],
+        label="Influence type for pair 3"
+    )
+    plausibility_edge_3_strength = models.IntegerField(blank=True)
+    social_pressure_personal_beliefs = models.LongStringField(blank=True)
+    
+    ### VEMI ### 
+    vemi_1 = models.IntegerField(label="I want to be healthy", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_2 = models.IntegerField(label="Plant-based diets are better for the environment", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_3 = models.IntegerField(label="Animals do not have to suffer", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_4 = models.IntegerField(label="Animals’ rights are respected", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_5 = models.IntegerField(label="I want to live a long time", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_6 = models.IntegerField(label="Plant-based diets are more sustainable", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_7 = models.IntegerField(label="I care about my body", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_8 = models.IntegerField(label="Eating meat is bad for the planet", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_9 = models.IntegerField(label="Animal rights are important to me", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_10 = models.IntegerField(label="Plant-based diets are environmentally-friendly", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_11 = models.IntegerField(label="It does not seem right to exploit animals", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_12 = models.IntegerField(label="Plants have less of an impact on the environment than animal products", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_13 = models.IntegerField(label="I am concerned about animal rights", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_14 = models.IntegerField(label="My health is important to me", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+    vemi_15 = models.IntegerField(label="I don’t want animals to suffer", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
+
+    # attention
+    attention_personal = models.IntegerField(
+        label="How much attention do you pay to your own meat eating motivations and behaviors?",
+        choices=[1, 2, 3, 4, 5, 6, 7],
+        widget=widgets.RadioSelectHorizontal
+    )
+    attention_social = models.IntegerField(
+        label="How much attention do you pay to the meat eating motivations and behaviors of your social contacts??",
+        choices=[1, 2, 3, 4, 5, 6, 7],
+        widget=widgets.RadioSelectHorizontal
+    )
+
+    # --- Demographics ---
     age = models.IntegerField(label='How old are you?', min=18, max=100)
     gender = models.StringField(
         label='What is your gender?',
@@ -127,196 +219,15 @@ class Player(BasePlayer):
         label="In which state do you currently live?",
         choices=US_STATES
     )
-
     zipcode = models.StringField(
         label="Please enter your 5-digit ZIP code:",
         min_length=5,
         max_length=5,
     )
 
-    # add the scale  
-    meat_consumption_present = models.StringField(
-        choices=[
-            'never',
-            'less than once a week',
-            'one or two days a week',
-            'three or four days a week',
-            'five or six days a week',
-            'every day',
-        ],
-        label="How often do you eat any meat in an average week?",
-        widget=widgets.RadioSelect
-    )
-    meat_consumption_past = models.StringField(
-        choices=[
-            'never',
-            'less than once a week',
-            'one or two days a week',
-            'three or four days a week',
-            'five or six days a week',
-            'every day',
-        ],
-        label="Try to recall your meat eating habits 5 years ago. How often did you eat any meat in an average week?",
-        widget=widgets.RadioSelect
-    )
-    meat_consumption_future = models.StringField(
-        choices=[
-            'never',
-            'less than once a week',
-            'one or two days a week',
-            'three or four days a week',
-            'five or six days a week',
-            'every day',
-        ],
-        label="Try to imagine how your meat eating habits might look 5 years from now. How often do you think you will eat any meat in an average week?",
-        widget=widgets.RadioSelect
-    )
-
-    # for questions (can we make this smoother?)
-    answer1 = models.LongStringField(label="", blank=False)  
-    answer2 = models.LongStringField(label="", blank=False)
-    answer3 = models.LongStringField(label="", blank=False)
-    answer4 = models.LongStringField(label="", blank=False)
-    answer5 = models.LongStringField(label="", blank=False)
-    
-    # LLM stuff
-    prompt_used = models.LongStringField(blank=True)
-    llm_result = models.LongStringField(blank=True)
-    generated_nodes = models.LongStringField(blank=True)
-    revised_beliefs = models.LongStringField(blank=True)
-    user_nodes = models.LongStringField(blank=True)
-    final_nodes = models.LongStringField(blank=True)
-    generated_nodes_ratings = models.LongStringField(blank=True)
-
-    # For new way of doing belief codings (humans)
-    # Currently we are not doing these human labels.
-    label_input_0 = models.StringField(blank=True)
-    label_input_1 = models.StringField(blank=True)
-    label_input_2 = models.StringField(blank=True)
-    label_input_3 = models.StringField(blank=True)
-
-    all_labels_json = models.LongStringField(initial='[]')  # final flat list
-    label_snapshots = models.LongStringField(initial='[]')  # list of lists
-
-    # Position/NETWORK 
-    ## MapNodePlacement
-    positions_1 = models.LongStringField(blank=True)
-    ## MapEdgeCreation1
-    edges_2 = models.LongStringField(blank=True)
-    positions_2 = models.LongStringField(blank=True)
-    ## MapEdgeCreation2
-    edges_3 = models.LongStringField(blank=True)
-    positions_3 = models.LongStringField(blank=True)
-    ## MapEdgeCreation3
-    edges_4 = models.LongStringField(blank=True)
-    positions_4 = models.LongStringField(blank=True)
-    ## MapImportance
-    edges_5 = models.LongStringField(blank=True)
-    positions_5 = models.LongStringField(blank=True)
-    
-    # Plausibility check (not implemented yet)
-    importance_ratings = models.LongStringField(blank=True)
-    
-    ## judge network ## 
-    network_reflection_rating = models.IntegerField(
-        label="How well do you feel that this representation captures the most important influences on your meat eating habits?",
-        choices=[[1, "Not at all"], [2, "Slightly"], [3, "Moderately"], [4, "Very well"], [5, "Extremely well"]],
-        widget=widgets.RadioSelectHorizontal
-    )
-
-    network_reflection_text = models.LongStringField(
-        label="Was there anything that was difficult or unclear?",
-        blank=True
-    )
-    
-    network_surprise_text = models.LongStringField(
-        label="Do you feel that something is missing from the network?",
-        blank=True
-    )
-    
-    network_learn_text = models.LongStringField(
-        label="Did you learn anything about your motivations or habits?",
-        blank=True
-    )
-    
-    # attention
-    attention_personal_behaviors = models.IntegerField(
-        label="How much attention do you pay to your own meat eating habits?",
-        choices=[1, 2, 3, 4, 5, 6, 7],
-        widget=widgets.RadioSelectHorizontal
-    )
-    attention_personal_motivations = models.IntegerField(
-        label="How much attention do you pay to your own meat eating motivations?",
-        choices=[1, 2, 3, 4, 5, 6, 7],
-        widget=widgets.RadioSelectHorizontal
-    )
-    attention_social_motivations = models.IntegerField(
-        label="How much attention do you pay to the meat eating motivations of your social contacts?",
-        choices=[1, 2, 3, 4, 5, 6, 7],
-        widget=widgets.RadioSelectHorizontal
-    )
-    attention_social_behaviors = models.IntegerField(
-        label="How much attention do you pay to the meat eating habits of your social contacts?",
-        choices=[1, 2, 3, 4, 5, 6, 7],
-        widget=widgets.RadioSelectHorizontal
-    )
-    attention_meat_eating = models.IntegerField(
-        label="How much attention do you overall pay to meat eating?",
-        choices=[1, 2, 3, 4, 5, 6, 7],
-        widget=widgets.RadioSelectHorizontal
-    )
-    
-    social_circle_distribution = models.LongStringField(blank=True)
-    
-    ### plausibility edges ### 
-    plausibility_edge_pairs_data = models.LongStringField()
-
-    plausibility_edge_1_type = models.IntegerField(
-        choices=[(0, 'No Influence'), (1, 'Positive Influence'), (2, 'Negative Influence')],
-        label="Influence type for pair 1"
-    )
-    plausibility_edge_1_strength = models.IntegerField(blank=True)
-
-    plausibility_edge_2_type = models.IntegerField(
-        choices=[(0, 'No Influence'), (1, 'Positive Influence'), (2, 'Negative Influence')],
-        label="Influence type for pair 2"
-    )
-    plausibility_edge_2_strength = models.IntegerField(blank=True)
-
-    plausibility_edge_3_type = models.IntegerField(
-        choices=[(0, 'No Influence'), (1, 'Positive Influence'), (2, 'Negative Influence')],
-        label="Influence type for pair 3"
-    )
-    plausibility_edge_3_strength = models.IntegerField(blank=True)
-    
-    ### VEMI ### 
-    vemi_1 = models.IntegerField(label="I want to be healthy", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
-    vemi_2 = models.IntegerField(label="Plant-based diets are better for the environment", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
-    vemi_3 = models.IntegerField(label="Animals do not have to suffer", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
-    vemi_4 = models.IntegerField(label="Animals’ rights are respected", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
-    vemi_5 = models.IntegerField(label="I want to live a long time", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
-    vemi_6 = models.IntegerField(label="Plant-based diets are more sustainable", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
-    vemi_7 = models.IntegerField(label="I care about my body", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
-    vemi_8 = models.IntegerField(label="Eating meat is bad for the planet", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
-    vemi_9 = models.IntegerField(label="Animal rights are important to me", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
-    vemi_10 = models.IntegerField(label="Plant-based diets are environmentally-friendly", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
-    vemi_11 = models.IntegerField(label="It does not seem right to exploit animals", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
-    vemi_12 = models.IntegerField(label="Plants have less of an impact on the environment than animal products", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
-    vemi_13 = models.IntegerField(label="I am concerned about animal rights", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
-    vemi_14 = models.IntegerField(label="My health is important to me", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
-    vemi_15 = models.IntegerField(label="I don’t want animals to suffer", choices=[1,2,3,4,5,6,7], widget=widgets.RadioSelectHorizontal)
-
-    social_pressure_personal_beliefs = models.LongStringField(blank=True)
-
-for i in range(C.MAX_NODES):
-    setattr(Player, f"belief_rating_{i}", models.StringField(blank=True))
-    setattr(Player, f"node_choice_{i}", models.StringField(blank=True))
-    setattr(Player, f"node_modify_text_{i}", models.StringField(blank=True))
-    setattr(Player, f"node_reject_reason_{i}", models.StringField(blank=True))
-    setattr(Player, f"LLM_codings_{i}", models.StringField(blank=True))
-    setattr(Player, f"LLM_accepted_{i}", models.StringField(blank=True))
-    setattr(Player, f"Human_nodes_{i}", models.StringField(blank=True))
-    setattr(Player, f"Final_nodes_{i}", models.StringField(blank=True))
+# some of this we can delete
+for i in range(40): # just some high enough number
+    setattr(Player, f"belief_rating_{i}", models.StringField(blank=True)) # used. 
 
 # PAGES 
 ## INTRODUCTION 
@@ -336,8 +247,8 @@ class Question1(Page):
 
     @staticmethod
     def error_message(player, values):
-        if len(values['answer1']) < 100:
-            return 'Please write at least 100 characters.'
+        if len(values['answer1']) < C.MIN_LEN_ANS:
+            return f'Please write at least {C.MIN_LEN_ANS} characters.'
 
 # implement check.
 class Question2(Page):
@@ -352,8 +263,8 @@ class Question2(Page):
 
     @staticmethod
     def error_message(player, values):
-        if len(values['answer2']) < 100:
-            return 'Please write at least 100 characters.'
+        if len(values['answer2']) < C.MIN_LEN_ANS:
+            return f'Please write at least {C.MIN_LEN_ANS} characters.'
 
 class Question3(Page):
     form_model = 'player'
@@ -367,8 +278,8 @@ class Question3(Page):
     
     @staticmethod
     def error_message(player, values):
-        if len(values['answer3']) < 100:
-            return 'Please write at least 100 characters.'
+        if len(values['answer3']) < C.MIN_LEN_ANS:
+            return f'Please write at least {C.MIN_LEN_ANS} characters.'
 
 class Question4(Page):
     form_model = 'player'
@@ -382,8 +293,8 @@ class Question4(Page):
         
     @staticmethod
     def error_message(player, values):
-        if len(values['answer4']) < 100:
-            return 'Please write at least 100 characters.'
+        if len(values['answer4']) < C.MIN_LEN_ANS:
+            return f'Please write at least {C.MIN_LEN_ANS} characters.'
 
 class MeatScale(Page):
     form_model = 'player'
@@ -395,18 +306,9 @@ class SocialCircleDistribution(Page):
     form_fields = ['social_circle_distribution']
 
     @staticmethod
-    def vars_for_template(player):
-        categories = [
-            'never',
-            'less than once a week',
-            'one or two days a week',
-            'three or four days a week',
-            'five or six days a week',
-            'every day',
-        ]
-
+    def vars_for_template(player: Player):
+        categories = C.MEAT_FREQ_CATEGORIES
         initial_distribution = json.dumps({category: 0 for category in categories})
-
         return dict(
             categories=categories,
             initial_distribution=initial_distribution
@@ -414,15 +316,12 @@ class SocialCircleDistribution(Page):
 
     @staticmethod
     def error_message(player, values):
-
         try:
             data = json.loads(values['social_circle_distribution'])
+            if sum(data.values()) != 100:
+                return "The total must sum to exactly 100"
         except Exception:
             return "Something went wrong. Please adjust the sliders again."
-
-        total = sum(data.values())
-        if total != 100:
-            return "The total must sum to exactly 100."
 
 class LLMGenerate(Page):
     timeout_seconds = 120
@@ -436,102 +335,53 @@ class LLMGenerate(Page):
                 for i in range(len(C.QUESTIONS))
             }
 
-            prompt = make_node_prompt(questions_answers)
-            player.prompt_used = prompt
-
-            print("📜 Prompt:\n", prompt)
-            print("🔑 API KEY:", os.getenv("OPENAI_API_KEY"))
+            player.prompt_used = make_node_prompt(questions_answers)
 
             try:
-                llm_nodes = call_openai(
-                    NodeModelList,
-                    prompt)
+                llm_nodes = call_openai(NodeModelList, player.prompt_used)
+                llm_nodes = json.loads(llm_nodes.model_dump_json(indent=2))['results']
             except Exception as e:
                 print("❌ LLM call failed:", e)
                 llm_nodes = []
 
-            llm_nodes = json.loads(llm_nodes.model_dump_json(indent=2))
-            llm_nodes = llm_nodes['results']
             player.llm_result = json.dumps(llm_nodes)
-            
             filtered_nodes = [
                 node for node in llm_nodes 
                 if not (node['type'] == 'PERSONAL' and node['category'] == 'BEHAVIOR')
             ]
-            
             random.shuffle(filtered_nodes)
             player.generated_nodes = json.dumps(filtered_nodes)
-            
 
 class BeliefAccuracyRating(Page):
     form_model = 'player'
 
     @staticmethod
     def get_form_fields(player):
-        generated_nodes = json.loads(player.generated_nodes or '[]')
-        return [f"belief_rating_{i}" for i in range(len(generated_nodes))]
+        return [f"belief_rating_{i}" for i in range(len(json.loads(player.generated_nodes or '[]')))]
 
     @staticmethod
-    def vars_for_template(player):
-        generated_nodes = json.loads(player.generated_nodes or '[]')
-
-        qa_pairs = []
-        for i, question in enumerate(C.QUESTIONS):
-            fieldname = f'answer{i+1}'
-            answer = getattr(player, fieldname, '')
-            qa_pairs.append({'question': question, 'answer': answer})
-
-        stored_ratings = json.loads(player.field_maybe_none('generated_nodes_ratings') or '[]')
-
-        rating_items = []
-        for i, node in enumerate(generated_nodes):
-            stance = node.get("stance", "")
-            rating = ''
-            if i < len(stored_ratings):
-                rating = stored_ratings[i].get("rating", "")
-            rating_items.append({
-                "index": i,
-                "belief": stance,
-                "rating": str(rating),
-            })
-
-        return dict(
-            belief_items=rating_items,
-            transcript=qa_pairs,
-            C=C,
-            rating_options=list(range(1, 8))
-        )
+    def vars_for_template(player: Player):
+        nodes = json.loads(player.generated_nodes) if player.generated_nodes else []
+        qa_pairs = [{'question': q, 'answer': getattr(player, f'answer{i+1}')}
+                    for i, q in enumerate(C.QUESTIONS)]
+        belief_items = [
+            {"index": i, "belief": node.get("stance", ""), "rating": ""}
+            for i, node in enumerate(nodes)
+        ]
+        return dict(belief_items=belief_items, transcript=qa_pairs, C=C, rating_options=list(range(1, 8)))
 
     @staticmethod
-    def error_message(player, values):
-        generated_nodes = json.loads(player.generated_nodes or '[]')
+    def error_message(player: Player, values):
+        nodes = json.loads(player.generated_nodes or '[]')
         ratings_to_store = []
-
-        for i, node in enumerate(generated_nodes):
+        for i, node in enumerate(nodes):
             stance = node.get("stance", "")
             rating = values.get(f"belief_rating_{i}", "")
-            text = smart_linebreak(stance)
             if not rating:
                 return "Please rate all items before continuing."
-            ratings_to_store.append({
-                "text": text,
-                "belief": stance,
-                "rating": rating # not used right now
-            })
-
+            ratings_to_store.append({"text": smart_linebreak(stance), "belief": stance, "rating": rating})
         player.generated_nodes_ratings = json.dumps(ratings_to_store)
-
-        # for revised beliefs - maybe we can do this in a more smooth way 
-        final_nodes = [
-            entry for entry in ratings_to_store 
-            if int(entry["rating"]) >= 4
-        ]
-        
-        player.final_nodes = json.dumps(final_nodes)
-
-    @staticmethod
-    def before_next_page(player, timeout_happened):
-        pass
+        player.final_nodes = json.dumps([r for r in ratings_to_store if int(r["rating"]) > 4])
 
 class MapNodePlacement(Page):
     form_model = 'player'
@@ -539,148 +389,68 @@ class MapNodePlacement(Page):
 
     @staticmethod
     def vars_for_template(player):
-        final_nodes = json.loads(player.final_nodes or '[]')
-        belief_texts = [item['text'] for item in final_nodes if item.get('text')]
-
-        # Just send the labels, layout happens in template
-        belief_points = [{"label": label} for label in belief_texts]
-
-        return dict(
-            belief_labels_json=json.dumps([point['label'] for point in belief_points]),
-        )
-
-    @staticmethod
-    def before_next_page(player, timeout_happened):
-        pass
+        labels = [item['text'] for item in json.loads(player.final_nodes or '[]') if item.get('text')]
+        return dict(belief_labels_json=json.dumps(labels))
 
 class MapEdgeCreation1(Page):
     form_model = 'player'
     form_fields = ['positions_2', 'edges_2']
 
     @staticmethod
-    def vars_for_template(player: Player):
-        final_nodes = json.loads(player.final_nodes or '[]')
-        try:
-            positions = json.loads(player.positions_1 or '[]')
-        except (TypeError, json.JSONDecodeError):
-            positions = []
-
-        belief_points = []
-        labels = [item['text'] for item in final_nodes]
-        for i, item in enumerate(final_nodes):
-            pos_idx = i + 1
-            x = positions[pos_idx]['x']
-            y = positions[pos_idx]['y']
-            radius = 20
-            belief_points.append({"label": item['text'], "x": x, "y": y, "radius": radius})
-
-        return dict(
-            belief_points=belief_points,
-            belief_labels_json=json.dumps(labels)  # only pass labels_json for JS
-        )
-
-    @staticmethod
-    def before_next_page(player: Player, timeout_happened):
-        pass
-
+    def vars_for_template(player):
+        labels = [item['text'] for item in json.loads(player.final_nodes or '[]')]
+        positions = json.loads(player.positions_1 or '[]')
+        belief_points = [
+            {"label": label, "x": positions[i+1]['x'], "y": positions[i+1]['y'], "radius": 20}
+            for i, label in enumerate(labels)
+        ]
+        return dict(belief_points=belief_points, belief_labels_json=json.dumps(labels))
+    
 class MapEdgeCreation2(Page):
     form_model = 'player'
     form_fields = ['positions_3', 'edges_3']
 
     @staticmethod
-    def vars_for_template(player: Player):
-        final_nodes = json.loads(player.final_nodes or '[]')
-        try:
-            positions = json.loads(player.positions_2 or '[]')
-            prior_edges = json.loads(player.edges_2 or '[]')
-        except (TypeError, json.JSONDecodeError):
-            positions = []
-            prior_edges = []
-
-        belief_points = []
-        labels = [item['text'] for item in final_nodes]
-        for i, item in enumerate(final_nodes):
-            pos_idx = i + 1
-            x = positions[pos_idx]['x']
-            y = positions[pos_idx]['y']
-            radius = 20
-            belief_points.append({"label": item['text'], "x": x, "y": y, "radius": radius})
-
-        return dict(
-            belief_points=belief_points,
-            belief_labels_json=json.dumps(labels),
-            belief_edges=prior_edges  # <-- pass existing edges
-        )
-
-    @staticmethod
-    def before_next_page(player: Player, timeout_happened):
-        pass
+    def vars_for_template(player):
+        labels = [item['text'] for item in json.loads(player.final_nodes or '[]')]
+        positions = json.loads(player.positions_2 or '[]')
+        prior_edges = json.loads(player.edges_2 or '[]')
+        belief_points = [
+            {"label": label, "x": positions[i+1]['x'], "y": positions[i+1]['y'], "radius": 20}
+            for i, label in enumerate(labels)
+        ]
+        return dict(belief_points=belief_points, belief_labels_json=json.dumps(labels), belief_edges=prior_edges)
 
 class MapEdgeCreation3(Page):
     form_model = 'player'
     form_fields = ['positions_4', 'edges_4']
 
     @staticmethod
-    def vars_for_template(player: Player):
-        final_nodes = json.loads(player.final_nodes or '[]')
-        try:
-            positions = json.loads(player.positions_3 or '[]')
-            prior_edges = json.loads(player.edges_3 or '[]')
-        except (TypeError, json.JSONDecodeError):
-            positions = []
-            prior_edges = []
+    def vars_for_template(player):
+        labels = [item['text'] for item in json.loads(player.final_nodes or '[]')]
+        positions = json.loads(player.positions_3 or '[]')
+        prior_edges = json.loads(player.edges_3 or '[]')
+        belief_points = [
+            {"label": label, "x": positions[i+1]['x'], "y": positions[i+1]['y'], "radius": 20}
+            for i, label in enumerate(labels)
+        ]
+        return dict(belief_points=belief_points, belief_labels_json=json.dumps(labels), belief_edges=prior_edges)
 
-        belief_points = []
-        labels = [item['text'] for item in final_nodes]
-        for i, item in enumerate(final_nodes):
-            pos_idx = i + 1
-            x = positions[pos_idx]['x']
-            y = positions[pos_idx]['y']
-            radius = 20
-            belief_points.append({"label": item['text'], "x": x, "y": y, "radius": radius})
-
-        return dict(
-            belief_points=belief_points,
-            belief_labels_json=json.dumps(labels),
-            belief_edges=prior_edges  # <-- pass existing edges
-        )
-
-    @staticmethod
-    def before_next_page(player: Player, timeout_happened):
-        pass
 
 class MapImportance(Page):
     form_model = 'player'
     form_fields = ['positions_5', 'edges_5']
 
     @staticmethod
-    def vars_for_template(player: Player):
-        final_nodes = json.loads(player.final_nodes or '[]')
-        try:
-            positions = json.loads(player.positions_4 or '[]')
-            prior_edges = json.loads(player.edges_4 or '[]')
-        except (TypeError, json.JSONDecodeError):
-            positions = []
-            prior_edges = []
-
-        belief_points = []
-        labels = [item['text'] for item in final_nodes]
-        for i, item in enumerate(final_nodes):
-            pos_idx = i + 1
-            x = positions[pos_idx]['x']
-            y = positions[pos_idx]['y']
-            radius = 20
-            belief_points.append({"label": item['text'], "x": x, "y": y, "radius": radius})
-
-        return dict(
-            belief_points=belief_points,
-            belief_labels_json=json.dumps(labels),
-            belief_edges=prior_edges  # <-- pass existing edges
-        )
-        
-    @staticmethod
-    def before_next_page(player: Player, timeout_happened):
-        pass
+    def vars_for_template(player):
+        labels = [item['text'] for item in json.loads(player.final_nodes or '[]')]
+        positions = json.loads(player.positions_4 or '[]')
+        prior_edges = json.loads(player.edges_4 or '[]')
+        belief_points = [
+            {"label": label, "x": positions[i+1]['x'], "y": positions[i+1]['y'], "radius": 20}
+            for i, label in enumerate(labels)
+        ]
+        return dict(belief_points=belief_points, belief_labels_json=json.dumps(labels), belief_edges=prior_edges)
 
 class NetworkReflection(Page):
     form_model = 'player'
@@ -688,36 +458,20 @@ class NetworkReflection(Page):
         'network_reflection_rating', 
         'network_reflection_text',
         'network_surprise_text',
-        'network_learn_text']
+        'network_learn_text'
+    ]
 
     @staticmethod
-    def vars_for_template(player: Player):
-        final_nodes = json.loads(player.final_nodes or '[]')
-        try:
-            positions = json.loads(player.positions_5 or '[]')
-            prior_edges = json.loads(player.edges_5 or '[]')
-        except (TypeError, json.JSONDecodeError):
-            positions = []
-            prior_edges = []
+    def vars_for_template(player):
+        labels = [item['text'] for item in json.loads(player.final_nodes or '[]')]
+        positions = json.loads(player.positions_5 or '[]')
+        edges = json.loads(player.edges_5 or '[]')
+        belief_points = [
+            {"label": label, "x": positions[i+1]['x'], "y": positions[i+1]['y'], "radius": positions[i+1].get('radius', 20)}
+            for i, label in enumerate(labels)
+        ]
+        return dict(belief_points=belief_points, belief_edges=edges, focal_radius=positions[0].get('radius', 20))
 
-        belief_points = []
-        labels = [item['text'] for item in final_nodes]
-        for i, item in enumerate(final_nodes):
-            pos_idx = i + 1
-            x = positions[pos_idx]['x']
-            y = positions[pos_idx]['y']
-            radius = positions[pos_idx]['radius']
-            belief_points.append({"label": item['text'], "x": x, "y": y, "radius": radius})
-
-        # a bit hacky
-        focal_node = positions[0]
-        focal_radius = focal_node['radius']
-
-        return dict(
-            belief_points=belief_points,
-            belief_edges=prior_edges,
-            focal_radius=focal_radius
-        )
 
 class PlausibilityImportance(Page):
     form_model = 'player'
@@ -741,55 +495,26 @@ class PlausibilityEdges(Page):
 
     @staticmethod
     def vars_for_template(player):
-        all_nodes = json.loads(player.positions_5)
-        all_edges = json.loads(player.edges_5)
+        nodes = json.loads(player.positions_5 or '[]')
+        edges = json.loads(player.edges_5 or '[]')
+        labels = [n['label'] for n in nodes]
 
-        labels = [node['label'] for node in all_nodes]
+        edge_lookup = {tuple(sorted([e['from'], e['to']])): e['polarity'] for e in edges}
+        all_pairs = [(a, b) for i, a in enumerate(labels) for b in labels[i+1:]]
 
-        edge_lookup = {}
-        for edge in all_edges:
-            key = tuple(sorted([edge['from'], edge['to']]))
-            edge_lookup[key] = edge['polarity']
+        pos_pairs = [p for p in all_pairs if edge_lookup.get(tuple(sorted(p))) == 'positive']
+        neg_pairs = [p for p in all_pairs if edge_lookup.get(tuple(sorted(p))) == 'negative']
+        none_pairs = [p for p in all_pairs if tuple(sorted(p)) not in edge_lookup]
 
-        all_pairs = []
-        for i in range(len(labels)):
-            for j in range(i + 1, len(labels)):
-                pair = (labels[i], labels[j])
-                all_pairs.append(pair)
+        def pick(pairs):
+            return random.choice(pairs) if pairs else random.choice(all_pairs)
 
-        positive_pairs, negative_pairs, none_pairs = [], [], []
-        for pair in all_pairs:
-            key = tuple(sorted(pair))
-            polarity = edge_lookup.get(key)
-            if polarity == 'positive':
-                positive_pairs.append(pair)
-            elif polarity == 'negative':
-                negative_pairs.append(pair)
-            else:
-                none_pairs.append(pair)
+        pos = pick(pos_pairs)
+        neg = pick(neg_pairs)
+        none = pick(none_pairs)
 
-        def pick_or_fallback(primary_list):
-            return random.choice(primary_list) if primary_list else random.choice(all_pairs)
-
-        pos_pair = pick_or_fallback(positive_pairs)
-        neg_pair = pick_or_fallback(negative_pairs)
-        none_pair = pick_or_fallback(none_pairs)
-
-        # store for later
-        player.plausibility_edge_pairs_data = json.dumps({
-            "positive": pos_pair,
-            "negative": neg_pair,
-            "none": none_pair
-        })
-
-        # here comes the key: we pass one list of tuples
-        return dict(
-            all_pairs=[
-                (1, pos_pair),
-                (2, neg_pair),
-                (3, none_pair)
-            ]
-        )
+        player.plausibility_edge_pairs_data = json.dumps({"positive": pos, "negative": neg, "none": none})
+        return dict(all_pairs=[(1, pos), (2, neg), (3, none)])
 
 class SocialPressureMotivations(Page):
     form_model = 'player'
@@ -797,30 +522,27 @@ class SocialPressureMotivations(Page):
 
     @staticmethod
     def vars_for_template(player):
+        def normalize(t): return t.replace('\n', ' ').strip()
 
-        # Load data
-        positions = json.loads(player.positions_5)
-        llm_nodes = json.loads(player.llm_result)
-
-        # Normalization helper
-        def normalize(text):
-            return text.replace('\n', ' ').strip()
-
-        # Build lookup table
-        node_lookup = {normalize(node['stance']): node for node in llm_nodes}
-
-        # Filter nodes (PERSONAL + MOTIVATION only)
-        filtered_nodes = []
-        for pos in positions:
-            label_norm = normalize(pos['label'])
-            node = node_lookup.get(label_norm)
-            if node and node['type'] == 'PERSONAL' and node['category'] == 'MOTIVATION':
-                filtered_nodes.append(pos)
+        positions = json.loads(player.positions_5 or '[]')
+        llm_nodes = json.loads(player.llm_result or '[]')
+        node_lookup = {normalize(n['stance']): n for n in llm_nodes}
 
         return dict(
-            belief_items=filtered_nodes,
+            belief_items=[p for p in positions if node_lookup.get(normalize(p['label']), {}).get('type') == 'PERSONAL' and node_lookup.get(normalize(p['label']), {}).get('category') == 'MOTIVATION'],
             categories=['Strongly agree', 'Strongly disagree', 'Not care']
         )
+
+    @staticmethod
+    def error_message(player, values):
+        try:
+            data = json.loads(values['social_pressure_personal_beliefs'])
+        except Exception:
+            return "Something went wrong. Please adjust the sliders again."
+
+        for belief_data in data.values():
+            if sum(belief_data['values'].values()) != 100:
+                return "Each box must sum to exactly 100%."
 
 
 class VEMI(Page):
@@ -834,11 +556,8 @@ class VEMI(Page):
 class AttentionPage(Page):
     form_model = 'player'
     form_fields = [
-        'attention_personal_behaviors',
-        'attention_personal_motivations',
-        'attention_social_motivations',
-        'attention_social_behaviors',
-        'attention_meat_eating'
+        'attention_personal',
+        'attention_social',
     ]
 
 class Demographics(Page): 
@@ -851,32 +570,25 @@ class ResultsWaitPage(WaitPage):
 class Results(Page):
     pass
 
-# page sequence 
 page_sequence = [
     Introduction,
-    # QUESTIONS 
     Question1, 
     Question2, 
     Question3, 
     Question4,
-    # WEIRD THAT THESE ARE BEFORE LLM THINGS?
     MeatScale,
     SocialCircleDistribution,
-    # GENERATE + SELECT BELIEFS 
     LLMGenerate,
     BeliefAccuracyRating,
-    # PLACEMENT + EDGES + IMPORTANCE
     MapNodePlacement,
     MapEdgeCreation1,
     MapEdgeCreation2,
     MapEdgeCreation3,
     MapImportance,
     NetworkReflection,
-    # PLAUSIBILITY
     PlausibilityImportance,
     PlausibilityEdges,
     SocialPressureMotivations,
-    # OTHER 
     VEMI,
     AttentionPage,
     Demographics, 

@@ -5,8 +5,8 @@
 
 <p>For each of the following statements, please estimate how many of your social contacts would:</p>
 <ul>
-    <li>Strongly agree</li>
-    <li>Strongly disagree</li>
+    <li>Strongly agree (good reason to eat more/less meat)</li>
+    <li>Strongly disagree (bad reason to eat more/less meat)</li>
     <li>Not care</li>
 </ul>
 <p>The values for each statement must sum to 100%.</p>
@@ -15,7 +15,7 @@
 
     {% for belief in belief_items %}
         {% with belief_index=forloop.counter0 %}
-        <div style="margin-bottom: 30px; border: 1px solid #ddd; padding: 10px;">
+        <div class="belief-block" data-belief="{{ belief_index }}" data-label="{{ belief.label }}" style="margin-bottom: 30px; border: 1px solid #ddd; padding: 10px;">
             <strong>{{ belief.label }}</strong>
 
             <table style="border-collapse: collapse; margin-top: 10px;">
@@ -39,7 +39,6 @@
     {% endfor %}
 
     <input type="hidden" name="social_pressure_personal_beliefs" id="hidden_field">
-
     {{ next_button }}
 </form>
 
@@ -53,24 +52,21 @@ document.addEventListener('DOMContentLoaded', function () {
         return Array.from(sliders).filter(slider => parseInt(slider.dataset.belief) === beliefIndex);
     }
 
-    function getTotalForBelief(beliefIndex, excludeSlider=null) {
-        let total = 0;
-        getSlidersForBelief(beliefIndex).forEach(slider => {
-            if (slider !== excludeSlider) {
-                total += parseInt(slider.value);
-            }
-        });
-        return total;
+    function getTotalForBelief(beliefIndex, excludeSlider = null) {
+        return getSlidersForBelief(beliefIndex).reduce((total, slider) => {
+            return total + (slider !== excludeSlider ? parseInt(slider.value) : 0);
+        }, 0);
     }
 
     function updateDisplays() {
-        const beliefs = new Set();
-        sliders.forEach(slider => beliefs.add(parseInt(slider.dataset.belief)));
-
+        const beliefBlocks = document.querySelectorAll('.belief-block');
         const result = {};
 
-        beliefs.forEach(beliefIndex => {
+        beliefBlocks.forEach(block => {
+            const beliefIndex = parseInt(block.dataset.belief);
+            const label = block.dataset.label;
             const slidersForBelief = getSlidersForBelief(beliefIndex);
+
             let beliefTotal = 0;
             const beliefResult = {};
 
@@ -84,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             document.getElementById(`total_display_${beliefIndex}`).textContent = beliefTotal;
             result[beliefIndex] = {
-                belief_label: document.querySelector(`strong:nth-of-type(${beliefIndex + 1})`).innerText,
+                belief_label: label,
                 values: beliefResult
             };
         });
