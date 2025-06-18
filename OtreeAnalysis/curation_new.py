@@ -111,140 +111,107 @@ import networkx as nx
 import matplotlib.pyplot as plt 
 import matplotlib.patches as mpatches
 
-text_mapping = {node['belief']: node['text'] for node in final_nodes}
-generated_nodes
-node_dict = pos_3
-edge_dict = edges_3
+text_mapping = {node['text']: node['belief'] for node in final_nodes}
+text_mapping['Meat Eating'] = 'Meat Eating'
+type_mapping = {node['stance']: [node['type'], node['category']] for node in generated_nodes}
+type_mapping['Meat Eating'] = ['PERSONAL', 'BEHAVIOR']
 
-# 1. this is on its head for some reason 
-# 2. the colors should be red/green 
-# 3. how do I scale it to be exactly like they see it?
-# 4. need to color based on category: a little complicated but okay. 
-G = nx.Graph()
-pos = {}
-radii = {}
+def category_to_color(node_type, node_category):
+    if node_type == 'PERSONAL' and node_category == 'MOTIVATION':
+        return 'tab:blue'
+    elif node_type == 'PERSONAL' and node_category == 'BEHAVIOR':
+        return 'tab:grey'
+    elif node_type == 'SOCIAL' and node_category == 'MOTIVATION':
+        return 'tab:orange'
+    else: 
+        return 'tab:green'
 
-for node in node_dict: 
-    label = node['label']
-    G.add_node(label)
-    pos[label] = (node['x'], node['y'])
-    radii[label] = node['radius']
+def get_colors(node_text):
+    node_text_clean = text_mapping.get(node_text)
+    node_type, node_category = type_mapping.get(node_text_clean)
+    return category_to_color(node_type, node_category)
 
-for edge in edge_dict: 
-    G.add_edge(edge['from'], edge['to'], polarity=edge['polarity'], size=edge['strength'])
-
-# node and edge properties / visuals 
-edge_colors = ['tab:red' if G[u][v]['polarity'] == 'positive' else 'tab:blue' for u, v in G.edges()]
-edge_size = [G[u][v]['size']/10 for u, v in G.edges()]
-node_sizes = [radii[n] ** 2 for n in G.nodes()] 
-
-
-fig, ax = plt.subplots(figsize=(8, 8))
-
-# Draw nodes and edges
-nx.draw_networkx_nodes(G, pos, ax=ax, node_size=node_sizes, edgecolors='black')
-nx.draw_networkx_edges(G, pos, ax=ax, edge_color=edge_colors, width=edge_size)
- 
-for label, (x, y) in pos.items():
-    ax.annotate(
-        label,
-        (x, y),
-        textcoords='offset points',
-        xytext=(0, 0),
-        ha='center',
-        va='center',
-        fontsize=12,
-        clip_on=False  # <-- this allows text to go beyond axes
-    )
-
-def plot_network(participant_id: str, node_dict: dict, edge_dict: dict, node_types=False, label_nodes=True):
+def plot_network(node_dict, edge_dict):
 
     G = nx.Graph()
-
-    # Add nodes with position and radius
     pos = {}
     radii = {}
-    for node in node_dict:
+
+    for node in node_dict: 
         label = node['label']
         G.add_node(label)
         pos[label] = (node['x'], node['y'])
         radii[label] = node['radius']
 
-    # Optionally add color
-    if node_types:
-        node_colors, source_to_color = color_nodes(G, node_types)
-    else: 
-        node_colors = 'tab:gray' 
-        source_to_color = {}
+    # test flipping y
+    max_y = max(y for _, y in pos.values())
+    pos = {label: (x, max_y - y) for label, (x, y) in pos.items()}
 
-    # Step 3: Add edges with polarity
-    for edge in edge_dict:
-        G.add_edge(edge['fromLabel'], edge['toLabel'], polarity=edge['polarity'])
+    for edge in edge_dict: 
+        G.add_edge(edge['from'], edge['to'], polarity=edge['polarity'], size=edge['strength'])
 
-    # Step 4: Prepare colors and sizes
-    edge_colors = ['tab:red' if G[u][v]['polarity'] == 'positive' else 'tab:blue' for u, v in G.edges()]
-    node_sizes = [radii[n] ** 2 for n in G.nodes()]  # area-based scaling
+    # node and edge properties / visuals 
+    edge_colors = ['tab:green' if G[u][v]['polarity'] == 'positive' else 'tab:red' for u, v in G.edges()]
+    edge_size = [G[u][v]['size']/10 for u, v in G.edges()]
+    node_sizes = [radii[n] ** 2 for n in G.nodes()] 
+    node_colors = [get_colors(n) for n in G.nodes()]
 
     fig, ax = plt.subplots(figsize=(8, 8))
 
     # Draw nodes and edges
     nx.draw_networkx_nodes(G, pos, ax=ax, node_size=node_sizes, node_color=node_colors, edgecolors='black')
-    nx.draw_networkx_edges(G, pos, ax=ax, edge_color=edge_colors, width=2)
+    nx.draw_networkx_edges(G, pos, ax=ax, edge_color=edge_colors, width=edge_size)
 
-    # Manually draw labels with clip_on=False
-    if label_nodes: 
-        for label, (x, y) in pos.items():
-            ax.annotate(
-                label,
-                (x, y),
-                textcoords='offset points',
-                xytext=(0, 0),
-                ha='center',
-                va='center',
-                fontsize=12,
-                clip_on=False  # <-- this allows text to go beyond axes
-            )
+    for label, (x, y) in pos.items():
+        ax.annotate(
+            label,
+            (x, y),
+            textcoords='offset points',
+            xytext=(0, 0),
+            ha='center',
+            va='center',
+            fontsize=12,
+            clip_on=False  # <-- this allows text to go beyond axes
+        )
 
-    # Problems with clipping on x axis 
-    x_vals, _ = zip(*pos.values())
-    x_margin = (max(x_vals) - min(x_vals)) * 0.3
-    ax.set_xlim(min(x_vals) - x_margin, max(x_vals) + x_margin)
-    ax.axis('off')
+    plt.show();
     
-    # Legend patches
-    legend_handles = [
-        mpatches.Patch(color=source_to_color.get('ACCEPTED'), label='Accepted'),
-        mpatches.Patch(color=source_to_color.get('USER'), label='User'),
-        mpatches.Patch(color=source_to_color.get('MODIFIED'), label='Modified'),
-    ]
+node_dict = pos_5
+edge_dict = edges_5
 
-    # Place legend *outside* the axes, in fixed bottom right of figure
-    fig.legend(
-        handles=legend_handles,
-        #loc='upper right',
-        bbox_to_anchor=(0.98, 0.02), 
-        borderaxespad=0.2,
-        frameon=False,
-        fontsize=12
-    )
-    
-    # Let tight_layout reposition the figure canvas to include overhanging labels
-    fig.tight_layout()
+plot_network(node_dict, edge_dict)
 
-    # Save without cropping
-    if partici
-    plt.savefig(f'fig/networks/{participant_id}.png', dpi=300, bbox_inches='tight')
-    plt.close()
+# --- SECOND NETWORK REPRESENTATION ---
 
-plot_network(
-    id = 'whatever',
-    
-)
+# --- ENERGY ---
+# --- E Simple ---
+meat_categories = [
+    "never",
+    "less than once a week",
+    "one or two days a week",
+    "three or four days a week",
+    "five or six days a week",
+    "every day"
+]
+meat_conversion = {ele: num for num, ele in enumerate(meat_categories)}
+likert_keys = [x+1 for x in range(7)]
+val_zero_to_one = np.linspace(0, 1, num=len(likert_keys))
+val_minus_to_plus = np.linspace(-1, 1, num=len(likert_keys))
 
-p_dicts = [load_file(dir, f) for f in files]
-for dic in p_dicts: 
-    id = dic['code']
-    nodes = dic['pos_3']
-    edges = dic['edges_3']
-    node_types = dic['final_nodes']
-    plot_network(id, nodes, edges, node_types, label_nodes=True)
+map_zero_to_one = dict(zip(likert_keys, val_zero_to_one))
+map_minus_to_plus = dict(zip(likert_keys, val_minus_to_plus))
+
+meat_present_lik = meat_conversion.get(meat_present) 
+meat_present_num = map_minus_to_plus.get(meat_present_lik)
+
+# attention
+attention_pers_num = map_zero_to_one.get(attention_pers)
+attention_soc_num = map_zero_to_one.get(attention_soc)
+
+# pressure social behaviors
+## take all of these out ...
+
+# direct personal influence 
+## take all of these out ... 
+
+# then rescale somehow (not entirely clear though)
