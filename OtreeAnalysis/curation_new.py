@@ -3,7 +3,7 @@ import pandas as pd
 import json 
 from collections import Counter
 
-df = pd.read_csv('data/all_apps_wide-2025-06-18(1).csv')
+df = pd.read_csv('data/all_apps_wide-2025-06-18_Peter.csv')
 base_str = 'otreesurvey_app.1.player'
 n_answers = 4
 position = 0
@@ -104,6 +104,10 @@ vemi_data = {ele: df[f'{base_str}.vemi_{num+1}'].iloc[0] for num, ele in enumera
 # --- ATTENTION ---
 attention_pers = df[f'{base_str}.attention_personal'].iloc[0]
 attention_soc = df[f'{base_str}.attention_social'].iloc[0]
+
+# --- CHECK RATINGS + ACCEPTED 
+node_ratings
+
 
 # --- ANALYSIS ---
 # --- NETWORKS ---

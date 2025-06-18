@@ -3,11 +3,13 @@
 {% block content %}
 <h2>Social Pressure on Motivations</h2>
 
-<p>For each of the following statements, please estimate how many of your social contacts would:</p>
+<p>Imagine that you are discussing meat eating with a group of important social contacts</p>
+<p>The following are motivations you mentioned to eat more or less meat</p>
+<p>For each of the these, please estimate what percentage of your social contacts would:</p>
 <ul>
-    <li>Strongly agree (good reason to eat more/less meat)</li>
-    <li>Strongly disagree (bad reason to eat more/less meat)</li>
-    <li>Not care</li>
+    <li>Think that this is a good reason to eat more/less meat</li>
+    <li>Think that this is a bad reason to eat more/less meat</li>
+    <li>Think that this is neither a good nor a bad reason to eat more/less meat</li>
 </ul>
 <p>The values for each statement must sum to 100%.</p>
 
@@ -73,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function () {
             slidersForBelief.forEach(slider => {
                 const category = slider.dataset.category;
                 const value = parseInt(slider.value);
-                document.getElementById(`value_display_${beliefIndex}_${category}`).textContent = `${value}%`;
+                document.getElementById(`value_display_${beliefIndex}_${category}`).textContent = `${value}% of social contacts`;
                 beliefResult[category] = value;
                 beliefTotal += value;
             });

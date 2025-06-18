@@ -530,7 +530,7 @@ class SocialPressureMotivations(Page):
 
         return dict(
             belief_items=[p for p in positions if node_lookup.get(normalize(p['label']), {}).get('type') == 'PERSONAL' and node_lookup.get(normalize(p['label']), {}).get('category') == 'MOTIVATION'],
-            categories=['Strongly agree', 'Strongly disagree', 'Not care']
+            categories=['Good reason', 'Bad reason', 'Neither']
         )
 
     @staticmethod
