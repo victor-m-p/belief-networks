@@ -1,0 +1,73 @@
+{{ block title }}Consent Form{{ endblock }}
+{{ block content }}
+
+<div class="card bg-light m-3">
+    <div class="card-body">
+
+        <p>Dear participant,</p>
+
+        <p>We would like to invite you to participate in a research study conducted by researchers from the Complexity Science Hub. Your participation in this study is entirely voluntary. Please read the information below and ask any questions you may have before deciding whether or not to participate.</p>
+
+        <p>You may refuse to participate at any time without giving a reason, and you can also withdraw your consent after the study has begun. There will be no negative consequences if you choose not to participate or if you decide to withdraw early.</p>
+
+        <p><strong>What is the purpose of this study?</strong></p>
+        <p>The purpose of this study is to investigate how people adapt their beliefs and behaviors about different issues. You are being asked to take part in this study because you are at least 18 years old.</p>
+
+        <p><strong>What is the procedure of the study?</strong></p>
+        <p>Your participation will involve answering questions about your meat eating habits and motivations as well as the meat eating habits and motivations of your social contacts, such as “Please describe your dietary pattern, specifically your meat eating habits” and “Are there any personal motivations that you have to eat or not to eat meat?”. This study will take up to 30 min. We will use a large language model (LLM, OpenAI GPT-4) to summarize some of your textual responses and ask you if those summaries look correct and if you would like to add anything.</p>
+
+        <p><strong>What are the benefits of participating in the study?</strong></p>
+        <p>The findings from this project will provide information on how people organize and change their beliefs and behaviors. You will also be compensated for the duration of the study according to standard hourly rates: 5 euros for 30 minutes.</p>
+
+        <p><strong>What are the possible risks for taking in this study? Could participants experience any discomfort or other side effects?</strong></p>
+        <p>There are no foreseeable risks associated with this study, but some individuals may experience discomfort. You may skip any question you prefer not to answer, and you may withdraw from the study at any time without penalty. You may also ask us to remove your data from the study (see point 6 below).</p>
+
+        <p><strong>Does participating in the study have any other effects on participants’ lifestyle? What are the obligations resulting from participating?</strong></p>
+        <p>Study participation is not expected to have any other impacts on your lifestyle. There are no future obligations associated with participating in the study.</p>
+
+        <p><strong>What should participants do if they experience symptoms of complaints, unwanted side effects and/or injuries?</strong></p>
+        <p>If you have any negative experiences during the study, please contact the study coordinator Victor Møller Poulsen at <a href="mailto:poulsen@csh.ac.at">poulsen@csh.ac.at</a>.</p>
+
+        <p><strong>In what cases is it necessary that participants withdraw from the study early?</strong></p>
+        <p>Your participation in this research study is voluntary. You may refuse to participate without penalty at any time. If you decide to participate, you are free to stop at any time without penalty by just stopping and/or telling the investigator.</p>
+
+        <p>If you complete the study but decide that you want your data removed, please contact the study coordinator Victor Møller Poulsen at <a href="mailto:poulsen@csh.ac.at">poulsen@csh.ac.at</a> within 30 days after the survey completion.</p>
+
+        <p><strong>How will the data collected in this study be used?</strong></p>
+        <p>All metadata collected in this study that could identify you—such as your Prolific ID—will be kept strictly confidential and will only be disclosed with your explicit permission. This identifying information is stored separately from your survey responses and will not be included in any published or shared data.</p>
+
+        <p>Only the minimum personal data necessary for the study will be collected, and it will be used solely for the specific, legitimate purposes outlined in this research. We will also collect data on your responses and actions during participation, which will be used exclusively for research purposes.</p>
+
+        <p>When using LLM to summarize your responses, your data will be retained locally and not shared with a third party. Your platform ID will only be used for compensation and will not be connected to your answers. Please do not include any personal, sensitive, or identifiable information in your written responses (e.g., names, addresses, or references to specific people or events that could reveal your identity).</p>
+
+        <p>Your fully anonymized data may be analyzed and shared in an Open Data Repository, accessible to other researchers for non-commercial, scientific use. This complies with EU data protection policies and supports transparency and reproducibility in academic research. Aggregated or anonymized findings may also be published or shared to support scientific conclusions.</p>
+
+        <p>Your personal data will never be used for purposes that are incompatible with the goals of this study.</p>
+
+        <p><strong>Will there be any costs for the participants? Will they receive reimbursement or remuneration?</strong></p>
+        <p>There is no cost for taking part in the study. You will be compensated for the duration of the study according to standard hourly rates (see point 3 above).</p>
+
+        <p><strong>Possibility to discuss further questions</strong></p>
+        <p>If you have any further questions about the study, or about your rights as a participant, we encourage you to contact the study coordinator Victor Møller Poulsen at <a href="mailto:poulsen@csh.ac.at">poulsen@csh.ac.at</a>.</p>
+
+        <p>In addition, you may submit an anonymous report via the TU Graz Electronic Mailbox for Anonymous Tips (Whistleblowing):<br>
+        <a href="https://www.tugraz.at/en/about-this-page/electronic-mailbox-for-anonymous-tips-whistleblowing" target="_blank">https://www.tugraz.at/en/about-this-page/electronic-mailbox-for-anonymous-tips-whistleblowing</a></p>
+
+        <p>This study has been approved by UNM IRB #2501179238</p>
+        
+        <hr>
+
+        <p><strong>Declaration of consent</strong></p>
+        <p>
+            I have read the information provided above and have had the opportunity to get answers to all relevant questions.
+            By selecting “I consent” and clicking “Next”, I indicate my voluntary agreement to participate in this research study.
+        </p>
+
+        {{ formfield 'consent_given' }}
+
+    </div>
+</div>
+
+{{ next_button }}
+
+{{ endblock }}

@@ -59,6 +59,9 @@ class C(BaseConstants):
         "five or six days a week",
         "every day"
     ]
+    NUM_NODES_THRESHOLD=3
+
+
 class Subsession(BaseSubsession):
     pass
 
@@ -66,6 +69,7 @@ class Group(BaseGroup):
     pass
 
 class Player(BasePlayer):
+    
     # --- QUESTIONS ---
     answer1 = models.LongStringField(label="", blank=False)  
     answer2 = models.LongStringField(label="", blank=False)
@@ -225,14 +229,27 @@ class Player(BasePlayer):
         max_length=5,
     )
 
+    # FOR EXCLUSION 
+    num_nodes = models.IntegerField(initial=0)
+
+    consent_given = models.BooleanField(
+        choices=[[True, 'I consent'], [False, 'I do not consent']],
+        widget=widgets.RadioSelect,
+        label=''
+    )
+
 # some of this we can delete
 for i in range(40): # just some high enough number
     setattr(Player, f"belief_rating_{i}", models.StringField(blank=True)) # used. 
 
 # PAGES 
-## INTRODUCTION 
-class Introduction(Page):
-    pass
+class Consent(Page):
+    form_model = 'player'
+    form_fields = ['consent_given']
+
+    def error_message(self, values):
+        if values['consent_given'] is None:
+            return "Please indicate whether you consent to participate."
 
 ## QUESTIONS
 class Question1(Page):
@@ -250,6 +267,10 @@ class Question1(Page):
         if len(values['answer1']) < C.MIN_LEN_ANS:
             return f'Please write at least {C.MIN_LEN_ANS} characters.'
 
+    @staticmethod
+    def is_displayed(player: Player): 
+        return player.consent_given 
+
 # implement check.
 class Question2(Page):
     form_model = 'player'
@@ -266,6 +287,10 @@ class Question2(Page):
         if len(values['answer2']) < C.MIN_LEN_ANS:
             return f'Please write at least {C.MIN_LEN_ANS} characters.'
 
+    @staticmethod
+    def is_displayed(player: Player): 
+        return player.consent_given 
+
 class Question3(Page):
     form_model = 'player'
     form_fields = ['answer3']
@@ -280,6 +305,10 @@ class Question3(Page):
     def error_message(player, values):
         if len(values['answer3']) < C.MIN_LEN_ANS:
             return f'Please write at least {C.MIN_LEN_ANS} characters.'
+
+    @staticmethod
+    def is_displayed(player: Player): 
+        return player.consent_given 
 
 class Question4(Page):
     form_model = 'player'
@@ -296,9 +325,17 @@ class Question4(Page):
         if len(values['answer4']) < C.MIN_LEN_ANS:
             return f'Please write at least {C.MIN_LEN_ANS} characters.'
 
+    @staticmethod
+    def is_displayed(player: Player): 
+        return player.consent_given 
+
 class MeatScale(Page):
     form_model = 'player'
     form_fields = ['meat_consumption_present', 'meat_consumption_past', 'meat_consumption_future']
+
+    @staticmethod
+    def is_displayed(player: Player): 
+        return player.consent_given 
 
 class SocialCircleDistribution(Page):
 
@@ -322,6 +359,10 @@ class SocialCircleDistribution(Page):
                 return "The total must sum to exactly 100"
         except Exception:
             return "Something went wrong. Please adjust the sliders again."
+
+    @staticmethod
+    def is_displayed(player: Player): 
+        return player.consent_given 
 
 class LLMGenerate(Page):
     timeout_seconds = 120
@@ -351,6 +392,13 @@ class LLMGenerate(Page):
             ]
             random.shuffle(filtered_nodes)
             player.generated_nodes = json.dumps(filtered_nodes)
+            
+            # for exclusion 
+            player.num_nodes = len(filtered_nodes)
+    
+    @staticmethod
+    def is_displayed(player: Player): 
+        return player.consent_given 
 
 class BeliefAccuracyRating(Page):
     form_model = 'player'
@@ -381,8 +429,25 @@ class BeliefAccuracyRating(Page):
                 return "Please rate all items before continuing."
             ratings_to_store.append({"text": smart_linebreak(stance), "belief": stance, "rating": rating})
         player.generated_nodes_ratings = json.dumps(ratings_to_store)
-        player.final_nodes = json.dumps([r for r in ratings_to_store if int(r["rating"]) > 4])
-
+        filtered_nodes = [r for r in ratings_to_store if int(r["rating"]) > 4]
+        player.final_nodes = json.dumps(filtered_nodes)
+        player.num_nodes = len(filtered_nodes)
+        
+    @staticmethod
+    def is_displayed(player: Player): 
+        return (
+            player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.consent_given
+        )
+        
+class Exit(Page):
+    @staticmethod
+    def is_displayed(player: Player):
+        return (
+            not player.consent_given
+            or player.num_nodes < C.NUM_NODES_THRESHOLD
+        )
+        
 class MapNodePlacement(Page):
     form_model = 'player'
     form_fields = ['positions_1']
@@ -391,6 +456,13 @@ class MapNodePlacement(Page):
     def vars_for_template(player):
         labels = [item['text'] for item in json.loads(player.final_nodes or '[]') if item.get('text')]
         return dict(belief_labels_json=json.dumps(labels))
+    
+    @staticmethod
+    def is_displayed(player: Player): 
+        return (
+            player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.consent_given
+        )
 
 class MapEdgeCreation1(Page):
     form_model = 'player'
@@ -406,6 +478,13 @@ class MapEdgeCreation1(Page):
         ]
         return dict(belief_points=belief_points, belief_labels_json=json.dumps(labels))
     
+    @staticmethod
+    def is_displayed(player: Player): 
+        return (
+            player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.consent_given
+        )
+
 class MapEdgeCreation2(Page):
     form_model = 'player'
     form_fields = ['positions_3', 'edges_3']
@@ -420,6 +499,13 @@ class MapEdgeCreation2(Page):
             for i, label in enumerate(labels)
         ]
         return dict(belief_points=belief_points, belief_labels_json=json.dumps(labels), belief_edges=prior_edges)
+
+    @staticmethod
+    def is_displayed(player: Player): 
+        return (
+            player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.consent_given
+        )
 
 class MapEdgeCreation3(Page):
     form_model = 'player'
@@ -436,6 +522,12 @@ class MapEdgeCreation3(Page):
         ]
         return dict(belief_points=belief_points, belief_labels_json=json.dumps(labels), belief_edges=prior_edges)
 
+    @staticmethod
+    def is_displayed(player: Player): 
+        return (
+            player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.consent_given
+        )
 
 class MapImportance(Page):
     form_model = 'player'
@@ -451,6 +543,13 @@ class MapImportance(Page):
             for i, label in enumerate(labels)
         ]
         return dict(belief_points=belief_points, belief_labels_json=json.dumps(labels), belief_edges=prior_edges)
+
+    @staticmethod
+    def is_displayed(player: Player): 
+        return (
+            player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.consent_given
+        )
 
 class NetworkReflection(Page):
     form_model = 'player'
@@ -472,6 +571,12 @@ class NetworkReflection(Page):
         ]
         return dict(belief_points=belief_points, belief_edges=edges, focal_radius=positions[0].get('radius', 20))
 
+    @staticmethod
+    def is_displayed(player: Player): 
+        return (
+            player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.consent_given
+        )
 
 class PlausibilityImportance(Page):
     form_model = 'player'
@@ -484,6 +589,13 @@ class PlausibilityImportance(Page):
         labels = [label for label in labels if label != 'Meat Eating']  # optionally skip the focal node
 
         return dict(labels=labels)
+
+    @staticmethod
+    def is_displayed(player: Player): 
+        return (
+            player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.consent_given
+        )
 
 class PlausibilityEdges(Page):
     form_model = 'player'
@@ -516,6 +628,13 @@ class PlausibilityEdges(Page):
         player.plausibility_edge_pairs_data = json.dumps({"positive": pos, "negative": neg, "none": none})
         return dict(all_pairs=[(1, pos), (2, neg), (3, none)])
 
+    @staticmethod
+    def is_displayed(player: Player): 
+        return (
+            player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.consent_given
+        )
+
 class SocialPressureMotivations(Page):
     form_model = 'player'
     form_fields = ['social_pressure_personal_beliefs']
@@ -544,6 +663,12 @@ class SocialPressureMotivations(Page):
             if sum(belief_data['values'].values()) != 100:
                 return "Each box must sum to exactly 100%."
 
+    @staticmethod
+    def is_displayed(player: Player): 
+        return (
+            player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.consent_given
+        )
 
 class VEMI(Page):
     form_model = 'player'
@@ -552,6 +677,13 @@ class VEMI(Page):
         'vemi_6', 'vemi_7', 'vemi_8', 'vemi_9', 'vemi_10',
         'vemi_11', 'vemi_12', 'vemi_13', 'vemi_14', 'vemi_15'
     ]
+    
+    @staticmethod
+    def is_displayed(player: Player): 
+        return (
+            player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.consent_given
+        )
 
 class AttentionPage(Page):
     form_model = 'player'
@@ -560,9 +692,23 @@ class AttentionPage(Page):
         'attention_social',
     ]
 
+    @staticmethod
+    def is_displayed(player: Player): 
+        return (
+            player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.consent_given
+        )
+
 class Demographics(Page): 
     form_model = 'player'
     form_fields = ['age', 'gender', 'education', 'politics', 'state', 'zipcode']
+
+    @staticmethod
+    def is_displayed(player: Player): 
+        return (
+            player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.consent_given
+        )
 
 class ResultsWaitPage(WaitPage):
     pass
@@ -571,15 +717,17 @@ class Results(Page):
     pass
 
 page_sequence = [
-    Introduction,
-    Question1, 
-    Question2, 
-    Question3, 
+    # INFORMED CONSENT # 
+    Consent,
+    Question1,
+    Question2,
+    Question3,
     Question4,
     MeatScale,
     SocialCircleDistribution,
-    LLMGenerate,
-    BeliefAccuracyRating,
+    LLMGenerate, # HERE-->REVIEW
+    BeliefAccuracyRating, # HERE-->REVIEW
+    Exit,
     MapNodePlacement,
     MapEdgeCreation1,
     MapEdgeCreation2,
@@ -591,6 +739,6 @@ page_sequence = [
     SocialPressureMotivations,
     VEMI,
     AttentionPage,
-    Demographics, 
+    Demographics,
     Results
 ]

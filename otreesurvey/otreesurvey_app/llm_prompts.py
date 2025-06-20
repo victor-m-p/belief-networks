@@ -1,3 +1,4 @@
+'''
 from llm_utils import *
 import time
 import json
@@ -115,11 +116,6 @@ with open(txt_path, "w") as f:
 
         f.write("\n")
 
-''' NOTES ON MODELS 
-- Reasoning models (o3, o4) are much slower (~15 seconds vs. ~5 seconds).
-- Still could be more precise and concise, but generally pretty good. 
-'''
-
 ### try connections ### 
 model = 'gpt-4o-mini'
 response = call_openai(NodeModelList, node_prompt, model_name=model)
@@ -156,3 +152,4 @@ response = call_openai(NodeModelList, node_prompt)
 This feels clearly slower. 
 '''
 test = call_openai(NodeModelValidateList, node_prompt)
+'''
