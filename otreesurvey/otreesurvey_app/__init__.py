@@ -714,7 +714,12 @@ class ResultsWaitPage(WaitPage):
     pass
 
 class Results(Page):
-    pass
+    @staticmethod
+    def is_displayed(player: Player): 
+        return (
+            player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.consent_given
+        )
 
 page_sequence = [
     # INFORMED CONSENT # 

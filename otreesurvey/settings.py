@@ -10,8 +10,8 @@ SESSION_CONFIGS = [
 
 ROOMS = [
     dict(
-        name='belief_network_pretest_20250528',
-        display_name='belief_network_pretest_20250528'
+        name='narratives_20250620',
+        display_name='narratives_20250620'
     )
 ]
 
