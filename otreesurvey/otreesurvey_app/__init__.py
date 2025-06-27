@@ -60,6 +60,7 @@ class C(BaseConstants):
         "every day"
     ]
     NUM_NODES_THRESHOLD=3
+    NUM_NODES_MAX=10
 
 
 class Subsession(BaseSubsession):
@@ -237,6 +238,9 @@ class Player(BasePlayer):
         widget=widgets.RadioSelect,
         label=''
     )
+    
+    # For now just set default as True 
+    force_answer = models.BooleanField(initial=True)
 
 # some of this we can delete
 for i in range(40): # just some high enough number
@@ -246,6 +250,10 @@ for i in range(40): # just some high enough number
 class Consent(Page):
     form_model = 'player'
     form_fields = ['consent_given']
+
+    @staticmethod
+    def before_next_page(player: Player, timeout_happened):
+        player.force_answer = True
 
     def error_message(self, values):
         if values['consent_given'] is None:
@@ -429,7 +437,14 @@ class BeliefAccuracyRating(Page):
                 return "Please rate all items before continuing."
             ratings_to_store.append({"text": smart_linebreak(stance), "belief": stance, "rating": rating})
         player.generated_nodes_ratings = json.dumps(ratings_to_store)
+
+        # First filter: only include beliefs rated > 4
         filtered_nodes = [r for r in ratings_to_store if int(r["rating"]) > 4]
+
+        # Second filter: randomly sample if too many
+        if len(filtered_nodes) > C.NUM_NODES_MAX:
+            filtered_nodes = random.sample(filtered_nodes, C.NUM_NODES_MAX)
+
         player.final_nodes = json.dumps(filtered_nodes)
         player.num_nodes = len(filtered_nodes)
         
@@ -476,7 +491,10 @@ class MapEdgeCreation1(Page):
             {"label": label, "x": positions[i+1]['x'], "y": positions[i+1]['y'], "radius": 20}
             for i, label in enumerate(labels)
         ]
-        return dict(belief_points=belief_points, belief_labels_json=json.dumps(labels))
+        return dict(
+            belief_points=belief_points, 
+            belief_labels_json=json.dumps(labels),
+            force_answer=player.force_answer)
     
     @staticmethod
     def is_displayed(player: Player): 
@@ -498,7 +516,11 @@ class MapEdgeCreation2(Page):
             {"label": label, "x": positions[i+1]['x'], "y": positions[i+1]['y'], "radius": 20}
             for i, label in enumerate(labels)
         ]
-        return dict(belief_points=belief_points, belief_labels_json=json.dumps(labels), belief_edges=prior_edges)
+        return dict(
+            belief_points=belief_points, 
+            belief_labels_json=json.dumps(labels), 
+            belief_edges=prior_edges,
+            force_answer=player.force_answer)
 
     @staticmethod
     def is_displayed(player: Player): 
@@ -520,7 +542,11 @@ class MapEdgeCreation3(Page):
             {"label": label, "x": positions[i+1]['x'], "y": positions[i+1]['y'], "radius": 20}
             for i, label in enumerate(labels)
         ]
-        return dict(belief_points=belief_points, belief_labels_json=json.dumps(labels), belief_edges=prior_edges)
+        return dict(
+            belief_points=belief_points, 
+            belief_labels_json=json.dumps(labels), 
+            belief_edges=prior_edges,
+            force_answer=player.force_answer)
 
     @staticmethod
     def is_displayed(player: Player): 

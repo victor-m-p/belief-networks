@@ -12,20 +12,34 @@
 {% endblock %}
 
 {% block content %}
-<h2>Create Connections to Meat Eating Frequency</h2>
-<p><b>Your task is to draw connections between the orange circles and the grey circle.</b></p>
-<p>Draw a connection between a motivation or habit if it directly influences your personal meat eating frequency (grey circle). The influence can be towards less frequent meat eating or towards more frequent meat eating. To draw a connection follow this approach:</p>
 
-<ol>
-    <li>Click on a circle to "activate" it. Your click will highlight the circle</li>
-    <li>Click on another circle to create a connection</li>
-    <li>A box will now appear. Answer whether the motivation or habit influences you to eat less meat (RED) or more meat (GREEN) and how important the motivation is. Press ESC or click outside to abort if needed. Use the blue button to confirm the connection.</li>
-</ol>
+<h2>Influences on your <span style="color: grey;">meat eating frequency</span></h2>
+<p id="connectionInstruction"><!-- This gets filled by JS --></p>
+<p>Judge whether each item influences you to eat meat <span style="color: green;">more frequently</span> or <span style="color: red;">less frequently</span> and how strong the influence is. 
+    Even if there are <span style="color: orange;">orange circles</span> that you feel do not influence your <span style="color: grey;">meat eating frequency</span> please connect them to the <span style="color: grey;">grey circle</span> as best you can.</p>
 
-<p>If you create a connection by mistake or regret a connection you can remove it again by clicking first on one of the circles and then on the other</p>
-<p>You can still drag circles around the square to reposition them if you wish</p>
+<button type="button" id="toggle-instructions" style="
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 1rem;">
+    Show Instructions
+</button>
 
-<p><em>Think of connections and their importance like: "if one of these things changed how much would it affect the other thing".</em></p>
+<!-- Instruction Box (initially hidden) -->
+<div id="instruction-container" style="display: none; margin-bottom: 1rem; border: 1px solid #ccc; padding: 1rem; border-radius: 5px; background-color: #f9f9f9;">
+    <ol>
+        <li>Click on an orange circle to activate it</li>
+        <li>Click on the grey circle to connect them</li>
+        <li>Judge direction and strength of influence</li>
+    </ol>
+
+    <p>If you create a connection by mistake or regret a connection you can remove it again by clicking first on one of the circles and then on the other. You can still drag circles around the square to reposition them if you wish.</p>
+</div>
 
 <div id="canvasContainer" style="position: relative; width: 900px; height: 600px;">
     <canvas id="dragCanvas" width="900" height="600"></canvas>
@@ -60,11 +74,32 @@
 {{ next_button }}
 
 <script>
-const beliefLabels = {{ belief_labels_json|safe }};
-
 document.addEventListener("DOMContentLoaded", function () {
     const canvas = document.getElementById("dragCanvas");
     const ctx = canvas.getContext("2d");
+    const beliefLabels = {{ belief_labels_json|safe }};
+
+    // for popup 
+    const toggleButton = document.getElementById('toggle-instructions');
+    const container = document.getElementById('instruction-container');
+
+    toggleButton.addEventListener('click', function () {
+            const isHidden = container.style.display === 'none' || container.style.display === '';
+            container.style.display = isHidden ? 'block' : 'none';
+            toggleButton.textContent = isHidden ? 'Hide Instructions' : 'Show Instructions';
+        });
+    
+    // retrieve condition
+    {% if force_answer %}
+        const forceAnswer = true;
+    {% else %}
+        const forceAnswer = false;
+    {% endif %}
+
+    // instruction text logic
+    document.getElementById("connectionInstruction").innerHTML = forceAnswer
+    ? `<b>Your task is to connect <span style="color: orange;">every orange circle</span> to the <span style="color: grey;">central grey "Meat Eating" circle</span>.</b>`
+    : `<b>Connect <span style="color: orange;">orange circles</span> to the central grey "Meat Eating" circle if they have any influence.</b>`;
 
     const points = [
         { label: "Meat Eating", x: canvas.width/2, y: canvas.height/2, radius: 20, fixed: true },
@@ -260,9 +295,29 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        if (edges.length < 1) {
-            alert("Please create at least one connection before continuing.");
-            return;
+        if (forceAnswer) {
+            // Check if each belief node is connected to "Meat Eating"
+            const centralLabel = "Meat Eating";
+            const beliefLabelsSet = new Set(beliefLabels);
+            const connectedToCentral = new Set();
+
+            edges.forEach(edge => {
+                if (edge.from.label === centralLabel && beliefLabelsSet.has(edge.to.label)) {
+                    connectedToCentral.add(edge.to.label);
+                } else if (edge.to.label === centralLabel && beliefLabelsSet.has(edge.from.label)) {
+                    connectedToCentral.add(edge.from.label);
+                }
+            });
+
+            if (connectedToCentral.size < beliefLabels.length) {
+                alert("Please connect all orange circles to 'Meat Eating' before continuing.");
+                return;
+            }
+        } else {
+            if (edges.length < 1) {
+                alert("Please create at least one connection before continuing.");
+                return;
+            }
         }
 
         document.getElementById("positions").value = JSON.stringify(points);

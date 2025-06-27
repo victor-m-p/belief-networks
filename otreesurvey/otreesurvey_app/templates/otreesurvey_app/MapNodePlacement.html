@@ -25,20 +25,33 @@
 {% endblock %}
 
 {% block content %}
-<h2>Move Each Statement Into the Box</h2>
+<h2>Drag each <span style="color: orange;">summary statement</span> into the box</h2>
 
-<p><strong>Your task is to place motivations and habits close to each other that influence each other more.</strong></p>
+<p><strong>Position things that influence each other more closer to each other</strong>. Place <span style="color: orange;">orange circles</span> closer to the <span style="color: grey;">central grey "Meat Eating" circle</span> if they have more influence on your meat eating frequency. Position <span style="color: orange;">orange circles</span> closer to each other if they influence each other more.</p>
 
-<ol>
-    <li>Drag the first motivation or habit into the box.</li>
-    <li>Position it relative to your meat eating habits. If it is very important to your personal meat eating frequency, place it close to the grey dot.</li>
-    <li>A new motivation or habit will now appear.</li>
-    <li>Continue to position new motivations or habits according to both your personal meat eating frequency (grey dot) and according to the things you have already placed.</li>
-</ol>
+<button type="button" id="toggle-instructions" style="
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 1rem;">
+    Show Instructions
+</button>
 
-<p>You can move all of the circles throughout.</p>
+<!-- Instruction Box (initially hidden) -->
+<div id="instruction-container" style="display: none; margin-bottom: 1rem; border: 1px solid #ccc; padding: 1rem; border-radius: 5px; background-color: #f9f9f9;">
+    <ol>
+        <li>Drag the first item into the box</li>
+        <li>Position it relative to your meat eating frequency. If it is very important to your meat eating frequency place it close to the grey circle</li>
+        <li>A new item will now appear above the box</li>
+        <li>Continue to position new items based on how they influence your meat eating frequency and how the items influence each other</li>
+    </ol>
+    <p>You can continue to move all of the orange circles throughout this phase.</p>
+</div>
 
-<p><em>Remember to think of the distance like: "if one of these things changed how much would it affect the other thing".</em></p>
 
 <div id="node-container">
     <div id="current-node" class="belief-node" draggable="true"></div>
@@ -56,6 +69,17 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+
+    // Toggle instruction box
+    const toggleBtn = document.getElementById("toggle-instructions");
+    const instructionBox = document.getElementById("instruction-container");
+
+    toggleBtn.addEventListener("click", function () {
+        const isHidden = instructionBox.style.display === "none" || instructionBox.style.display === "";
+        instructionBox.style.display = isHidden ? "block" : "none";
+        toggleBtn.textContent = isHidden ? "Hide Instructions" : "Show Instructions";
+    });
+
     let currentIndex = 0;
     const canvas = document.getElementById("dragCanvas");
     const ctx = canvas.getContext("2d");
