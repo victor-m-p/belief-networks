@@ -12,8 +12,33 @@
 {% endblock %}
 
 {% block content %}
-<h2>Final chance to add more connections</h2>
-<p><b>Add connections between any elements that influence each other.</b></p>
+
+<h2>What else influences each other?</h2>
+
+<p><b>Your task is to draw connections between <span style="color: orange;">orange circles</span></b>.</p>
+<p>Create a connection between as many <span style="color: orange;">orange circles</span> as you think have <b>any influence at all</b> on each other.</p>
+
+<button type="button" id="toggle-instructions" style="
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 1rem;">
+    Show Instructions
+</button>
+
+<div id="instruction-container" style="display: none; margin-bottom: 1rem; border: 1px solid #ccc; padding: 1rem; border-radius: 5px; background-color: #f9f9f9;">
+    <h3>Instructions</h3>
+    <ol>
+        <li>Click on an orange circle to activate it</li>
+        <li>Click on another orange circle to connect them</li>
+        <li>Judge the influence between the two things</li>
+    </ol>
+    <p>If you create a connection by mistake or regret creating a connection you can remove it again by clicking first on one of the circles and then on the other.</p>
+</div>
 
 <div id="canvasContainer" style="position: relative; width: 900px; height: 600px;">
     <canvas id="dragCanvas" width="900" height="600"></canvas>
@@ -28,27 +53,26 @@
         padding: 20px;
         z-index: 10;
     ">
-        <p style="font-weight: bold; margin-bottom: 10px;">Choose edge type:</p>
-        <button id="selectPositive" type="button" style="background-color: green; color: white; padding: 10px 20px;">Positive</button>
-        <button id="selectNegative" type="button" style="background-color: red; color: white; padding: 10px 20px;">Negative</button>
+        <p style="font-weight: bold; margin-bottom: 10px;">They influence each other:</p>
+        <button id="selectPositive" type="button" style="background-color: green; color: white; padding: 10px 20px;">Positively</button>
+        <button id="selectNegative" type="button" style="background-color: red; color: white; padding: 10px 20px;">Negatively</button>
 
-        <p style="font-weight: bold; margin-top: 15px;">Select strength:</p>
+        <p style="font-weight: bold; margin-top: 15px;">Select importance:</p>
         <input id="strengthSlider" type="range" min="1" max="100" value="50" style="width: 100%;">
-        <p id="strengthValue" style="text-align: center;">Strength: 50</p>
+        <p id="strengthValue" style="text-align: center;">Importance: 50</p>
 
         <button id="confirmEdge" type="button" style="background-color: blue; color: white; padding: 10px 20px; width: 100%;">Confirm Connection</button>
     </div>
 </div>
 
-<input type="hidden" id="positions" name="positions_4">
-<input type="hidden" id="edges" name="edges_4">
+<input type="hidden" id="positions" name="positions_3">
+<input type="hidden" id="edges" name="edges_3">
 
 {{ next_button }}
 
 <script>
 const beliefLabels = {{ belief_labels_json|safe }};
 const beliefEdges = {{ belief_edges|safe }};
-const beliefPoints = {{ belief_points|safe }};
 
 document.addEventListener("DOMContentLoaded", function () {
     {% if force_answer %}
@@ -57,13 +81,21 @@ document.addEventListener("DOMContentLoaded", function () {
         const forceAnswer = false;
     {% endif %}
 
+    const toggleBtn = document.getElementById("toggle-instructions");
+    const instructionBox = document.getElementById("instruction-container");
+    toggleBtn.addEventListener("click", function () {
+        const isHidden = instructionBox.style.display === "none" || instructionBox.style.display === "";
+        instructionBox.style.display = isHidden ? "block" : "none";
+        toggleBtn.textContent = isHidden ? "Hide Instructions" : "Show Instructions";
+    });
+
     const canvas = document.getElementById("dragCanvas");
     const ctx = canvas.getContext("2d");
 
     const points = [
         { label: "Meat Eating", x: canvas.width/2, y: canvas.height/2, radius: 20, fixed: true },
         ...beliefLabels.map((label, i) => {
-            const p = beliefPoints[i];
+            const p = {{ belief_points|safe }}[i];
             return { label: label, x: p.x, y: p.y, radius: p.radius };
         })
     ];
@@ -83,18 +115,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const strengthSlider = document.getElementById("strengthSlider");
     const strengthValue = document.getElementById("strengthValue");
 
-    strengthSlider.addEventListener("input", function () {
-        strengthValue.textContent = "Strength: " + strengthSlider.value;
+    strengthSlider.addEventListener("input", function() {
+        strengthValue.textContent = "Importance: " + strengthSlider.value;
     });
-
-    function getMousePos(evt) {
-        const rect = canvas.getBoundingClientRect();
-        return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
-    }
-
-    function findPoint(pos) {
-        return points.find(p => Math.hypot(p.x - pos.x, p.y - pos.y) <= p.radius);
-    }
 
     function drawCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -124,12 +147,22 @@ document.addEventListener("DOMContentLoaded", function () {
             ctx.font = "14px sans-serif";
             ctx.textAlign = "center";
             const lines = p.label.split('\n');
+            const lineHeight = 16;
             const baseY = p.y - 28;
             lines.forEach((line, index) => {
-                const y = baseY - (lines.length - index - 1) * 16;
+                const y = baseY - (lines.length - index - 1) * lineHeight;
                 ctx.fillText(line, p.x, y);
             });
         });
+    }
+
+    function getMousePos(evt) {
+        const rect = canvas.getBoundingClientRect();
+        return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
+    }
+
+    function findPoint(pos) {
+        return points.find(p => Math.hypot(p.x - pos.x, p.y - pos.y) <= p.radius);
     }
 
     canvas.addEventListener("mousedown", function (evt) {
@@ -168,7 +201,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     pendingEdge = { from: selectedPoint, to: hit };
                     document.getElementById("edgeSelectionPanel").style.display = "block";
                     strengthSlider.value = 50;
-                    strengthValue.textContent = "Strength: 50";
+                    strengthValue.textContent = "Importance: 50";
                     document.getElementById("selectPositive").classList.remove("selected-polarity");
                     document.getElementById("selectNegative").classList.remove("selected-polarity");
                 }
@@ -188,7 +221,15 @@ document.addEventListener("DOMContentLoaded", function () {
         draggingPoint = null;
         maybeDragPoint = null;
         wasDragging = false;
-        drawCanvas();
+    });
+
+    document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape" && pendingEdge) {
+            pendingEdge = null;
+            document.getElementById("edgeSelectionPanel").style.display = "none";
+            document.getElementById("selectPositive").classList.remove("selected-polarity");
+            document.getElementById("selectNegative").classList.remove("selected-polarity");
+        }
     });
 
     document.getElementById("selectPositive").addEventListener("click", () => {
@@ -221,55 +262,53 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
+    function allInsideBox() {
+        return points.every(p =>
+            p.x >= 0 && p.x <= canvas.width &&
+            p.y >= 0 && p.y <= canvas.height
+        );
+    }
+
     document.querySelector("button[type=submit], .otree-btn-next").addEventListener("click", function (e) {
         e.preventDefault();
 
-        if (!points.every(p => p.x >= 0 && p.x <= canvas.width && p.y >= 0 && p.y <= canvas.height)) {
+        if (!allInsideBox()) {
             alert("Please drag all beliefs into the square before continuing.");
             return;
         }
 
         const centralLabel = "Meat Eating";
         const beliefLabelsSet = new Set(beliefLabels);
-        const connectedToCentral = new Set();
 
-        let hasOrangeToOrange = false;
-        let hasOrangeToGrey = false;
-
-        edges.forEach(edge => {
-            const fromLabel = edge.from.label;
-            const toLabel = edge.to.label;
-
-            const fromIsOrange = beliefLabelsSet.has(fromLabel);
-            const toIsOrange = beliefLabelsSet.has(toLabel);
-            const involvesCentral = fromLabel === centralLabel || toLabel === centralLabel;
-
-            if (fromIsOrange && toIsOrange && !involvesCentral) {
-                hasOrangeToOrange = true;
-            }
-
-            if (involvesCentral && (fromIsOrange || toIsOrange)) {
-                hasOrangeToGrey = true;
-                const orangeLabel = fromLabel === centralLabel ? toLabel : fromLabel;
-                connectedToCentral.add(orangeLabel);
-            }
-        });
+        // Check for at least one orange–orange connection
+        const hasOrangeToOrange = edges.some(edge =>
+            beliefLabelsSet.has(edge.from.label) && beliefLabelsSet.has(edge.to.label)
+        );
 
         if (!hasOrangeToOrange) {
             alert("Please create at least one connection between two orange circles before continuing.");
             return;
         }
 
-        if (!hasOrangeToGrey) {
-            alert("Please create at least one connection between an orange circle and the grey circle before continuing.");
-            return;
+        // If forceAnswer: check all orange nodes are connected to the grey node
+        if (forceAnswer) {
+            const connectedToCentral = new Set();
+
+            edges.forEach(edge => {
+                if (edge.from.label === centralLabel && beliefLabelsSet.has(edge.to.label)) {
+                    connectedToCentral.add(edge.to.label);
+                } else if (edge.to.label === centralLabel && beliefLabelsSet.has(edge.from.label)) {
+                    connectedToCentral.add(edge.from.label);
+                }
+            });
+
+            if (connectedToCentral.size < beliefLabels.length) {
+                alert("Please connect all orange circles to 'Meat Eating' before continuing.");
+                return;
+            }
         }
 
-        if (forceAnswer && connectedToCentral.size < beliefLabels.length) {
-            alert("Please connect all orange circles to the grey circle before continuing.");
-            return;
-        }
-
+        // Submit the form
         document.getElementById("positions").value = JSON.stringify(points);
         document.getElementById("edges").value = JSON.stringify(edges.map(edge => ({
             from: edge.from.label,
@@ -280,7 +319,9 @@ document.addEventListener("DOMContentLoaded", function () {
         document.querySelector("form").submit();
     });
 
+
     drawCanvas();
 });
 </script>
+
 {% endblock %}

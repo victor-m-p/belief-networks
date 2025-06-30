@@ -13,7 +13,7 @@
 
 {% block content %}
 <h2>Final chance to add more connections</h2>
-<p>Please take a last look at the network. <b>Add connections between any elements that influence each other</b>.</p>
+<p>Please take a last look at the network. <b>Add connections between any elements that influence each other.</b></p>
 
 <div id="canvasContainer" style="position: relative; width: 900px; height: 600px;">
     <canvas id="dragCanvas" width="900" height="600"></canvas>
@@ -35,7 +35,7 @@
         <p style="font-weight: bold; margin-top: 15px;">Select strength:</p>
         <input id="strengthSlider" type="range" min="1" max="100" value="50" style="width: 100%;">
         <p id="strengthValue" style="text-align: center;">Strength: 50</p>
-
+        
         <button id="confirmEdge" type="button" style="background-color: blue; color: white; padding: 10px 20px; width: 100%;">Confirm Connection</button>
     </div>
 </div>
@@ -48,9 +48,9 @@
 <script>
 const beliefLabels = {{ belief_labels_json|safe }};
 const beliefEdges = {{ belief_edges|safe }};
-const beliefPoints = {{ belief_points|safe }};
 
 document.addEventListener("DOMContentLoaded", function () {
+
     {% if force_answer %}
         const forceAnswer = true;
     {% else %}
@@ -63,11 +63,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const points = [
         { label: "Meat Eating", x: canvas.width/2, y: canvas.height/2, radius: 20, fixed: true },
         ...beliefLabels.map((label, i) => {
-            const p = beliefPoints[i];
+            const p = {{ belief_points|safe }}[i];
             return { label: label, x: p.x, y: p.y, radius: p.radius };
         })
     ];
 
+    // convert loaded edges (stored with string labels) into object references:
     let edges = beliefEdges.map(e => {
         const from = points.find(p => p.label === e.from);
         const to = points.find(p => p.label === e.to);
@@ -78,19 +79,15 @@ document.addEventListener("DOMContentLoaded", function () {
     let maybeDragPoint = null;
     let selectedPoint = null;
     let pendingEdge = null;
+    let hoveredPoint = null;
     let wasDragging = false;
 
-    function getMousePos(evt) {
-        const rect = canvas.getBoundingClientRect();
-        return {
-            x: evt.clientX - rect.left,
-            y: evt.clientY - rect.top
-        };
-    }
+    const strengthSlider = document.getElementById("strengthSlider");
+    const strengthValue = document.getElementById("strengthValue");
 
-    function findPoint(pos) {
-        return points.find(p => Math.hypot(p.x - pos.x, p.y - pos.y) <= p.radius);
-    }
+    strengthSlider.addEventListener("input", function() {
+        strengthValue.textContent = "Strength: " + strengthSlider.value;
+    });
 
     function drawCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -110,7 +107,11 @@ document.addEventListener("DOMContentLoaded", function () {
         points.forEach(p => {
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.radius, 0, 2 * Math.PI);
-            ctx.fillStyle = p.label === "Meat Eating" ? (p === selectedPoint ? "#777777" : "#999999") : (p === selectedPoint ? "yellow" : "orange");
+            if (p.label === "Meat Eating") {
+                ctx.fillStyle = (p === selectedPoint) ? "#777777" : "#999999";
+            } else {
+                ctx.fillStyle = (p === selectedPoint) ? "yellow" : "orange";
+            }
             ctx.fill();
             ctx.strokeStyle = "black";
             ctx.lineWidth = 2;
@@ -120,21 +121,126 @@ document.addEventListener("DOMContentLoaded", function () {
             ctx.font = "14px sans-serif";
             ctx.textAlign = "center";
             const lines = p.label.split('\n');
+            const lineHeight = 16;
             const baseY = p.y - 28;
             lines.forEach((line, index) => {
-                const y = baseY - (lines.length - index - 1) * 16;
+                const y = baseY - (lines.length - index - 1) * lineHeight;
                 ctx.fillText(line, p.x, y);
             });
         });
     }
 
+    function getMousePos(evt) {
+        const rect = canvas.getBoundingClientRect();
+        return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
+    }
+
+    function findPoint(pos) {
+        return points.find(p => Math.hypot(p.x - pos.x, p.y - pos.y) <= p.radius);
+    }
+
+    canvas.addEventListener("mousedown", function (evt) {
+        const pos = getMousePos(evt);
+        const hit = findPoint(pos);
+        maybeDragPoint = hit && !hit.fixed ? hit : null;
+        wasDragging = false;
+    });
+
+    canvas.addEventListener("mousemove", function (evt) {
+        const pos = getMousePos(evt);
+        hoveredPoint = findPoint(pos);
+        if (!draggingPoint && maybeDragPoint) {
+            draggingPoint = maybeDragPoint;
+        }
+        if (draggingPoint) {
+            draggingPoint.x = pos.x;
+            draggingPoint.y = pos.y;
+            wasDragging = true;
+        }
+        drawCanvas();
+    });
+
+    document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape" && pendingEdge) {
+            pendingEdge = null;
+            document.getElementById("edgeSelectionPanel").style.display = "none";
+            document.getElementById("selectPositive").classList.remove("selected-polarity");
+            document.getElementById("selectNegative").classList.remove("selected-polarity");
+        }
+    });
+    canvas.addEventListener("mouseup", function (evt) {
+        const pos = getMousePos(evt);
+        const hit = findPoint(pos);
+
+        if (!wasDragging && hit) {
+            if (!selectedPoint) {
+                selectedPoint = hit;
+            } else if (selectedPoint !== hit) {
+                const exists = edges.find(e =>
+                    (e.from === selectedPoint && e.to === hit) || (e.from === hit && e.to === selectedPoint));
+                if (exists) {
+                    edges.splice(edges.indexOf(exists), 1);
+                } else {
+                    pendingEdge = { from: selectedPoint, to: hit };
+                    document.getElementById("edgeSelectionPanel").style.display = "block";
+                    strengthSlider.value = 50;
+                    strengthValue.textContent = "Importance: 50";
+                    document.getElementById("selectPositive").classList.remove("selected-polarity");
+                    document.getElementById("selectNegative").classList.remove("selected-polarity");
+                }
+                selectedPoint = null;
+            } else {
+                selectedPoint = null;
+            }
+        }
+
+        // <<< INSERT THIS RIGHT HERE >>>
+
+        if (!wasDragging && !hit && pendingEdge) {
+            pendingEdge = null;
+            document.getElementById("edgeSelectionPanel").style.display = "none";
+            document.getElementById("selectPositive").classList.remove("selected-polarity");
+            document.getElementById("selectNegative").classList.remove("selected-polarity");
+        }
+
+        draggingPoint = null;
+        maybeDragPoint = null;
+        wasDragging = false;
+    });
+
+
+    document.getElementById("selectPositive").addEventListener("click", () => {
+        if (pendingEdge) {
+            pendingEdge.polarity = "positive";
+            document.getElementById("selectPositive").classList.add("selected-polarity");
+            document.getElementById("selectNegative").classList.remove("selected-polarity");
+        }
+    });
+
+    document.getElementById("selectNegative").addEventListener("click", () => {
+        if (pendingEdge) {
+            pendingEdge.polarity = "negative";
+            document.getElementById("selectNegative").classList.add("selected-polarity");
+            document.getElementById("selectPositive").classList.remove("selected-polarity");
+        }
+    });
+
+    document.getElementById("confirmEdge").addEventListener("click", () => {
+        if (pendingEdge && pendingEdge.polarity) {
+            pendingEdge.strength = parseInt(strengthSlider.value);
+            edges.push(pendingEdge);
+            pendingEdge = null;
+            document.getElementById("edgeSelectionPanel").style.display = "none";
+            document.getElementById("selectPositive").classList.remove("selected-polarity");
+            document.getElementById("selectNegative").classList.remove("selected-polarity");
+            drawCanvas();
+        } else {
+            alert("Please select direction of influence before confirming.");
+        }
+    });
+
     document.querySelector("button[type=submit], .otree-btn-next").addEventListener("click", function (e) {
         e.preventDefault();
-
-        if (!points.every(p => p.x >= 0 && p.x <= canvas.width && p.y >= 0 && p.y <= canvas.height)) {
-            alert("Please drag all beliefs into the square before continuing.");
-            return;
-        }
 
         const centralLabel = "Meat Eating";
         const beliefLabelsSet = new Set(beliefLabels);
@@ -185,95 +291,6 @@ document.addEventListener("DOMContentLoaded", function () {
             strength: edge.strength
         })));
         document.querySelector("form").submit();
-    });
-
-    canvas.addEventListener("mousedown", function (evt) {
-        const pos = getMousePos(evt);
-        const hit = findPoint(pos);
-        maybeDragPoint = hit && !hit.fixed ? hit : null;
-        wasDragging = false;
-    });
-
-    canvas.addEventListener("mousemove", function (evt) {
-        const pos = getMousePos(evt);
-        if (!draggingPoint && maybeDragPoint) draggingPoint = maybeDragPoint;
-        if (draggingPoint) {
-            draggingPoint.x = pos.x;
-            draggingPoint.y = pos.y;
-            wasDragging = true;
-            drawCanvas();
-        }
-    });
-
-    canvas.addEventListener("mouseup", function (evt) {
-        const pos = getMousePos(evt);
-        const hit = findPoint(pos);
-
-        if (!wasDragging && hit) {
-            if (!selectedPoint) {
-                selectedPoint = hit;
-            } else if (selectedPoint !== hit) {
-                const exists = edges.find(e =>
-                    (e.from === selectedPoint && e.to === hit) || (e.from === hit && e.to === selectedPoint)
-                );
-                if (exists) {
-                    edges = edges.filter(e =>
-                        !((e.from === selectedPoint && e.to === hit) || (e.from === hit && e.to === selectedPoint))
-                    );
-                } else {
-                    pendingEdge = { from: selectedPoint, to: hit };
-                    document.getElementById("edgeSelectionPanel").style.display = "block";
-                    strengthSlider.value = 50;
-                    strengthValue.textContent = "Strength: 50";
-                    document.getElementById("selectPositive").classList.remove("selected-polarity");
-                    document.getElementById("selectNegative").classList.remove("selected-polarity");
-                }
-                selectedPoint = null;
-            } else {
-                selectedPoint = null;
-            }
-        }
-
-        if (!wasDragging && !hit && pendingEdge) {
-            pendingEdge = null;
-            document.getElementById("edgeSelectionPanel").style.display = "none";
-            document.getElementById("selectPositive").classList.remove("selected-polarity");
-            document.getElementById("selectNegative").classList.remove("selected-polarity");
-        }
-
-        draggingPoint = null;
-        maybeDragPoint = null;
-        wasDragging = false;
-    });
-
-    document.getElementById("selectPositive").addEventListener("click", () => {
-        if (pendingEdge) {
-            pendingEdge.polarity = "positive";
-            document.getElementById("selectPositive").classList.add("selected-polarity");
-            document.getElementById("selectNegative").classList.remove("selected-polarity");
-        }
-    });
-
-    document.getElementById("selectNegative").addEventListener("click", () => {
-        if (pendingEdge) {
-            pendingEdge.polarity = "negative";
-            document.getElementById("selectNegative").classList.add("selected-polarity");
-            document.getElementById("selectPositive").classList.remove("selected-polarity");
-        }
-    });
-
-    document.getElementById("confirmEdge").addEventListener("click", () => {
-        if (pendingEdge && pendingEdge.polarity) {
-            pendingEdge.strength = parseInt(strengthSlider.value);
-            edges.push(pendingEdge);
-            pendingEdge = null;
-            document.getElementById("edgeSelectionPanel").style.display = "none";
-            document.getElementById("selectPositive").classList.remove("selected-polarity");
-            document.getElementById("selectNegative").classList.remove("selected-polarity");
-            drawCanvas();
-        } else {
-            alert("Please select direction of influence before confirming.");
-        }
     });
 
     drawCanvas();
