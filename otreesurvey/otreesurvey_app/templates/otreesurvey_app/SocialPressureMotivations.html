@@ -1,17 +1,32 @@
 {% extends "global/Page.html" %}
 
 {% block content %}
-<h2>Social Pressure on Motivations</h2>
+<h2>How would social contacts judge your motivations?</h2>
 
-<p>Imagine that you are discussing meat eating with a group of important social contacts</p>
-<p>The following are motivations you mentioned to eat more or less meat</p>
-<p>For each of the these, please estimate what percentage of your social contacts would:</p>
-<ul>
-    <li>Think that this is a good reason to eat more/less meat</li>
-    <li>Think that this is a bad reason to eat more/less meat</li>
-    <li>Think that this is neither a good nor a bad reason to eat more/less meat</li>
-</ul>
-<p>The values for each statement must sum to 100%.</p>
+<p>Imagine that you are discussing meat eating with some of your social contacts. <b>How would they evaluate each of the motivations you gave for eating more or less meat?</b></p> 
+
+<button type="button" id="toggle-instructions" style="
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 1rem;">
+    Show Instructions
+</button>
+
+<!-- Instruction Box (initially hidden) -->
+<div id="instruction-container" style="display: none; margin-bottom: 1rem; border: 1px solid #ccc; padding: 1rem; border-radius: 5px; background-color: #f9f9f9;">
+    <p>Please estimate what percentage of your social contacts would:</p>
+    <ul>
+        <li>Think that this is a good reason to eat more/less meat</li>
+        <li>Think that this is a bad reason to eat more/less meat</li>
+        <li>Think that this is neither a good nor a bad reason to eat more/less meat</li>
+    </ul>
+    <p>The values for each statement must sum to 100%.</p>
+</div>
 
 <form method="post" id="pressureForm">
 
@@ -46,6 +61,17 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+    // for popup 
+    const toggleButton = document.getElementById('toggle-instructions');
+    const container = document.getElementById('instruction-container');
+
+    toggleButton.addEventListener('click', function () {
+            const isHidden = container.style.display === 'none' || container.style.display === '';
+            container.style.display = isHidden ? 'block' : 'none';
+            toggleButton.textContent = isHidden ? 'Hide Instructions' : 'Show Instructions';
+        });
+
     const sliders = document.querySelectorAll('input[type="range"]');
     const hiddenField = document.getElementById('hidden_field');
     const TOTAL_MAX = 100;

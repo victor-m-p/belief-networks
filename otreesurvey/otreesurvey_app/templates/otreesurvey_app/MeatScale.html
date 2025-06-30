@@ -6,11 +6,19 @@
 
 {{ block content }}
 
-<p><i>For the following questions, by "meat", we mean any meat or meat products, including chicken, fish, beef, pork, lamb, mutton, goat etc.</i></p>
+<p>How often do you eat any meat <b>in an average week</b>?</p>
+{{ form.meat_consumption_present }}
 
-{{ formfield 'meat_consumption_present' }}
-{{ formfield 'meat_consumption_past' }}
-{{ formfield 'meat_consumption_future' }}
+<br>
+<p>Try to recall your meat <b>eating habits 5 years ago.</b> How often did you eat any meat in an average week?</p>
+{{ form.meat_consumption_past }}
+
+<br>
+<p>Try to imagine how your meat eating habits might look <b>5 years from now</b>. How often do you think you will eat any meat in an average week?</p>
+{{ form.meat_consumption_future }}
+
+<br>
+<p><i>By "meat", we mean any meat or meat products, including chicken, fish, beef, pork, lamb, mutton, goat etc.</i></p>
 
 {{ next_button }}
 

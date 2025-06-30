@@ -79,17 +79,17 @@ class Player(BasePlayer):
     # --- MEAT SCALE ---
     meat_consumption_present = models.StringField(
         choices=C.MEAT_FREQ_CATEGORIES,
-        label="How often do you eat any meat in an average week?",
+        label=None,
         widget=widgets.RadioSelect
     )
     meat_consumption_past = models.StringField(
         choices=C.MEAT_FREQ_CATEGORIES,
-        label="Try to recall your meat eating habits 5 years ago. How often did you eat any meat in an average week?",
+        label=None,
         widget=widgets.RadioSelect
     )
     meat_consumption_future = models.StringField(
         choices=C.MEAT_FREQ_CATEGORIES,
-        label="Try to imagine how your meat eating habits might look 5 years from now. How often do you think you will eat any meat in an average week?",
+        label=None,
         widget=widgets.RadioSelect
     )
     
@@ -136,23 +136,23 @@ class Player(BasePlayer):
     
     ### --- PLAUSIBILITY ---
     importance_ratings = models.LongStringField(blank=True)
-    #plausibility_edge_evaluations = models.LongStringField()
+    plausibility_edge_evaluations = models.LongStringField()
     plausibility_edge_pairs_data = models.LongStringField()
-    plausibility_edge_1_type = models.IntegerField(
-        choices=[(0, 'No Influence'), (1, 'Positive Influence'), (2, 'Negative Influence')],
-        label="Influence type for pair 1"
-    )
-    plausibility_edge_1_strength = models.IntegerField(blank=True)
-    plausibility_edge_2_type = models.IntegerField(
-        choices=[(0, 'No Influence'), (1, 'Positive Influence'), (2, 'Negative Influence')],
-        label="Influence type for pair 2"
-    )
-    plausibility_edge_2_strength = models.IntegerField(blank=True)
-    plausibility_edge_3_type = models.IntegerField(
-        choices=[(0, 'No Influence'), (1, 'Positive Influence'), (2, 'Negative Influence')],
-        label="Influence type for pair 3"
-    )
-    plausibility_edge_3_strength = models.IntegerField(blank=True)
+    #plausibility_edge_1_type = models.IntegerField(
+    #    choices=[(0, 'No Influence'), (1, 'Positive Influence'), (2, 'Negative Influence')],
+    #    label="Influence type for pair 1"
+    #)
+    #plausibility_edge_1_strength = models.IntegerField(blank=True)
+    #plausibility_edge_2_type = models.IntegerField(
+    #    choices=[(0, 'No Influence'), (1, 'Positive Influence'), (2, 'Negative Influence')],
+    #    label="Influence type for pair 2"
+    #)
+    #plausibility_edge_2_strength = models.IntegerField(blank=True)
+    #plausibility_edge_3_type = models.IntegerField(
+    #    choices=[(0, 'No Influence'), (1, 'Positive Influence'), (2, 'Negative Influence')],
+    #    label="Influence type for pair 3"
+    #)
+    #plausibility_edge_3_strength = models.IntegerField(blank=True)
     social_pressure_personal_beliefs = models.LongStringField(blank=True)
     
     ### VEMI ### 
@@ -625,40 +625,43 @@ class PlausibilityImportance(Page):
 
 class PlausibilityEdges(Page):
     form_model = 'player'
-    form_fields = [
-        'plausibility_edge_1_type', 'plausibility_edge_1_strength',
-        'plausibility_edge_2_type', 'plausibility_edge_2_strength',
-        'plausibility_edge_3_type', 'plausibility_edge_3_strength'
-    ]
+    form_fields = ['plausibility_edge_evaluations']
 
     @staticmethod
     def vars_for_template(player):
+
         nodes = json.loads(player.positions_5 or '[]')
         edges = json.loads(player.edges_5 or '[]')
         labels = [n['label'] for n in nodes]
 
-        edge_lookup = {tuple(sorted([e['from'], e['to']])): e['polarity'] for e in edges}
+        edge_lookup = {
+            tuple(sorted([e['from'], e['to']])): e['polarity']
+            for e in edges
+        }
+
         all_pairs = [(a, b) for i, a in enumerate(labels) for b in labels[i+1:]]
+        all_pairs_set = set(map(tuple, map(sorted, all_pairs)))
 
         pos_pairs = [p for p in all_pairs if edge_lookup.get(tuple(sorted(p))) == 'positive']
         neg_pairs = [p for p in all_pairs if edge_lookup.get(tuple(sorted(p))) == 'negative']
-        none_pairs = [p for p in all_pairs if tuple(sorted(p)) not in edge_lookup]
+        none_pairs = list(all_pairs_set - set(edge_lookup.keys()))
 
-        def pick(pairs):
-            return random.choice(pairs) if pairs else random.choice(all_pairs)
+        def pick_n(pairs, n):
+            if len(pairs) >= n:
+                return random.sample(pairs, n)
+            remaining = list(set(all_pairs) - set(pairs))
+            return pairs + random.sample(remaining, n - len(pairs))
 
-        pos = pick(pos_pairs)
-        neg = pick(neg_pairs)
-        none = pick(none_pairs)
+        pos_selected = pick_n(pos_pairs, 2)
+        neg_selected = pick_n(neg_pairs, 2)
+        none_selected = pick_n(none_pairs, 2)
 
-        player.plausibility_edge_pairs_data = json.dumps({"positive": pos, "negative": neg, "none": none})
-        return dict(all_pairs=[(1, pos), (2, neg), (3, none)])
+        selected_pairs = pos_selected + neg_selected + none_selected
+        player.plausibility_edge_pairs_data = json.dumps({"pairs": selected_pairs})
 
-    @staticmethod
-    def is_displayed(player: Player): 
-        return (
-            player.num_nodes >= C.NUM_NODES_THRESHOLD
-            and player.consent_given
+        return dict(
+            all_pairs=[(i+1, pair) for i, pair in enumerate(selected_pairs)],
+            pair_ids=[i+1 for i in range(len(selected_pairs))]
         )
 
 class SocialPressureMotivations(Page):
@@ -675,7 +678,7 @@ class SocialPressureMotivations(Page):
 
         return dict(
             belief_items=[p for p in positions if node_lookup.get(normalize(p['label']), {}).get('type') == 'PERSONAL' and node_lookup.get(normalize(p['label']), {}).get('category') == 'MOTIVATION'],
-            categories=['Good reason', 'Bad reason', 'Neither']
+            categories=['Good reason to eat [more/less] meat', 'Bad reason to eat [more/less] meat', 'Not a relevant reason / would not care']
         )
 
     @staticmethod

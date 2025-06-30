@@ -18,41 +18,20 @@
     .selected { border: 3px solid black; }
 
     .influence-text {
-    font-weight: bold;
-    padding: 2px 6px;
-    border-radius: 4px;
+        font-weight: bold;
+        transition: font-size 0.2s ease;
+        padding: 2px 6px;
+        border-radius: 4px;
     }
-
-    .influence-positive {
-        background-color: green;
-        color: white;
-    }
-
-    .influence-negative {
-        background-color: red;
-        color: white;
-    }
-
-    .influence-none {
-        background-color: grey;
-        color: white;
-    }
-
-    .influence-unset {
-        color: #444;
-        font-style: italic;
-    }
-
-    .influence-text {
-    font-weight: bold;
-    transition: font-size 0.2s ease;
-    }
+    .influence-positive { background-color: green; color: white; }
+    .influence-negative { background-color: red; color: white; }
+    .influence-none     { background-color: grey; color: white; }
 </style>
 {% endblock %}
 
 {% block content %}
 <h2>Which things influence each other?</h2>
-<p>Your task is to judge which things influence eachc other and how</p>
+<p>Your task is to judge which things influence each other and how.</p>
 
 {% for pair_num, pair in all_pairs %}
 <div style="margin-bottom: 30px;">
@@ -74,29 +53,25 @@
     </div>
 
     <div id="strength_section_{{ pair_num }}" style="display:none; margin-top:10px; text-align: center;">
-        <p>Strength of influence (1-100)</p>
         <input type="range" id="strength_slider_{{ pair_num }}" min="1" max="100" style="width:300px;" data-touched="false">
         <span id="strength_value_{{ pair_num }}"></span>
     </div>
-
-    <input type="hidden" name="plausibility_edge_{{ pair_num }}_type" id="type_input_{{ pair_num }}">
-    <input type="hidden" name="plausibility_edge_{{ pair_num }}_strength" id="strength_input_{{ pair_num }}">
 </div>
 {% endfor %}
 
+<input type="hidden" name="plausibility_edge_evaluations" id="plausibility_edge_evaluations">
 {{ next_button }}
 {% endblock %}
 
 {% block scripts %}
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+    const pairIds = {{ pair_ids|safe }};
 
     function handleSelection(pair, value) {
-        document.getElementById(`type_input_${pair}`).value = value;
-
-        // 🔽 Set label text and color
+        const typeInput = document.getElementById(`type_input_${pair}`);
         const label = document.getElementById(`influence_label_${pair}`);
-        label.className = "influence-text"; // Reset first
+        label.className = "influence-text";
 
         if (value === "1") {
             label.textContent = "POSITIVE";
@@ -109,67 +84,76 @@ document.addEventListener("DOMContentLoaded", function() {
             label.classList.add("influence-none");
         }
 
-        // 🔽 Update selected button
         document.querySelectorAll(`[data-pair="${pair}"]`).forEach(btn => {
             btn.classList.remove("selected");
         });
         document.querySelector(`[data-pair="${pair}"][data-value="${value}"]`).classList.add("selected");
 
-        // 🔽 Show/hide slider
         if (value === "1" || value === "2") {
             document.getElementById(`strength_section_${pair}`).style.display = "block";
-            document.getElementById(`strength_input_${pair}`).value = "";
+            document.getElementById(`strength_slider_${pair}`).dataset.touched = "false";
+            document.getElementById(`strength_value_${pair}`).textContent = "";
         } else {
             document.getElementById(`strength_section_${pair}`).style.display = "none";
-            document.getElementById(`strength_input_${pair}`).value = "";
+            document.getElementById(`strength_value_${pair}`).textContent = "";
         }
+
+        document.getElementById(`type_input_${pair}`).value = value;
     }
 
     document.querySelectorAll(".influence-button").forEach(btn => {
         btn.addEventListener("click", function() {
-            const pair = this.dataset.pair;
-            const value = this.dataset.value;
-            handleSelection(pair, value);
+            handleSelection(this.dataset.pair, this.dataset.value);
         });
     });
 
-    [1, 2, 3].forEach(pair => {
+    pairIds.forEach(pair => {
         const slider = document.getElementById(`strength_slider_${pair}`);
         const output = document.getElementById(`strength_value_${pair}`);
 
-    slider.addEventListener("input", () => {
-        slider.dataset.touched = "true";
-        output.textContent = slider.value;
-        document.getElementById(`strength_input_${pair}`).value = slider.value;
+        slider.addEventListener("input", () => {
+            slider.dataset.touched = "true";
+            output.textContent = slider.value;
 
-        // 🔽 Dynamic scaling of label font size
-        const label = document.getElementById(`influence_label_${pair}`);
-        const minFontSize = 10;
-        const maxFontSize = 24;
-        const fontSize = minFontSize + ((slider.value - 1) / 99) * (maxFontSize - minFontSize);
-        label.style.fontSize = `${fontSize}px`;
-    });
-
+            const label = document.getElementById(`influence_label_${pair}`);
+            const minFontSize = 12;
+            const maxFontSize = 28;
+            const size = minFontSize + ((slider.value - 1) / 99) * (maxFontSize - minFontSize);
+            label.style.fontSize = `${size}px`;
+        });
     });
 
     document.querySelector("button[type=submit], .otree-btn-next").addEventListener("click", function(e) {
         let valid = true;
-        [1, 2, 3].forEach(pair => {
-            const typeVal = document.getElementById(`type_input_${pair}`).value;
-            if (typeVal === "") {
+        const evaluations = [];
+
+        pairIds.forEach(pair => {
+            const typeBtn = document.querySelector(`[data-pair="${pair}"].selected`);
+            const typeVal = typeBtn ? typeBtn.dataset.value : "";
+
+            const slider = document.getElementById(`strength_slider_${pair}`);
+            const touched = slider.dataset.touched === "true";
+            const strengthVal = touched ? slider.value : null;
+
+            if (!typeVal) {
                 valid = false;
-            } else if (typeVal === "1" || typeVal === "2") {
-                const touched = document.getElementById(`strength_slider_${pair}`).dataset.touched === "true";
-                if (!touched) {
-                    valid = false;
-                }
+            } else if ((typeVal === "1" || typeVal === "2") && !touched) {
+                valid = false;
             }
+
+            evaluations.push({
+                type: parseInt(typeVal),
+                strength: (typeVal === "1" || typeVal === "2") ? parseInt(strengthVal) : null
+            });
         });
 
         if (!valid) {
             e.preventDefault();
             alert("Please complete all inputs before continuing.");
+            return;
         }
+
+        document.getElementById("plausibility_edge_evaluations").value = JSON.stringify(evaluations);
     });
 });
 </script>
