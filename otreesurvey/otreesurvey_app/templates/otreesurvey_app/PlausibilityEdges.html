@@ -16,19 +16,55 @@
     .negative { background-color: red; }
     .none { background-color: grey; }
     .selected { border: 3px solid black; }
+
+    .influence-text {
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    }
+
+    .influence-positive {
+        background-color: green;
+        color: white;
+    }
+
+    .influence-negative {
+        background-color: red;
+        color: white;
+    }
+
+    .influence-none {
+        background-color: grey;
+        color: white;
+    }
+
+    .influence-unset {
+        color: #444;
+        font-style: italic;
+    }
+
+    .influence-text {
+    font-weight: bold;
+    transition: font-size 0.2s ease;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<h2>Evaluate Influence Between Pairs of Statements</h2>
-
-<p>Please indicate whether one statement influences the other. If there is an influence, also rate how strong it is.</p>
+<h2>Which things influence each other?</h2>
+<p>Your task is to judge which things influence eachc other and how</p>
 
 {% for pair_num, pair in all_pairs %}
 <div style="margin-bottom: 30px;">
-    <div style="display: flex; justify-content: center; margin-bottom: 10px;">
-        <div style="width: 200px; text-align: center;">{{ pair.0 }}</div>
-        <div style="width: 200px; text-align: center;">{{ pair.1 }}</div>
+    <div style="margin-bottom: 10px; text-align: center;">
+        <p style="font-size: 18px;">
+            There is 
+            <span id="influence_label_{{ pair_num }}" class="influence-text">[select one]</span>
+            influence between 
+            <span style="font-weight: bold;">{{ pair.0 }}</span> 
+            and 
+            <span style="font-weight: bold;">{{ pair.1 }}</span>.
+        </p>
     </div>
 
     <div style="text-align: center;">
@@ -38,9 +74,9 @@
     </div>
 
     <div id="strength_section_{{ pair_num }}" style="display:none; margin-top:10px; text-align: center;">
-        <p>Influence strength (1-100):</p>
+        <p>Strength of influence (1-100)</p>
         <input type="range" id="strength_slider_{{ pair_num }}" min="1" max="100" style="width:300px;" data-touched="false">
-        <span id="strength_value_{{ pair_num }}">—</span>
+        <span id="strength_value_{{ pair_num }}"></span>
     </div>
 
     <input type="hidden" name="plausibility_edge_{{ pair_num }}_type" id="type_input_{{ pair_num }}">
@@ -58,11 +94,28 @@ document.addEventListener("DOMContentLoaded", function() {
     function handleSelection(pair, value) {
         document.getElementById(`type_input_${pair}`).value = value;
 
+        // 🔽 Set label text and color
+        const label = document.getElementById(`influence_label_${pair}`);
+        label.className = "influence-text"; // Reset first
+
+        if (value === "1") {
+            label.textContent = "POSITIVE";
+            label.classList.add("influence-positive");
+        } else if (value === "2") {
+            label.textContent = "NEGATIVE";
+            label.classList.add("influence-negative");
+        } else {
+            label.textContent = "NO";
+            label.classList.add("influence-none");
+        }
+
+        // 🔽 Update selected button
         document.querySelectorAll(`[data-pair="${pair}"]`).forEach(btn => {
             btn.classList.remove("selected");
         });
         document.querySelector(`[data-pair="${pair}"][data-value="${value}"]`).classList.add("selected");
 
+        // 🔽 Show/hide slider
         if (value === "1" || value === "2") {
             document.getElementById(`strength_section_${pair}`).style.display = "block";
             document.getElementById(`strength_input_${pair}`).value = "";
@@ -84,11 +137,19 @@ document.addEventListener("DOMContentLoaded", function() {
         const slider = document.getElementById(`strength_slider_${pair}`);
         const output = document.getElementById(`strength_value_${pair}`);
 
-        slider.addEventListener("input", () => {
-            slider.dataset.touched = "true";
-            output.textContent = slider.value;
-            document.getElementById(`strength_input_${pair}`).value = slider.value;
-        });
+    slider.addEventListener("input", () => {
+        slider.dataset.touched = "true";
+        output.textContent = slider.value;
+        document.getElementById(`strength_input_${pair}`).value = slider.value;
+
+        // 🔽 Dynamic scaling of label font size
+        const label = document.getElementById(`influence_label_${pair}`);
+        const minFontSize = 10;
+        const maxFontSize = 24;
+        const fontSize = minFontSize + ((slider.value - 1) / 99) * (maxFontSize - minFontSize);
+        label.style.fontSize = `${fontSize}px`;
+    });
+
     });
 
     document.querySelector("button[type=submit], .otree-btn-next").addEventListener("click", function(e) {

@@ -38,7 +38,6 @@ def smart_linebreak(text, threshold=15):
         split_point = left if (mid - left) <= (right - mid) else right
     return text[:split_point] + '\n' + text[split_point+1:]
 
-
 class C(BaseConstants): 
     NAME_IN_URL = 'survey'
     PLAYERS_PER_GROUP = None
@@ -118,7 +117,7 @@ class Player(BasePlayer):
     
     # --- NETWORK REFLECTION ---
     network_reflection_rating = models.IntegerField(
-        label="How well do you feel that this representation captures the most important influences on your meat eating habits?",
+        label="How well does this representation capture the most important influences on your meat eating behavior?",
         choices=[[1, "Not at all"], [2, "Slightly"], [3, "Moderately"], [4, "Very well"], [5, "Extremely well"]],
         widget=widgets.RadioSelectHorizontal
     )
@@ -137,6 +136,7 @@ class Player(BasePlayer):
     
     ### --- PLAUSIBILITY ---
     importance_ratings = models.LongStringField(blank=True)
+    #plausibility_edge_evaluations = models.LongStringField()
     plausibility_edge_pairs_data = models.LongStringField()
     plausibility_edge_1_type = models.IntegerField(
         choices=[(0, 'No Influence'), (1, 'Positive Influence'), (2, 'Negative Influence')],
