@@ -1,4 +1,5 @@
 {% extends "global/Page.html" %}
+
 {% block styles %}
 <style>
     #node-container {
@@ -21,7 +22,8 @@
     canvas {
         border: 2px solid black;
     }
-</style>
+
+    </style>
 {% endblock %}
 
 {% block content %}
@@ -59,6 +61,33 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+
+    function flashRedCircle(point) {
+        // Temporarily mark the point for red flash
+        point.flash = true;
+        drawCanvas();
+
+        setTimeout(() => {
+            point.flash = false;
+            drawCanvas();
+        }, 150);
+    }
+
+    function isTooClose(x, y, existingPoints, minDistance = 50) {
+        return existingPoints.some(p => {
+            const dx = p.x - x;
+            const dy = p.y - y;
+            return Math.hypot(dx, dy) < minDistance;
+        });
+    }
+
+    function flashRed(element) {
+        const originalBg = element.style.backgroundColor;
+        element.style.backgroundColor = '#ff4d4d';  // red
+        setTimeout(() => {
+            element.style.backgroundColor = originalBg;
+        }, 200);
+    }
 
     let currentIndex = 0;
     const canvas = document.getElementById("dragCanvas");
@@ -101,10 +130,15 @@ document.addEventListener("DOMContentLoaded", function () {
         const y = e.clientY - rect.top;
 
         if (!pointsOnCanvas.find(p => p.label === label)) {
-            pointsOnCanvas.push({ label, x, y });
-            currentIndex++;
-            showNextNode();
-            drawCanvas();
+            if (!isTooClose(x, y, pointsOnCanvas)) {
+                pointsOnCanvas.push({ label, x, y });
+                currentIndex++;
+                showNextNode();
+                drawCanvas();
+            } else {
+                // Drop was too close → reject and flash red node
+                flashRed(document.getElementById("current-node"));
+            }
         }
     });
 
@@ -114,14 +148,18 @@ document.addEventListener("DOMContentLoaded", function () {
         ctx.lineWidth = 3;
         ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
+        // First pass: draw all circles
         pointsOnCanvas.forEach(p => {
             ctx.beginPath();
             ctx.arc(p.x, p.y, 20, 0, Math.PI * 2);
-            ctx.fillStyle = p.fixed ? "#999999" : "orange";
+            ctx.fillStyle = p.flash ? "#ff4d4d" : (p.fixed ? "#999999" : "orange");
             ctx.fill();
             ctx.strokeStyle = "black";
             ctx.stroke();
+        });
 
+        // Second pass: draw all text labels
+        pointsOnCanvas.forEach(p => {
             ctx.fillStyle = "black";
             ctx.font = "14px sans-serif";
             ctx.textAlign = "center";
@@ -131,7 +169,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const baseY = p.y - 28;
 
             lines.forEach((line, index) => {
-                const y = baseY - (lines.length - index - 1) * lineHeight
+                const y = baseY - (lines.length - index - 1) * lineHeight;
                 ctx.fillText(line, p.x, y);
             });
         });
@@ -153,6 +191,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     canvas.addEventListener("mousedown", function (e) {
         const pos = getMousePos(e);
+        canvas.style.cursor = "grabbing";
         draggingPoint = findPoint(pos);
         if (draggingPoint) {
             offsetX = pos.x - draggingPoint.x;
@@ -161,15 +200,30 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     canvas.addEventListener("mousemove", function (e) {
+        const pos = getMousePos(e);
+        const hoveringPoint = findPoint(pos);
+        canvas.style.cursor = hoveringPoint ? "grab" : "default";
+
         if (draggingPoint) {
-            const pos = getMousePos(e);
-            draggingPoint.x = pos.x - offsetX;
-            draggingPoint.y = pos.y - offsetY;
-            drawCanvas();
+            const newX = pos.x - offsetX;
+            const newY = pos.y - offsetY;
+
+            // Temporarily exclude dragging point from check
+            const otherPoints = pointsOnCanvas.filter(p => p !== draggingPoint);
+
+            if (!isTooClose(newX, newY, otherPoints)) {
+                draggingPoint.x = newX;
+                draggingPoint.y = newY;
+                drawCanvas();
+            } else {
+                flashRedCircle(draggingPoint)
+            }
+            // else: do nothing — disallow overlap
         }
     });
 
     canvas.addEventListener("mouseup", function () {
+        canvas.style.cursor = "default";
         draggingPoint = null;
     });
 
