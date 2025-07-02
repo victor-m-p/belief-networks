@@ -44,12 +44,12 @@ class C(BaseConstants):
     NUM_ROUNDS = 1
     MIN_LEN_ANS = 100
     QUESTIONS = [
-        "Please describe your dietary pattern, specifically your meat eating habits. Think about what you would consume in a typical week",
-        "Are there any personal motivations that you have to eat or not to eat meat? Feel free to write about anything that comes to mind",
+        "Please describe your dietary pattern, specifically your meat eating habits. Think about what you would consume in a typical week.",
+        "Are there any personal motivations that you have to eat or not to eat meat? Feel free to write about anything that comes to mind.",
         "Think about the people you interact with on a regular basis and whose opinions and meat eating habits are important to you. What are their meat eating habits?",
         "Think about the people you interact with on a regular basis and whose opinions and meat eating habits are important to you. What are their motivations to eat or to avoid eating meat?"
     ]
-    MEAT_DEFINITION = "Even if you did not think much about these issues please write whatever comes to mind at this moment. Please try to write at least a few sentences."
+    MEAT_DEFINITION = "Even if you have not thought a lot about your meat eating behavior and motivations, please take a moment now to reflect on this. Please try to write at least a few sentences."
     MEAT_FREQ_CATEGORIES = [
         "never",
         "less than once a week",
@@ -185,7 +185,7 @@ class Player(BasePlayer):
     )
 
     # --- Demographics ---
-    age = models.IntegerField(label='How old are you?', min=18, max=100)
+    age = models.IntegerField(label='How old are you?', min=18, max=130)
     gender = models.StringField(
         label='What is your gender?',
         choices=[
@@ -244,7 +244,7 @@ class Player(BasePlayer):
 
 # some of this we can delete
 for i in range(40): # just some high enough number
-    setattr(Player, f"belief_rating_{i}", models.StringField(blank=True)) # used. 
+    setattr(Player, f"belief_rating_{i}", models.IntegerField(blank=True)) # used. 
 
 # PAGES 
 class Consent(Page):
@@ -267,8 +267,9 @@ class Question1(Page):
     @staticmethod
     def vars_for_template(player: Player):
         return dict(
-            meat=C.MEAT_DEFINITION,
-            prompt=C.QUESTIONS[0])
+            #meat=C.MEAT_DEFINITION,
+            #prompt=C.QUESTIONS[0]
+            )
 
     @staticmethod
     def error_message(player, values):
@@ -287,8 +288,9 @@ class Question2(Page):
     @staticmethod
     def vars_for_template(player: Player):
         return dict(
-            meat=C.MEAT_DEFINITION,
-            prompt=C.QUESTIONS[1])
+            #meat=C.MEAT_DEFINITION,
+            #prompt=C.QUESTIONS[1]
+            )
 
     @staticmethod
     def error_message(player, values):
@@ -306,8 +308,9 @@ class Question3(Page):
     @staticmethod
     def vars_for_template(player: Player):
         return dict(
-            meat=C.MEAT_DEFINITION,
-            prompt=C.QUESTIONS[2])
+            #meat=C.MEAT_DEFINITION,
+            #prompt=C.QUESTIONS[2]
+            )
     
     @staticmethod
     def error_message(player, values):
@@ -325,8 +328,9 @@ class Question4(Page):
     @staticmethod
     def vars_for_template(player: Player):
         return dict(
-            meat=C.MEAT_DEFINITION,
-            prompt=C.QUESTIONS[3])
+            #meat=C.MEAT_DEFINITION,
+            #prompt=C.QUESTIONS[3]
+            )
         
     @staticmethod
     def error_message(player, values):
@@ -420,33 +424,61 @@ class BeliefAccuracyRating(Page):
         nodes = json.loads(player.generated_nodes) if player.generated_nodes else []
         qa_pairs = [{'question': q, 'answer': getattr(player, f'answer{i+1}')}
                     for i, q in enumerate(C.QUESTIONS)]
-        belief_items = [
-            {"index": i, "belief": node.get("stance", ""), "rating": ""}
-            for i, node in enumerate(nodes)
-        ]
-        return dict(belief_items=belief_items, transcript=qa_pairs, C=C, rating_options=list(range(1, 8)))
 
+        belief_items = []
+        for i, node in enumerate(nodes):
+            field_name = f"belief_rating_{i}"
+            current_rating = player.field_maybe_none(field_name)
+            belief_items.append({
+                "index": i,
+                "belief": node.get("stance", ""),
+                "rating": current_rating,
+            })
+
+        return dict(
+            belief_items=belief_items,
+            transcript=qa_pairs,
+            C=C,
+            rating_options=list(range(1, 8)),
+        )
+        
     @staticmethod
     def error_message(player: Player, values):
         nodes = json.loads(player.generated_nodes or '[]')
         ratings_to_store = []
+        missing = False  # Flag to track if any rating is missing
+
         for i, node in enumerate(nodes):
             stance = node.get("stance", "")
-            rating = values.get(f"belief_rating_{i}", "")
+            rating = values.get(f"belief_rating_{i}", None)
+
+            # Save rating to player regardless
+            setattr(player, f"belief_rating_{i}", int(rating) if rating else None)
+
             if not rating:
-                return "Please rate all items before continuing."
-            ratings_to_store.append({"text": smart_linebreak(stance), "belief": stance, "rating": rating})
+                missing = True  # Flag to trigger error
+
+            ratings_to_store.append({
+                "text": smart_linebreak(stance),
+                "belief": stance,
+                "rating": rating,
+            })
+
+        # Save to player regardless of error, so values persist
         player.generated_nodes_ratings = json.dumps(ratings_to_store)
 
-        # First filter: only include beliefs rated > 4
+        if missing:
+            return "Please rate all items before continuing."
+
+        # Filtering logic below runs only if nothing is missing
         filtered_nodes = [r for r in ratings_to_store if int(r["rating"]) > 4]
 
-        # Second filter: randomly sample if too many
         if len(filtered_nodes) > C.NUM_NODES_MAX:
             filtered_nodes = random.sample(filtered_nodes, C.NUM_NODES_MAX)
 
         player.final_nodes = json.dumps(filtered_nodes)
         player.num_nodes = len(filtered_nodes)
+
         
     @staticmethod
     def is_displayed(player: Player): 
@@ -762,12 +794,14 @@ page_sequence = [
     LLMGenerate, # HERE-->REVIEW
     BeliefAccuracyRating, # HERE-->REVIEW
     Exit,
+    # THIS WE COULD CUT FOR AN EASY DEMO
     MapNodePlacement,
     MapEdgeCreation1,
     MapEdgeCreation2,
     MapEdgeCreation3,
     MapImportance,
     NetworkReflection,
+    # DOWN TO HERE
     PlausibilityImportance,
     PlausibilityEdges,
     SocialPressureMotivations,

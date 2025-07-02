@@ -2,11 +2,12 @@
     <link rel="stylesheet" href="{{ static 'global.css' }}">
 {% endblock %}
 
-{% block title %} Social Contacts Meat Eating Habits {% endblock %}
-
 {% block content %}
-<p>{{ prompt }}</p>
-<p><small><i>{{ meat }}</i></small></p>
+<p>We’re also interested in the meat-eating behaviors of the people you interact with most frequently (e.g., family, friends, coworkers). 
+    Are there any people whose eating habits influence your own meat-eating behavior? Even if no one has a strong influence, 
+    <b>please describe the meat-eating behaviors of the people you regularly interact with.</b></p>
+    
+<p><small><i>Try to write at least a few sentences.</i></small></p>
 {{ formfield 'answer3' }}
 {{ next_button }}
 {% endblock %}

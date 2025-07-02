@@ -2,11 +2,12 @@
     <link rel="stylesheet" href="{{ static 'global.css' }}">
 {% endblock %}
 
-{% block title %} Social Contacts Meat Eating Motivations {% endblock %}
-
 {% block content %}
-<p>{{ prompt }}</p>
-<p><small><i>{{ meat }}</i></small></p>
-{{ formfield 'answer4' }}
+<p>Finally, we’d like to understand the motivations you believe others in your life have for eating or avoiding meat.
+    <b>Based on your impressions, what are some of the reasons these people eat meat or avoid it?</b>
+    Even if you’re not entirely sure, describe all of the motivations that you perceive.</p>
+
+<p><small><i>Try to write at least a few sentences</i></small></p>
+    {{ formfield 'answer4' }}
 {{ next_button }}
 {% endblock %}

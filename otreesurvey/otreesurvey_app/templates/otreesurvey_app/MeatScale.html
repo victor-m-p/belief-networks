@@ -2,24 +2,23 @@
     <link rel="stylesheet" href="{{ static 'global.css' }}">
 {% endblock %}
 
-{{ block title }} Meat Consumption {{ endblock }}
-
 {{ block content }}
 
-<p>How often do you eat any meat <b>in an average week</b>?</p>
+<p>You've just reflected on your own and others' motivations and behaviors around eating meat. 
+Now, we’d like to ask you some more specific questions about how often you eat meat (past, present, and future).</p>
+
+<p><b>How often do you eat any meat in an average week</b>?<small><i>(“Meat” includes chicken, fish, beef, pork, lamb, mutton, goat, and other meat products.)</i></small></p>
 {{ form.meat_consumption_present }}
 
 <br>
-<p>Try to recall your meat <b>eating habits 5 years ago.</b> How often did you eat any meat in an average week?</p>
+<p><b>Try to recall your meat eating habits 5 years ago.</b> How often did you eat any meat in an average week back then?</p>
 {{ form.meat_consumption_past }}
 
 <br>
-<p>Try to imagine how your meat eating habits might look <b>5 years from now</b>. How often do you think you will eat any meat in an average week?</p>
+<p><b>Now imagine how your meat-eating habits might look 5 years from now</b>. How often do you think you will eat any meat in an average week?</p>
 {{ form.meat_consumption_future }}
 
 <br>
-<p><i>By "meat", we mean any meat or meat products, including chicken, fish, beef, pork, lamb, mutton, goat etc.</i></p>
-
 {{ next_button }}
 
 {{ endblock }}

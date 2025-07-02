@@ -2,11 +2,12 @@
     <link rel="stylesheet" href="{{ static 'global.css' }}">
 {% endblock %}
 
-{% block title %} Personal Meat Eating Motivations {% endblock %}
-
 {% block content %}
-<p>{{ prompt }}</p>
-<p><small><i>{{ meat }}</i></small></p>
+<p>What are your main reasons for eating meat, avoiding meat, or doing both?
+    <b>Please describe all of the reasons that are important for you.</b></p>
+
+<p><small><i>Even if you haven’t thought much about your motivations before, please share whatever comes to mind. Try to write at least a few sentences.</i></small></p>
+
 {{ formfield 'answer2' }}
 {{ next_button }}
 {% endblock %}

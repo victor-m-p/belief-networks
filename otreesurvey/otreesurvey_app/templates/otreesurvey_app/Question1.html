@@ -2,11 +2,10 @@
     <link rel="stylesheet" href="{{ static 'global.css' }}">
 {% endblock %}
 
-{% block title %} Personal Meat Eating Habits {% endblock %}
 
 {% block content %}
-<p>{{ prompt }}</p>
-<p><small><i>{{ meat }}</i></small></p>
+<p>We’re interested in understanding your typical meat consumption. <b>Please describe the types and amounts of meat or meat products you usually eat in a typical week.</b></p>
+<p><small><i>By “meat,” we mean any animal flesh or meat products, including chicken, fish, beef, pork, lamb, mutton, goat, etc.</i></small></p>
 {{ formfield 'answer1' }}
 {{ next_button }}
 {% endblock %}

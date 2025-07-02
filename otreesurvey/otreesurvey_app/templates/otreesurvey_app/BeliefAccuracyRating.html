@@ -54,13 +54,29 @@
         padding-left: 30rem;
         padding-right: 1rem;
     }
+
+    .belief-row:nth-child(even) .belief-text {
+    color: black;
+    }
+
+    .belief-row:nth-child(odd) .belief-text {
+        color: #666;
+    }
+
 </style>
 {% endblock %}
 
 {% block content %}
-<h2>Evaluate Summaries of Meat Eating Behaviors and Motivations</h2>
-<p>Based on your answers we created the following summaries of your meat eating motivations and habits. We would like to know how accurate you think these are. Please rate how accurately each statement reflects your written responses, on a scale from 1 (Not accurate at all) to 7 (Very accurate). You can toggle the blue button to see the transcript of your answers.
-<br></br>
+<p><b>Instructions:</b></p>
+<p>Based on your earlier responses, we’ve generated a set of statements that might reflect what you said about your meat-eating behaviors and motivations, as well as those of people in your life.</p>
+<p><b>Please evaluate how accurately each statement reflects what you actually wrote.</b></p>
+
+<p>Use the scale from <b>1 (Not accurate at all)</b> to <b>7 (Very accurate)</b> to rate each statement.</p>
+
+<p>If you’d like to <b>see the transcript of your original responses</b>, you can click the blue <b>“Show transcript”</b> button.</p>
+
+<p>This will help us understand how well our summaries match what you intended to express.</p>
+
 <!-- Transcript toggle button -->
 <button type="button" id="toggle-transcript" style="
     background-color: #007BFF;
@@ -100,14 +116,7 @@
                 {% for i in rating_options %}
                     <input type="radio" name="belief_rating_{{ item.index }}" id="belief_rating_{{ item.index }}_{{ i }}" value="{{ i }}"
                         {% if item.rating == i %}checked{% endif %}>
-                    <label for="belief_rating_{{ item.index }}_{{ i }}"
-                        {% if i == 1 %} style="background-color: #ff4d4d;" {% endif %}
-                        {% if i == 2 %} style="background-color: #ff944d;" {% endif %}
-                        {% if i == 3 %} style="background-color: #ffb84d;" {% endif %}
-                        {% if i == 4 %} style="background-color: #ffd24d;" {% endif %}
-                        {% if i == 5 %} style="background-color: #b3e673;" {% endif %}
-                        {% if i == 6 %} style="background-color: #80e27e;" {% endif %}
-                        {% if i == 7 %} style="background-color: #33cc33;" {% endif %}>
+                    <label for="belief_rating_{{ item.index }}_{{ i }}">
                         {{ i }}
                     </label>
                 {% endfor %}
